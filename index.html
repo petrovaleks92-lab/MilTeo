@@ -35,7 +35,7 @@ body { background: var(--bg); color: var(--ink); font-family: var(--font-body); 
 button, input, select { font: inherit; color: inherit; }
 button { cursor: pointer; }
 .wrap, .narrow { max-width: 640px; margin: 0 auto; padding: 16px; }
-.wrap { padding-bottom: 110px; }
+.wrap { padding-bottom: 190px; }
 .narrow { max-width: 440px; padding-top: 40px; }
 header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
 .brand { display: flex; align-items: center; gap: 10px; }
@@ -76,11 +76,12 @@ ul.list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction
 .field-label { font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; margin: 0 0 6px; }
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .code { font-family: var(--font-display); font-weight: 700; font-size: 36px; letter-spacing: 0.08em; }
-nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface); border-top: 1px solid var(--line); padding: 8px; z-index: 5; }
-.nav-in { max-width: 640px; margin: 0 auto; display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
-.tab { border: 0; background: transparent; border-radius: 12px; padding: 6px; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 12px; color: var(--muted); }
+nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface); border-top: 1px solid var(--line); padding: 10px 10px calc(env(safe-area-inset-bottom, 0px) + 22px); z-index: 5; box-shadow: 0 -4px 16px rgba(0,0,0,.08); }
+.nav-in { max-width: 640px; margin: 0 auto; display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.tab { border: 0; background: transparent; border-radius: 16px; padding: 10px 2px; min-height: 68px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 13px; color: var(--muted); }
+.tab .ic { font-size: 26px; line-height: 1; }
 .tab[aria-selected="true"] { background: var(--mil-soft); color: var(--ink); font-weight: 600; }
-#toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: 86px; background: var(--ink); color: var(--bg); border-radius: 12px; padding: 10px 16px; font-size: 14px; z-index: 9; }
+#toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: 150px; background: var(--ink); color: var(--bg); border-radius: 12px; padding: 10px 16px; font-size: 14px; z-index: 9; }
 </style>
 </head>
 <body>
@@ -199,11 +200,11 @@ nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface);
 
   <nav>
     <div class="nav-in">
-      <button class="tab" id="t-shop" aria-selected="true" onclick="switchTab('shop')">Einkauf</button>
-      <button class="tab" id="t-todos" onclick="switchTab('todos')">Aufgaben</button>
-      <button class="tab" id="t-timers" onclick="switchTab('timers')">Timer</button>
-      <button class="tab" id="t-events" onclick="switchTab('events')">Termine</button>
-      <button class="tab" id="t-family" onclick="switchTab('family')">Familie</button>
+      <button class="tab" id="t-shop" aria-selected="true" onclick="switchTab('shop')"><span class="ic" aria-hidden="true">🛒</span><span>Einkauf</span></button>
+      <button class="tab" id="t-todos" onclick="switchTab('todos')"><span class="ic" aria-hidden="true">✅</span><span>Aufgaben</span></button>
+      <button class="tab" id="t-timers" onclick="switchTab('timers')"><span class="ic" aria-hidden="true">⏱️</span><span>Timer</span></button>
+      <button class="tab" id="t-events" onclick="switchTab('events')"><span class="ic" aria-hidden="true">📅</span><span>Termine</span></button>
+      <button class="tab" id="t-family" onclick="switchTab('family')"><span class="ic" aria-hidden="true">👪</span><span>Familie</span></button>
     </div>
   </nav>
 </div>
