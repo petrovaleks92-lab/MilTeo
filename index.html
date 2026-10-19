@@ -194,6 +194,11 @@ nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface);
         <div class="code" id="fam-code">-</div>
         <button class="btn small" id="fam-copy" type="button">Code kopieren</button>
       </div>
+      <div class="card">
+        <p class="field-label">Familie wechseln</p>
+        <p class="lead" style="margin:0">Verlasse deine Familie, um eine neue zu gründen oder mit einem Code einer anderen beizutreten. Die Einträge bleiben in der alten Familie erhalten.</p>
+        <button class="btn danger" id="btn-leave" type="button">Familie verlassen</button>
+      </div>
       <button class="btn ghost small" id="btn-logout" type="button">Abmelden</button>
     </section>
   </div>
@@ -324,6 +329,17 @@ nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface);
   document.getElementById('btn-logout').onclick = logoutAction;
   const famLogout = document.getElementById('fam-logout');
   if (famLogout) famLogout.onclick = logoutAction;
+
+  document.getElementById('btn-leave').onclick = async () => {
+    if (!confirm('Familie wirklich verlassen? Du siehst die Einträge dann nicht mehr, kannst aber mit dem Code wieder beitreten.')) return;
+    const r = await sb.rpc('leave_family');
+    if (r.error) { toast('Verlassen nicht möglich: ' + r.error.message); return; }
+    fid = null; entries = [];
+    document.getElementById('fam-code').textContent = '-';
+    const { data } = await sb.auth.getSession();
+    route(data.session);
+    toast('Du hast die Familie verlassen.');
+  };
 
   document.getElementById('fam-copy').onclick = () => {
     navigator.clipboard.writeText(document.getElementById('fam-code').textContent);
