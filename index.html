@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#166534">
   <meta name="description" content="Einkauf, Aufgaben, Timer und Termine.">
 
-  <!-- PWA Manifest für Installierbarkeit als App -->
+  <!-- PWA Manifest -->
   <link rel="manifest" href='data:application/manifest+json,{
     "name": "Milteo Familienplaner",
     "short_name": "Milteo",
@@ -15,20 +15,11 @@
     "display": "standalone",
     "background_color": "#ffffff",
     "theme_color": "#166534",
-    "icons": [
-      {
-        "src": "https://api.iconify.design/lucide:home.svg?color=%23166534",
-        "sizes": "192x192",
-        "type": "image/svg+xml",
-        "purpose": "any maskable"
-      },
-      {
-        "src": "https://api.iconify.design/lucide:home.svg?color=%23166534",
-        "sizes": "512x512",
-        "type": "image/svg+xml",
-        "purpose": "any maskable"
-      }
-    ]
+    "icons": [{
+      "src": "https://api.iconify.design/lucide:home.svg?color=%23166534",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    }]
   }'>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -44,32 +35,32 @@
   </div>
 
   <script>
-    // 1. Service Worker registrieren
+    // Service Worker registrieren
     if ('serviceWorker' in navigator) {
       const swCode = "self.addEventListener('fetch', (e) => e.respondWith(fetch(e.request)));";
       const blob = new Blob([swCode], { type: 'application/javascript' });
       navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(() => {});
     }
 
-    // 2. Supabase Initialisierung & Sofort-Start
+    // Supabase Initialisierung
     const SUPABASE_URL = 'https://fmyjhuzrwskalirunreb.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZteWpodXpyd3NrYWxpcnVucmViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzNTI4NzQsImV4cCI6MjEwNzkyODg3NH0.8yxSeNScfIEc7fvqymn9hZyQ8ispIy_zK3rgcgWVrbQ';
     
     let supabase = null;
-
     try {
       supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     } catch (e) {
       console.error(e);
     }
 
-    // Direkt beim Starten des Skripts die Ansicht erzwingen
-    window.addEventListener('DOMContentLoaded', () => {
-      renderAuth();
-    });
+    // Direkt ausführen ohne Warten auf DOMContentLoaded
+    renderAuth();
 
     function renderAuth() {
-      document.getElementById('app').innerHTML = `
+      const appEl = document.getElementById('app');
+      if (!appEl) return;
+
+      appEl.innerHTML = `
         <div class="space-y-6">
           <div class="text-center space-y-1">
             <h1 class="text-4xl font-bold text-emerald-800">Milteo</h1>
