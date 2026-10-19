@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Milteo Familienplaner</title>
+  <meta name="theme-color" content="#166534">
+  <meta name="description" content="Einkauf, Aufgaben, Timer und Termine.">
+
+  <!-- PWA Manifest für Installierbarkeit als App -->
+  <link rel="manifest" href='data:application/manifest+json,{
+    "name": "Milteo Familienplaner",
+    "short_name": "Milteo",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#166534",
+    "icons": [
+      {
+        "src": "https://api.iconify.design/lucide:home.svg?color=%23166534",
+        "sizes": "192x192",
+        "type": "image/svg+xml",
+        "purpose": "any maskable"
+      },
+      {
+        "src": "https://api.iconify.design/lucide:home.svg?color=%23166534",
+        "sizes": "512x512",
+        "type": "image/svg+xml",
+        "purpose": "any maskable"
+      }
+    ]
+  }'>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen p-4">
+
+  <div id="app" class="max-w-md mx-auto mt-6">
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 text-center">
+      <h1 class="text-2xl font-bold text-emerald-800 mb-2">Milteo</h1>
+      <p class="text-slate-500">Wird gestartet...</p>
+    </div>
+  </div>
+
+  <script>
+    // 1. Service Worker registrieren
+    if ('serviceWorker' in navigator) {
+      const swCode = "self.addEventListener('fetch', (e) => e.respondWith(fetch(e.request)));";
+      const blob = new Blob([swCode], { type: 'application/javascript' });
+      navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(() => {});
+    }
+
+    // 2. Supabase Initialisierung & Sofort-Start
+    const SUPABASE_URL = 'https://fmyjhuzrwskalirunreb.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZteWpodXpyd3NrYWxpcnVucmViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzNTI4NzQsImV4cCI6MjEwNzkyODg3NH0.8yxSeNScfIEc7fvqymn9hZyQ8ispIy_zK3rgcgWVrbQ';
+    
+    let supabase = null;
+
+    try {
+      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    } catch (e) {
+      console.error(e);
+    }
+
+    // Direkt beim Starten des Skripts die Ansicht erzwingen
+    window.addEventListener('DOMContentLoaded', () => {
+      renderAuth();
+    });
+
+    function renderAuth() {
+      document.getElementById('app').innerHTML = `
+        <div class="space-y-6">
+          <div class="text-center space-y-1">
+            <h1 class="text-4xl font-bold text-emerald-800">Milteo</h1>
+            <p class="text-slate-600 font-medium">Familienplaner</p>
+          </div>
+          <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 space-y-4">
+            <h2 class="text-xl font-semibold">Anmelden</h2>
+            <form id="login-form" class="space-y-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">E-Mail</label>
+                <input type="email" id="email" required class="w-full p-3 border rounded-xl border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Passwort</label>
+                <input type="password" id="password" required class="w-full p-3 border rounded-xl border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              </div>
+              <button type="submit" class="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-semibold py-3 rounded-xl transition">Anmelden</button>
+            </form>
+            <p id="msg" class="text-sm text-center text-red-500 hidden"></p>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('login-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const msg = document.getElementById('msg');
+        
+        msg.classList.add('hidden');
+        
+        if (!supabase) {
+          msg.textContent = "Supabase nicht initialisiert.";
+          msg.classList.remove('hidden');
+          return;
+        }
+
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        
+        if (error) {
+          msg.textContent = error.message;
+          msg.classList.remove('hidden');
+        } else {
+          renderDashboard(data.user);
+        }
+      });
+    }
+
+    function renderDashboard(user) {
+      document.getElementById('app').innerHTML = `
+        <div class="space-y-6">
+          <div class="flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-emerald-800">Milteo</h1>
+            <button onclick="logout()" class="text-sm text-slate-500 hover:text-red-500">Abmelden</button>
+          </div>
+          <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 space-y-4">
+            <h2 class="text-lg font-semibold">Einkaufsliste</h2>
+            <div class="flex gap-2">
+              <input type="text" id="item-input" placeholder="Was fehlt?" class="flex-1 p-3 border rounded-xl border-slate-200">
+              <button class="bg-emerald-700 text-white px-4 py-3 rounded-xl font-semibold">Hinzufügen</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    async function logout() {
+      if (supabase) await supabase.auth.signOut();
+      renderAuth();
+    }
+  </script>
+</body>
+</html>
