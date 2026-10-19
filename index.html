@@ -190,6 +190,13 @@ nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface);
     <section class="panel" id="p-family" hidden>
       <h2>Familie & Konto</h2>
       <div class="card">
+        <label class="field-label" for="in-myname">Dein Name</label>
+        <form id="f-name" style="display:flex; gap:8px;">
+          <input type="text" id="in-myname" maxlength="40" autocomplete="nickname">
+          <button class="btn" type="submit">Speichern</button>
+        </form>
+      </div>
+      <div class="card">
         <p class="field-label">Dein Code</p>
         <div class="code" id="fam-code">-</div>
         <button class="btn small" id="fam-copy" type="button">Code kopieren</button>
@@ -259,6 +266,8 @@ nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface);
     if (!session) { showScreen('auth'); return; }
     myId = session.user.id;
     myName = session.user.user_metadata?.name || session.user.email.split('@')[0];
+    const nameInput = document.getElementById('in-myname');
+    if (nameInput) nameInput.value = myName;
     
     sb.from('members').select('family_id, display_name, families(code)').eq('user_id', myId).maybeSingle().then(r => {
       if (!r.data) {
@@ -329,6 +338,16 @@ nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface);
   document.getElementById('btn-logout').onclick = logoutAction;
   const famLogout = document.getElementById('fam-logout');
   if (famLogout) famLogout.onclick = logoutAction;
+
+  document.getElementById('f-name').onsubmit = async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('in-myname').value.trim();
+    if (!name) { toast('Bitte einen Namen eingeben'); return; }
+    const r = await sb.auth.updateUser({ data: { name } });
+    if (r.error) { toast('Name konnte nicht gespeichert werden'); return; }
+    myName = name;
+    toast('Name gespeichert');
+  };
 
   document.getElementById('btn-leave').onclick = async () => {
     if (!confirm('Familie wirklich verlassen? Du siehst die Einträge dann nicht mehr, kannst aber mit dem Code wieder beitreten.')) return;
