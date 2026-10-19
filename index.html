@@ -197,6 +197,10 @@ nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface);
         </form>
       </div>
       <div class="card">
+        <p class="field-label">Mitglieder</p>
+        <div id="list-members"></div>
+      </div>
+      <div class="card">
         <p class="field-label">Dein Code</p>
         <div class="code" id="fam-code">-</div>
         <button class="btn small" id="fam-copy" type="button">Code kopieren</button>
@@ -246,6 +250,7 @@ nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface);
 
   function switchTab(tab) {
     currentTab = tab;
+    if (tab === 'family' && fid) loadMembers();
     ['shop', 'todos', 'timers', 'events', 'family'].forEach(t => {
       const p = document.getElementById('p-' + t);
       if (p) p.hidden = (t !== tab);
@@ -346,6 +351,8 @@ nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface);
     const r = await sb.auth.updateUser({ data: { name } });
     if (r.error) { toast('Name konnte nicht gespeichert werden'); return; }
     myName = name;
+    await sb.rpc('set_my_display_name', { p_name: name });
+    loadMembers();
     toast('Name gespeichert');
   };
 
@@ -365,6 +372,16 @@ nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface);
     toast('Code kopiert!');
   };
 
+  // ---------- Mitglieder ----------
+  async function loadMembers() {
+    if (!fid) return;
+    const r = await sb.from('members').select('user_id, display_name, created_at').eq('family_id', fid).order('created_at');
+    const el = document.getElementById('list-members');
+    if (r.error) { el.innerHTML = '<div class="empty">Mitglieder konnten nicht geladen werden.</div>'; return; }
+    el.innerHTML = '<ul class="list">' + r.data.map(m => `
+      <li class="row"><span class="txt">${esc(m.display_name || 'Ohne Namen')}${m.user_id === myId ? '<span class="who">(du)</span>' : ''}</span></li>`).join('') + '</ul>';
+  }
+
   // ---------- Daten (Tabelle "entries") ----------
   let entries = [];
   const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -375,6 +392,7 @@ nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface);
     if (r.error) { toast('Fehler beim Laden'); return; }
     entries = r.data;
     renderAll();
+    loadMembers();
   }
   async function addEntry(kind, data) {
     const r = await sb.from('entries').insert({ family_id: fid, kind, data });
