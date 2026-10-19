@@ -12,31 +12,10 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>Milteo</title>
 
-<!-- Web App Manifest für PWA Installation -->
-<link rel="manifest" href='data:application/manifest+json,{
-  "name": "Milteo Familienplaner",
-  "short_name": "Milteo",
-  "start_url": "/",
-  "display": "standalone",
-  "background_color": "#F2F5FA",
-  "theme_color": "#1F8A4C",
-  "icons": [
-    {
-      "src": "https://api.iconify.design/lucide:home.svg?color=%231F8A4C",
-      "sizes": "192x192",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "https://api.iconify.design/lucide:home.svg?color=%231F8A4C",
-      "sizes": "512x512",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    }
-  ]
-}'>
-
-<link rel="icon" href="https://api.iconify.design/lucide:home.svg?color=%231F8A4C" type="image/svg+xml">
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=DM+Sans:wght@400;500;600&display=swap">
 <style>
 :root {
@@ -235,9 +214,7 @@ nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface);
 <script>
   // Service Worker für PWA Installation
   if ('serviceWorker' in navigator) {
-    const swCode = "self.addEventListener('fetch', (e) => e.respondWith(fetch(e.request)));";
-    const blob = new Blob([swCode], { type: 'application/javascript' });
-    navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(() => {});
+    navigator.serviceWorker.register('sw.js').catch(() => {});
   }
 
   // Korrekte Supabase Konfiguration
