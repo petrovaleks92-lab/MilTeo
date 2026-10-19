@@ -242,7 +242,7 @@ nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface);
 
   // Korrekte Supabase Konfiguration
   const SUPABASE_URL = "https://fmyjhuzrwskalirunreb.supabase.co";
-  const SUPABASE_ANON_KEY = "EyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZteWpodXpyd3NrYWxpcnVucmViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzNTI4NzQsImV4cCI6MjEwNzkyODg3NH0.8yxSeNScfIEc7fvqymn9hZyQ8ispIy_zK3rgcgWVrbQ";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZteWpodXpyd3NrYWxpcnVucmViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzNTI4NzQsImV4cCI6MjEwNzkyODg3NH0.8yxSeNScfIEc7fvqymn9hZyQ8ispIy_zK3rgcgWVrbQ";
 
   const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   let fid = null, myId = null, myName = '', currentTab = 'shop';
@@ -289,6 +289,7 @@ nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface);
       }
       showScreen('app');
       switchTab('shop');
+      loadEntries();
     }).catch(() => {
       showScreen('auth');
     });
@@ -350,6 +351,134 @@ nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface);
     navigator.clipboard.writeText(document.getElementById('fam-code').textContent);
     toast('Code kopiert!');
   };
+
+  // ---------- Daten (Tabelle "entries") ----------
+  let entries = [];
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+  async function loadEntries() {
+    if (!fid) return;
+    const r = await sb.from('entries').select('*').eq('family_id', fid).order('created_at');
+    if (r.error) { toast('Fehler beim Laden'); return; }
+    entries = r.data;
+    renderAll();
+  }
+  async function addEntry(kind, data) {
+    const r = await sb.from('entries').insert({ family_id: fid, kind, data });
+    if (r.error) toast('Fehler beim Speichern'); else loadEntries();
+  }
+  async function updateEntry(id, data) {
+    const r = await sb.from('entries').update({ data }).eq('id', id);
+    if (r.error) toast('Fehler beim Speichern'); else loadEntries();
+  }
+  async function delEntry(id) {
+    const r = await sb.from('entries').delete().eq('id', id);
+    if (r.error) toast('Fehler beim Löschen'); else loadEntries();
+  }
+
+  function renderChecklist(kind) {
+    const el = document.getElementById('list-' + kind);
+    const items = entries.filter(e => e.kind === kind);
+    if (!items.length) { el.innerHTML = '<div class="empty">Noch nichts da.</div>'; return; }
+    el.innerHTML = '<ul class="list">' + items.map(e => `
+      <li class="row ${e.data.done ? 'done' : ''}">
+        <button class="check" type="button" role="checkbox" aria-checked="${!!e.data.done}" data-act="toggle" data-id="${e.id}">${e.data.done ? '✓' : ''}</button>
+        <span class="txt">${esc(e.data.text || '')}</span>
+        <button class="del" type="button" aria-label="Löschen" data-act="del" data-id="${e.id}">×</button>
+      </li>`).join('') + '</ul>';
+  }
+
+  function fmtLeft(ms) {
+    const s = Math.max(0, Math.ceil(ms / 1000));
+    return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+  }
+  const notified = new Set();
+  function renderTimers() {
+    const el = document.getElementById('list-timers');
+    const items = entries.filter(e => e.kind === 'timers');
+    if (!items.length) { el.innerHTML = '<div class="empty">Kein Timer läuft.</div>'; return; }
+    el.innerHTML = '<ul class="list">' + items.map(e => {
+      const left = e.data.end - Date.now();
+      return `<li class="row"><span class="txt">${esc(e.data.label || 'Timer')}
+        <span class="who timer-left" data-end="${e.data.end}" data-id="${e.id}">${left > 0 ? fmtLeft(left) : 'Fertig!'}</span></span>
+        <button class="del" type="button" aria-label="Löschen" data-act="del" data-id="${e.id}">×</button></li>`;
+    }).join('') + '</ul>';
+  }
+  function renderEvents() {
+    const el = document.getElementById('list-events');
+    const items = entries.filter(e => e.kind === 'events')
+      .sort((a, b) => ((a.data.date || '') + (a.data.time || '')).localeCompare((b.data.date || '') + (b.data.time || '')));
+    if (!items.length) { el.innerHTML = '<div class="empty">Keine Termine.</div>'; return; }
+    el.innerHTML = '<ul class="list">' + items.map(e => {
+      const d = e.data.date ? new Date(e.data.date + 'T00:00').toLocaleDateString('de-CH', { weekday: 'short', day: 'numeric', month: 'short' }) : '';
+      return `<li class="row"><span class="txt">${esc(e.data.title || '')}<span class="who">${d} ${esc(e.data.time || '')}</span></span>
+        <button class="del" type="button" aria-label="Löschen" data-act="del" data-id="${e.id}">×</button></li>`;
+    }).join('') + '</ul>';
+  }
+  function renderAll() { renderChecklist('shop'); renderChecklist('todos'); renderTimers(); renderEvents(); }
+
+  // Tick für Timer
+  setInterval(() => {
+    document.querySelectorAll('.timer-left').forEach(s => {
+      const left = Number(s.dataset.end) - Date.now();
+      s.textContent = left > 0 ? fmtLeft(left) : 'Fertig!';
+      if (left <= 0 && !notified.has(s.dataset.id)) {
+        notified.add(s.dataset.id);
+        toast('⏰ Timer abgelaufen!');
+        try { navigator.vibrate && navigator.vibrate([300, 150, 300]); } catch (_) {}
+      }
+    });
+  }, 1000);
+
+  // Klicks in Listen (Abhaken / Löschen)
+  document.addEventListener('click', (ev) => {
+    const b = ev.target.closest('[data-act]');
+    if (!b) return;
+    const id = b.dataset.id;
+    if (b.dataset.act === 'del') delEntry(id);
+    if (b.dataset.act === 'toggle') {
+      const e = entries.find(x => x.id === id);
+      if (e) updateEntry(id, { ...e.data, done: !e.data.done });
+    }
+  });
+
+  // Formulare
+  function bindAdd(formId, inputId, kind) {
+    document.getElementById(formId).onsubmit = (e) => {
+      e.preventDefault();
+      const inp = document.getElementById(inputId);
+      const text = inp.value.trim();
+      if (!text) return;
+      addEntry(kind, { text, done: false, by: myName });
+      inp.value = '';
+    };
+  }
+  bindAdd('f-shop', 'in-shop', 'shop');
+  bindAdd('f-todos', 'in-todos', 'todos');
+
+  document.getElementById('f-timer').onsubmit = (e) => {
+    e.preventDefault();
+    const label = document.getElementById('in-tlabel').value.trim() || 'Timer';
+    const min = Number(document.getElementById('in-tmin').value);
+    if (!(min > 0)) return;
+    addEntry('timers', { label, end: Date.now() + min * 60000 });
+  };
+  document.getElementById('f-event').onsubmit = (e) => {
+    e.preventDefault();
+    const title = document.getElementById('in-etitle').value.trim();
+    const date = document.getElementById('in-edate').value;
+    const time = document.getElementById('in-etime').value;
+    if (!title || !date) { toast('Titel und Datum fehlen'); return; }
+    addEntry('events', { title, date, time });
+    document.getElementById('in-etitle').value = '';
+  };
+
+  // Datum im Kopf + automatische Aktualisierung
+  const now = new Date();
+  document.getElementById('todayDay').textContent = now.toLocaleDateString('de-CH', { weekday: 'long' });
+  document.getElementById('todayDate').textContent = now.toLocaleDateString('de-CH', { day: 'numeric', month: 'long' });
+  setInterval(loadEntries, 15000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) loadEntries(); });
 </script>
 </body>
 </html>
