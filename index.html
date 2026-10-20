@@ -1015,6 +1015,7 @@ input.switch:disabled { opacity: .5; }
   document.querySelectorAll('input[type=text], input[type=number]').forEach(i => {
     if (i.id === 'in-name' || i.id === 'in-myname') return;
     i.setAttribute('autocomplete', 'off'); i.setAttribute('autocorrect', 'off'); i.setAttribute('spellcheck', 'false');
+    i.setAttribute('name', 'x' + Math.random().toString(36).slice(2, 9)); i.setAttribute('data-lpignore', 'true'); i.setAttribute('data-form-type', 'other');
   });
   // Tastatur offen (in jedem Reiter): untere Leiste ausblenden
   const isField = (el) => el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) && !['checkbox','radio','button','file'].includes(el.type);
