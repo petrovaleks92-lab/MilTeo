@@ -1011,6 +1011,11 @@ input.switch:disabled { opacity: .5; }
     document.body.classList.toggle('composing', typing);
     syncViewport();
   }
+  // Keine Wortvorschläge/Autofill-Leiste der Tastatur bei normalen Textfeldern
+  document.querySelectorAll('input[type=text], input[type=number]').forEach(i => {
+    if (i.id === 'in-name' || i.id === 'in-myname') return;
+    i.setAttribute('autocomplete', 'off'); i.setAttribute('autocorrect', 'off'); i.setAttribute('spellcheck', 'false');
+  });
   // Tastatur offen (in jedem Reiter): untere Leiste ausblenden
   const isField = (el) => el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) && !['checkbox','radio','button','file'].includes(el.type);
   document.addEventListener('focusin', (e) => { if (isField(e.target) && currentTab !== 'chat') document.body.classList.add('composing'); });
