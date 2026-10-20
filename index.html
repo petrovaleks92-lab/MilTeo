@@ -338,6 +338,7 @@ nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface);
   function startTimer(e) { e.preventDefault(); toast('Timer-Funktion aktiv'); }
   function addEventItem(e) { e.preventDefault(); toast('Termin-Funktion aktiv'); }
 
+  // Direkt-Logik zum Hinzufügen der Zutaten in Supabase
   async function generateAndAddIngredients() {
     if (!fid) {
       toast('Fehler: Keine Familie verbunden!');
@@ -412,7 +413,6 @@ nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface);
     document.getElementById('auth-submit').textContent = isReg ? 'Registrieren' : 'Anmelden';
   };
 
-  // Original-Formular-Handler mit e.preventDefault() und Rückmeldung
   document.getElementById('f-auth').onsubmit = async (e) => {
     e.preventDefault();
     const email = document.getElementById('in-email').value.trim();
