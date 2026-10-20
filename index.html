@@ -102,7 +102,8 @@ body.in-chat .wrap { position: fixed; top: var(--vvt, 0px); left: 0; right: 0; m
 body.in-chat header { flex: none; margin-bottom: 8px; }
 body.in-chat #p-chat { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 body.in-chat #p-chat h2 { flex: none; margin-bottom: 6px; }
-body.in-chat.composing nav { display: none; }
+body.composing nav { display: none; }
+body.composing .wrap { padding-bottom: 24px; }
 body.in-chat.composing .wrap { padding-bottom: 8px; padding-top: 8px; }
 body.in-chat.composing header, body.in-chat.composing #p-chat h2 { display: none; }
 body.composing #toast { bottom: 90px; }
@@ -1010,6 +1011,10 @@ input.switch:disabled { opacity: .5; }
     document.body.classList.toggle('composing', typing);
     syncViewport();
   }
+  // Tastatur offen (in jedem Reiter): untere Leiste ausblenden
+  const isField = (el) => el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) && !['checkbox','radio','button','file'].includes(el.type);
+  document.addEventListener('focusin', (e) => { if (isField(e.target) && currentTab !== 'chat') document.body.classList.add('composing'); });
+  document.addEventListener('focusout', () => setTimeout(() => { if (currentTab !== 'chat' && !isField(document.activeElement)) document.body.classList.remove('composing'); }, 120));
   $('in-chat').addEventListener('input', updateCompose);
   $('in-chat').addEventListener('focus', () => { closeEmoji(); updateCompose(); setTimeout(() => { const l = $('list-chat'); l.scrollTop = l.scrollHeight; }, 300); });
   $('in-chat').addEventListener('blur', () => setTimeout(updateCompose, 150));
