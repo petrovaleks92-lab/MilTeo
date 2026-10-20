@@ -322,9 +322,11 @@ input.switch:disabled { opacity: .5; }
         <button type="button" class="ic-btn" id="btn-emoji" aria-label="Emojis"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9h.01M15 9h.01"/></svg></button>
         <input type="text" id="in-chat" enterkeyhint="send" placeholder="Nachricht" autocomplete="off" maxlength="2000">
         <button type="button" class="ic-btn" id="btn-attach" aria-label="Bild oder GIF senden"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5l-8.6 8.6a5 5 0 01-7.1-7.1l8.6-8.6a3.3 3.3 0 014.7 4.7l-8.6 8.6a1.7 1.7 0 01-2.4-2.4l7.9-7.9"/></svg></button>
+        <button type="button" class="ic-btn" id="btn-cam" aria-label="Foto aufnehmen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg></button>
         <button type="button" class="ic-btn" id="btn-mic" aria-label="Sprachnachricht aufnehmen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/></svg></button>
         <button type="submit" class="ic-btn primary" id="btn-send" aria-label="Senden" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg></button>
         <input type="file" id="in-file" accept="image/*" hidden>
+        <input type="file" id="in-cam" accept="image/*" capture="environment" hidden>
       </form>
     </section>
 
@@ -1068,6 +1070,7 @@ input.switch:disabled { opacity: .5; }
     $('btn-send').hidden = !has || recording;
     $('btn-mic').hidden = has || recording;
     $('btn-attach').hidden = recording;
+    $('btn-cam').hidden = recording;
     $('btn-emoji').hidden = recording;
     $('in-chat').hidden = recording;
     $('rec-bar').hidden = !recording;
@@ -1168,9 +1171,12 @@ input.switch:disabled { opacity: .5; }
     return path;
   }
   $('btn-attach').onclick = () => { closeEmoji(); $('in-file').click(); };
-  $('in-file').onchange = async () => {
-    const f = $('in-file').files[0];
-    $('in-file').value = '';
+  $('btn-cam').onclick = () => { closeEmoji(); $('in-cam').click(); };
+  $('in-cam').onchange = () => handlePicked($('in-cam'));
+  $('in-file').onchange = () => handlePicked($('in-file'));
+  async function handlePicked(el) {
+    const f = el.files[0];
+    el.value = '';
     if (!f || !fid) return;
     if (!f.type.startsWith('image/')) { toast('Nur Bilder und GIFs'); return; }
     if (f.size > 12 * 1024 * 1024) { toast('Datei zu gross (max. 12 MB)'); return; }
@@ -1180,7 +1186,7 @@ input.switch:disabled { opacity: .5; }
     const ext = type === 'image/gif' ? 'gif' : type === 'image/png' ? 'png' : 'jpg';
     const path = await uploadMedia(blob, ext, type);
     if (path) await sendMessage({ body: '', media_path: path, media_type: type });
-  };
+  }
 
   // Lightbox
   document.addEventListener('click', (e) => {
