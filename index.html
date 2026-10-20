@@ -81,7 +81,7 @@ input[type=text], input[type=number], input[type=date], input[type=time], input[
 .btn.small { min-height: 36px; padding: 0 12px; font-size: 14px; }
 .btn.block { width: 100%; }
 .link { background: none; border: 0; color: var(--mil); font-weight: 600; padding: 10px 0; text-decoration: underline; }
-.msg { margin: 0; font-size: 14px; color: var(--danger); }
+.msg { margin: 8px 0 0; font-size: 14px; color: var(--danger); }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
 .chip { min-height: 34px; padding: 0 12px; border-radius: 999px; background: var(--surface); border: 1.5px solid var(--line); font-size: 14px; }
 ul.list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
@@ -112,22 +112,22 @@ nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface);
     <div class="brand big"><div class="word"><span class="a">Mil</span><span class="b">teo</span></div></div>
     <h1 id="auth-title">Anmelden</h1>
     <p class="lead">Einkauf, Aufgaben, Timer und Termine.</p>
-    <form id="f-auth" class="card">
+    <div class="card">
       <div id="auth-name-wrap" hidden>
         <label class="field-label">Dein Name</label>
         <input type="text" id="in-name">
       </div>
       <div>
         <label class="field-label">E-Mail</label>
-        <input type="email" id="in-email" required>
+        <input type="email" id="in-email">
       </div>
       <div>
         <label class="field-label">Passwort</label>
-        <input type="password" id="in-pw" required>
+        <input type="password" id="in-pw">
       </div>
-      <button class="btn block" type="submit" id="auth-submit">Anmelden</button>
+      <button class="btn block" type="button" id="auth-submit">Anmelden</button>
       <p class="msg" id="auth-msg"></p>
-    </form>
+    </div>
     <button class="link" id="auth-toggle" type="button">Neu hier? Konto erstellen</button>
   </div>
 </div>
@@ -141,11 +141,9 @@ nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface);
       <button class="btn block" id="btn-create" type="button">Neue Familie erstellen</button>
     </div>
     <div class="card">
-      <form id="f-join">
-        <label class="field-label">Familiencode eingeben</label>
-        <input type="text" id="in-code" placeholder="ABCD-EFGH">
-        <button class="btn block" type="submit" style="margin-top:8px">Beitreten</button>
-      </form>
+      <label class="field-label">Familiencode eingeben</label>
+      <input type="text" id="in-code" placeholder="ABCD-EFGH">
+      <button class="btn block" type="button" id="btn-join" style="margin-top:8px">Beitreten</button>
     </div>
     <p class="msg" id="fam-msg"></p>
     <button class="link" id="fam-logout" type="button">Abmelden</button>
@@ -241,7 +239,7 @@ nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface);
 </div>
 <div id="toast" hidden></div>
 
-<!-- Supabase Client eingebunden -->
+<!-- Supabase Client -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
   if ('serviceWorker' in navigator) {
@@ -251,4 +249,222 @@ nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface);
   }
 
   const SUPABASE_URL = "https://fmyjhuzrwskalirunreb.supabase.co";
-  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZteWpodXpyd3NrYWxpcnVucmViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZteWpodXpyd3NrYWxpcnVucmViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzNTI4NzQsImV4cCI6MjEwNzkyODg3NH0.8yxSeNScfIEc7fvqymn9hZyQ8ispIy_zK3rgcgWVrbQ";
+  const WORKER_URL = "https://curly-base-7807.petrov-aleks92.workers.dev";
+
+  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  let fid = null, myId = null, myName = '', currentTab = 'shop';
+
+  // Datum im Header anzeigen
+  const now = new Date();
+  const days = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
+  const months = ['Jan.', 'Feb.', 'März', 'Apr.', 'Mai', 'Juni', 'Juli', 'Aug.', 'Sep.', 'Okt.', 'Nov.', 'Dez.'];
+  document.getElementById('todayDay').textContent = days[now.getDay()];
+  document.getElementById('todayDate').textContent = `${now.getDate()}. ${months[now.getMonth()]}`;
+
+  function showScreen(id) {
+    ['screen-auth', 'screen-family', 'screen-app'].forEach(s => {
+      const el = document.getElementById(s);
+      if (el) el.hidden = (s !== 'screen-' + id);
+    });
+  }
+
+  function switchTab(tab) {
+    currentTab = tab;
+    ['shop', 'todos', 'timers', 'events', 'family'].forEach(t => {
+      const p = document.getElementById('p-' + t);
+      if (p) p.hidden = (t !== tab);
+      const btn = document.getElementById('t-' + t);
+      if (btn) btn.setAttribute('aria-selected', t === tab ? 'true' : 'false');
+    });
+  }
+
+  function toast(msg) {
+    const t = document.getElementById('toast');
+    if (t) {
+      t.textContent = msg; t.hidden = false;
+      setTimeout(() => t.hidden = true, 3000);
+    }
+  }
+
+  function loadAllData() {
+    if (!fid) return;
+    loadShop();
+  }
+
+  function loadShop() {
+    sb.from('shopping_items').select('*').eq('family_id', fid).order('created_at', { ascending: false }).then(r => {
+      const list = document.getElementById('list-shop');
+      if (!r.data || r.data.length === 0) {
+        list.innerHTML = '<div class="empty">Alles erledigt! Die Einkaufsliste ist leer.</div>';
+        return;
+      }
+      list.innerHTML = '<ul class="list">' + r.data.map(item => `
+        <li class="row ${item.completed ? 'done' : ''}">
+          <button class="check" aria-checked="${item.completed}" onclick="toggleShop('${item.id}', ${!item.completed})">${item.completed ? '✓' : ''}</button>
+          <span class="txt">${item.title}</span>
+          <button class="del" onclick="delShop('${item.id}')">×</button>
+        </li>
+      `).join('') + '</ul>';
+    });
+  }
+
+  function addShopText(title) {
+    if (!fid || !title.trim()) return Promise.resolve();
+    return sb.from('shopping_items').insert([{ family_id: fid, title: title.trim(), created_by: myId }]);
+  }
+
+  function addShopItem(e) {
+    e.preventDefault();
+    const input = document.getElementById('in-shop');
+    const val = input.value.trim();
+    if (!val) return;
+    addShopText(val).then(() => {
+      input.value = '';
+      loadShop();
+    });
+  }
+
+  function toggleShop(id, val) {
+    sb.from('shopping_items').update({ completed: val }).eq('id', id).then(() => loadShop());
+  }
+
+  function delShop(id) {
+    sb.from('shopping_items').delete().eq('id', id).then(() => loadShop());
+  }
+
+  function addTodoItem(e) { e.preventDefault(); toast('Aufgaben-Funktion aktiv'); }
+  function startTimer(e) { e.preventDefault(); toast('Timer-Funktion aktiv'); }
+  function addEventItem(e) { e.preventDefault(); toast('Termin-Funktion aktiv'); }
+
+  // KI-Zutaten abrufen
+  async function generateAndAddIngredients() {
+    const dishInput = document.getElementById('in-ai-dish');
+    const personsInput = document.getElementById('in-ai-persons');
+    const dish = dishInput.value.trim();
+    const persons = parseInt(personsInput.value) || 2;
+
+    if (!dish) {
+      toast('Bitte gib ein Gericht ein!');
+      return;
+    }
+
+    toast('Hole Zutaten von KI...');
+
+    try {
+      const res = await fetch(WORKER_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dish, persons })
+      });
+      const items = await res.json();
+      if (Array.isArray(items)) {
+        for (const item of items) {
+          await addShopText(item);
+        }
+        toast(`${items.length} Zutaten hinzugefügt!`);
+        dishInput.value = '';
+        loadShop();
+      } else {
+        toast('Fehler bei der Antwort');
+      }
+    } catch (e) {
+      toast('Konnte Zutaten nicht laden');
+    }
+  }
+
+  function route(session) {
+    if (!session) { showScreen('auth'); return; }
+    myId = session.user.id;
+    myName = session.user.user_metadata?.name || session.user.email.split('@')[0];
+    
+    sb.from('members').select('family_id, display_name, families(code)').eq('user_id', myId).maybeSingle().then(r => {
+      if (!r.data) {
+        document.getElementById('fam-hello').textContent = 'Hallo ' + myName;
+        showScreen('family');
+        return;
+      }
+      fid = r.data.family_id;
+      if (r.data.families) {
+        document.getElementById('fam-code').textContent = r.data.families.code;
+      }
+      showScreen('app');
+      switchTab('shop');
+      loadAllData();
+    }).catch(() => {
+      showScreen('auth');
+    });
+  }
+
+  sb.auth.getSession().then(({ data }) => route(data.session)).catch(() => showScreen('auth'));
+  sb.auth.onAuthStateChange((_, session) => route(session));
+
+  let isReg = false;
+  document.getElementById('auth-toggle').onclick = () => {
+    isReg = !isReg;
+    document.getElementById('auth-name-wrap').hidden = !isReg;
+    document.getElementById('auth-title').textContent = isReg ? 'Konto erstellen' : 'Anmelden';
+    document.getElementById('auth-submit').textContent = isReg ? 'Registrieren' : 'Anmelden';
+  };
+
+  // Stabiler Login-Klick-Handler (verhindert das Verschwinden der Daten)
+  document.getElementById('auth-submit').onclick = (e) => {
+    e.preventDefault();
+    const email = document.getElementById('in-email').value.trim();
+    const pw = document.getElementById('in-pw').value;
+    const name = document.getElementById('in-name').value.trim();
+    const msgEl = document.getElementById('auth-msg');
+    
+    if (!email || !pw) {
+      msgEl.textContent = 'Bitte E-Mail und Passwort eingeben.';
+      return;
+    }
+
+    msgEl.textContent = 'Verbinde...';
+    
+    const promise = isReg 
+      ? sb.auth.signUp({ email, password: pw, options: { data: { name } } })
+      : sb.auth.signInWithPassword({ email, password: pw });
+
+    promise.then(r => {
+      if (r.error) {
+        msgEl.textContent = r.error.message;
+      } else if (isReg) {
+        msgEl.textContent = '';
+        toast('Registriert! Bestätige die E-Mail.');
+      } else {
+        msgEl.textContent = '';
+        window.location.reload();
+      }
+    }).catch(() => {
+      msgEl.textContent = 'Verbindungsfehler aufgetreten.';
+    });
+  };
+
+  document.getElementById('btn-create').onclick = () => {
+    sb.rpc('create_family', { p_display: myName }).then(r => {
+      if (r.error) toast('Fehler beim Erstellen');
+      else sb.auth.getSession().then(({ data }) => route(data.session));
+    });
+  };
+
+  document.getElementById('btn-join').onclick = () => {
+    const code = document.getElementById('in-code').value.trim();
+    sb.rpc('join_family', { p_code: code, p_display: myName }).then(r => {
+      if (r.error) document.getElementById('fam-msg').textContent = 'Ungültiger Code';
+      else window.location.reload();
+    });
+  };
+
+  const logoutAction = () => sb.auth.signOut();
+  document.getElementById('btn-logout').onclick = logoutAction;
+  const famLogout = document.getElementById('fam-logout');
+  if (famLogout) famLogout.onclick = logoutAction;
+
+  document.getElementById('fam-copy').onclick = () => {
+    navigator.clipboard.writeText(document.getElementById('fam-code').textContent);
+    toast('Code kopiert!');
+  };
+</script>
+</body>
+</html>
