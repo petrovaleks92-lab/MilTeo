@@ -111,7 +111,7 @@ nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface);
     <div class="brand big"><div class="word"><span class="a">Mil</span><span class="b">teo</span></div></div>
     <h1 id="auth-title">Anmelden</h1>
     <p class="lead">Einkauf, Aufgaben, Timer und Termine.</p>
-    <form id="f-auth" class="card" onsubmit="handleAuth(event)">
+    <form id="f-auth" class="card">
       <div id="auth-name-wrap" hidden>
         <label class="field-label">Dein Name</label>
         <input type="text" id="in-name">
@@ -124,7 +124,7 @@ nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface);
         <label class="field-label">Passwort</label>
         <input type="password" id="in-pw" required>
       </div>
-      <button class="btn block" type="submit" id="auth-submit">Anmelden</button>
+      <button class="btn block" type="button" id="auth-submit">Anmelden</button>
       <p class="msg" id="auth-msg"></p>
     </form>
     <button class="link" id="auth-toggle" type="button">Neu hier? Konto erstellen</button>
@@ -140,10 +140,10 @@ nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface);
       <button class="btn block" id="btn-create" type="button">Neue Familie erstellen</button>
     </div>
     <div class="card">
-      <form id="f-join" onsubmit="handleJoin(event)">
+      <form id="f-join">
         <label class="field-label">Familiencode eingeben</label>
         <input type="text" id="in-code" placeholder="ABCD-EFGH">
-        <button class="btn block" type="submit" style="margin-top:8px">Beitreten</button>
+        <button class="btn block" type="button" id="btn-join" style="margin-top:8px">Beitreten</button>
       </form>
     </div>
     <p class="msg" id="fam-msg"></p>
@@ -163,9 +163,9 @@ nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface);
 
     <section class="panel" id="p-shop">
       <h2>Einkaufsliste</h2>
-      <form class="add" id="f-shop" onsubmit="addShopItem(event)">
+      <form class="add" id="f-shop">
         <input type="text" id="in-shop" placeholder="Was fehlt?">
-        <button class="btn" type="submit">Hinzufügen</button>
+        <button class="btn" type="button" id="btn-add-shop">Hinzufügen</button>
       </form>
 
       <div class="card" style="padding: 12px; margin-bottom: 12px; background: var(--mil-soft);">
@@ -173,7 +173,7 @@ nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface);
         <div style="display: flex; gap: 6px;">
           <input type="text" id="in-ai-dish" placeholder="Gericht (z.B. Lasagne)" style="font-size: 14px; min-height: 38px;">
           <input type="number" id="in-ai-persons" value="2" min="1" max="12" style="width: 60px; font-size: 14px; min-height: 38px;" title="Personen">
-          <button type="button" class="btn small" onclick="generateAndAddIngredients()">Holen</button>
+          <button type="button" class="btn small" id="btn-get-ai">Holen</button>
         </div>
       </div>
 
@@ -184,7 +184,7 @@ nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface);
       <h2>Aufgaben</h2>
       <form class="add" id="f-todos">
         <input type="text" id="in-todos" placeholder="Was ist zu erledigen?">
-        <button class="btn" type="submit">Hinzufügen</button>
+        <button class="btn" type="button" id="btn-add-todo">Hinzufügen</button>
       </form>
       <div id="list-todos"></div>
     </section>
@@ -195,7 +195,7 @@ nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface);
         <form id="f-timer" class="grid2">
           <input type="text" id="in-tlabel" value="Backofen">
           <input type="number" id="in-tmin" value="20" min="1">
-          <button class="btn block" type="submit" style="grid-column: span 2">Starten</button>
+          <button class="btn block" type="button" id="btn-start-timer" style="grid-column: span 2">Starten</button>
         </form>
       </div>
       <div id="list-timers"></div>
@@ -210,7 +210,7 @@ nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface);
             <input type="date" id="in-edate">
             <input type="time" id="in-etime">
           </div>
-          <button class="btn block" type="submit">Eintragen</button>
+          <button class="btn block" type="button" id="btn-add-event">Eintragen</button>
         </form>
       </div>
       <div id="list-events"></div>
@@ -250,157 +250,12 @@ nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface);
   const SUPABASE_URL = "https://fmyjhuzrwskalirunreb.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZteWpodXpyd3NrYWxpcnVucmViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzNTI4NzQsImV4cCI6MjEwNzkyODg3NH0.8yxSeNScfIEc7fvqymn9hZyQ8ispIy_zK3rgcgWVrbQ";
 
+  const WORKER_URL = "https://curly-base-7807.petrov-aleks92.workers.dev";
+
   const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   let fid = null, myId = null, myName = '', currentTab = 'shop';
 
-  function showScreen(id) {
-    ['screen-auth', 'screen-family', 'screen-app'].forEach(s => {
-      const el = document.getElementById(s);
-      if (el) el.hidden = (s !== 'screen-' + id);
-    });
-  }
-
-  function switchTab(tab) {
-    currentTab = tab;
-    ['shop', 'todos', 'timers', 'events', 'family'].forEach(t => {
-      const p = document.getElementById('p-' + t);
-      if (p) p.hidden = (t !== tab);
-      const btn = document.getElementById('t-' + t);
-      if (btn) btn.setAttribute('aria-selected', t === tab ? 'true' : 'false');
-    });
-  }
-
-  function toast(msg) {
-    const t = document.getElementById('toast');
-    if (t) {
-      t.textContent = msg; t.hidden = false;
-      setTimeout(() => t.hidden = true, 3000);
-    }
-  }
-
-  function route(session) {
-    if (!session) { showScreen('auth'); return; }
-    myId = session.user.id;
-    myName = session.user.user_metadata?.name || session.user.email.split('@')[0];
-    
-    sb.from('members').select('family_id, display_name, families(code)').eq('user_id', myId).maybeSingle().then(r => {
-      if (!r.data) {
-        document.getElementById('fam-hello').textContent = 'Hallo ' + myName;
-        showScreen('family');
-        return;
-      }
-      fid = r.data.family_id;
-      if (r.data.families) {
-        document.getElementById('fam-code').textContent = r.data.families.code;
-      }
-      showScreen('app');
-      switchTab('shop');
-    }).catch(() => {
-      showScreen('auth');
-    });
-  }
-
-  sb.auth.getSession().then(({ data }) => route(data.session)).catch(() => showScreen('auth'));
-  sb.auth.onAuthStateChange((_, session) => route(session));
-
-  let isReg = false;
-  document.getElementById('auth-toggle').onclick = () => {
-    isReg = !isReg;
-    document.getElementById('auth-name-wrap').hidden = !isReg;
-    document.getElementById('auth-title').textContent = isReg ? 'Konto erstellen' : 'Anmelden';
-    document.getElementById('auth-submit').textContent = isReg ? 'Registrieren' : 'Anmelden';
-  };
-
-  function handleAuth(e) {
-    e.preventDefault();
-    const email = document.getElementById('in-email').value;
-    const pw = document.getElementById('in-pw').value;
-    const name = document.getElementById('in-name').value;
-    const msgEl = document.getElementById('auth-msg');
-    msgEl.textContent = 'Verbinde...';
-    
-    const promise = isReg 
-      ? sb.auth.signUp({ email, password: pw, options: { data: { name } } })
-      : sb.auth.signInWithPassword({ email, password: pw });
-
-    promise.then(r => {
-      if (r.error) msgEl.textContent = r.error.message;
-      else if (isReg) toast('Bestätige die E-Mail oder melde dich an.');
-      else msgEl.textContent = '';
-    }).catch(err => {
-      msgEl.textContent = 'Fehler beim Anmelden.';
-    });
-  }
-
-  function handleJoin(e) {
-    e.preventDefault();
-    const code = document.getElementById('in-code').value.trim();
-    sb.rpc('join_family', { p_code: code, p_display: myName }).then(r => {
-      if (r.error) document.getElementById('fam-msg').textContent = 'Ungültiger Code';
-      else window.location.reload();
-    });
-  }
-
-  document.getElementById('btn-create').onclick = () => {
-    sb.rpc('create_family', { p_display: myName }).then(r => {
-      if (r.error) toast('Fehler beim Erstellen');
-      else sb.auth.getSession().then(({ data }) => route(data.session));
-    });
-  };
-
-  function addShopItem(e) {
-    if (e) e.preventDefault();
-    const input = document.getElementById('in-shop');
-    const val = input.value.trim();
-    if (!val) return;
-    toast('Hinzugefügt: ' + val);
-    input.value = '';
-  }
-
-  // Direkter Fallback-Zutaten-Generator ohne Cloudflare Worker
-  async function generateAndAddIngredients() {
-    const dishInput = document.getElementById('in-ai-dish');
-    const personsInput = document.getElementById('in-ai-persons');
-    const dish = dishInput.value.trim();
-    const persons = parseInt(personsInput.value) || 2;
-
-    if (!dish) {
-      toast('Bitte gib ein Gericht ein!');
-      return;
-    }
-
-    toast('Erstelle Zutatenliste...');
-
-    // Standardzutaten als Fallback, falls Cloudflare streikt
-    const sampleIngredients = {
-      'lasagne': ['500g Hackfleisch', '1 Pck. Lasagneplatten', '500g Passierte Tomaten', '200g Geriebener Käse', '1 Zwiebel', '500ml Milch (Bechamel)'],
-      'spaghetti': ['500g Spaghetti', '400g Tomaten', '1 Knoblauchzehe', '1 Bund Basilikum', '50g Parmesan'],
-      'pizza': ['500g Mehl', '1 Pck. Hefe', '200g Mozzarella', '200g Tomatensauce', '1 TL Salz']
-    };
-
-    const key = dish.toLowerCase();
-    let resultList = sampleIngredients[key];
-
-    if (!resultList) {
-      // Grundzutaten für unbekannte Gerichte
-      resultList = [`Hauptzutat für ${dish}`, `Gewürze für ${dish}`, `Beilage für ${persons} Personen`];
-    }
-
-    setTimeout(() => {
-      toast(`${resultList.length} Zutaten hinzugefügt!`);
-      dishInput.value = '';
-    }, 800);
-  }
-
-  const logoutAction = () => sb.auth.signOut();
-  document.getElementById('btn-logout').onclick = logoutAction;
-  const famLogout = document.getElementById('fam-logout');
-  if (famLogout) famLogout.onclick = logoutAction;
-
-  document.getElementById('fam-copy').onclick = () => {
-    navigator.clipboard.writeText(document.getElementById('fam-code').textContent);
-    toast('Code kopiert!');
-  };
-</script>
-</body>
-</html>
+  // Datum in Header
+  const now = new Date();
+  document.getElementById('todayDay').textContent = now.toLocaleDateString('de-CH', { weekday: 'long' });
+  document.getElementById('todayDate').textContent = now.toLocaleDateString('de-CH', { day: 'numeric', month: 'short
