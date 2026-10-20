@@ -244,7 +244,7 @@ input.switch:disabled { opacity: .5; }
         <input type="text" id="in-shop" enterkeyhint="send" placeholder="Was fehlt?">
         <button class="btn" type="submit">Hinzufügen</button>
       </form>
-      <p class="field-label" style="margin-top:14px">🍽️ Gericht → Zutaten (KI)</p>
+      <p class="field-label" style="margin-top:14px">🍽️ Gericht → Zutaten</p>
       <form class="add dish-add" id="f-dish">
         <input type="text" id="in-dish" enterkeyhint="go" placeholder="Gericht, z. B. Lasagne" maxlength="80" autocomplete="off">
         <input type="number" id="in-servings" class="servings" value="4" min="1" max="20" inputmode="numeric" aria-label="Anzahl Personen" title="Anzahl Personen">
@@ -401,10 +401,19 @@ input.switch:disabled { opacity: .5; }
 
   function showScreen(id) {
     ['screen-auth', 'screen-reset', 'screen-family', 'screen-app'].forEach(s => {
-      const el = document.getElementById(s);
-      if (el) el.hidden = (s !== 'screen-' + id);
+      const el = authNodes[s] ? authNodes[s].el : document.getElementById(s);
+      if (!el) return;
+      el.hidden = (s !== 'screen-' + id);
+      // Login-/Passwort-Formulare nur im DOM lassen, wenn sie gebraucht werden (sonst blendet die Tastatur Passwort-/Karten-Leiste ein)
+      const a = authNodes[s];
+      if (a) {
+        if (s === 'screen-' + id) { if (!el.isConnected && a.mark.parentNode) a.mark.parentNode.replaceChild(el, a.mark); }
+        else if (el.isConnected) el.replaceWith(a.mark);
+      }
     });
   }
+  const authNodes = {};
+  ['screen-auth', 'screen-reset'].forEach(n => { const el = document.getElementById(n); if (el) authNodes[n] = { el, mark: document.createComment(n) }; });
 
   function switchTab(tab) {
     if (currentTab === 'chat' && tab !== 'chat') { if (rec) stopRec(false); closeEmoji(); stopPlaying(); }
