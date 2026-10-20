@@ -1016,8 +1016,7 @@ input.switch:disabled { opacity: .5; }
     $('btn-emoji').hidden = recording;
     $('in-chat').hidden = recording;
     $('rec-bar').hidden = !recording;
-    const typing = currentTab === 'chat' && document.activeElement === $('in-chat');
-    document.body.classList.toggle('composing', typing);
+    applyComposing();
     syncViewport();
   }
   // Keine Wortvorschläge/Autofill-Leiste der Tastatur bei normalen Textfeldern
@@ -1034,8 +1033,20 @@ input.switch:disabled { opacity: .5; }
   document.addEventListener('focusout', (e) => { const t = e.target; if (t && t.dataset && t.dataset.ro) setTimeout(() => { if (document.activeElement !== t) t.readOnly = true; }, 200); });
   // Tastatur offen (in jedem Reiter): untere Leiste ausblenden
   const isField = (el) => el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) && !['checkbox','radio','button','file'].includes(el.type);
-  document.addEventListener('focusin', (e) => { if (isField(e.target) && currentTab !== 'chat') document.body.classList.add('composing'); });
-  document.addEventListener('focusout', () => setTimeout(() => { if (currentTab !== 'chat' && !isField(document.activeElement)) document.body.classList.remove('composing'); }, 120));
+  // Tastatur wirklich offen? (Höhe der sichtbaren Fläche deutlich kleiner als die grösste gesehene)
+  let maxVH = Math.max(window.innerHeight, window.visualViewport ? visualViewport.height : 0);
+  let lastW = window.innerWidth;
+  function kbOpen() {
+    const h = window.visualViewport ? visualViewport.height : window.innerHeight;
+    if (window.innerWidth !== lastW) { lastW = window.innerWidth; maxVH = h; }   // Drehung
+    if (h > maxVH) maxVH = h;
+    return h < maxVH - 120 && isField(document.activeElement);
+  }
+  function applyComposing() { document.body.classList.toggle('composing', kbOpen()); }
+  document.addEventListener('focusin', () => { setTimeout(applyComposing, 350); });
+  document.addEventListener('focusout', () => setTimeout(applyComposing, 150));
+  if (window.visualViewport) visualViewport.addEventListener('resize', () => { applyComposing(); syncViewport(); });
+  window.addEventListener('resize', applyComposing);
   $('in-chat').addEventListener('input', updateCompose);
   $('in-chat').addEventListener('focus', () => { closeEmoji(); updateCompose(); setTimeout(() => { const l = $('list-chat'); l.scrollTop = l.scrollHeight; }, 300); });
   $('in-chat').addEventListener('blur', () => setTimeout(updateCompose, 150));
