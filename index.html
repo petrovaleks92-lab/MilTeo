@@ -147,6 +147,14 @@ form.dish-add input.servings { width: 62px; flex: none; text-align: center; padd
 
 /* Schalter */
 .switch-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 40px; }
+/* Textfelder als bearbeitbare Flächen: Chrome/Tastatur blenden dort keine Autofill-Leiste (Passwort/Karte/Adresse) ein */
+.cef { display: block; width: 100%; min-height: 46px; line-height: 43px; padding: 0 14px; background: var(--surface); border: 1.5px solid var(--line); border-radius: 12px; white-space: nowrap; overflow: hidden; outline: none; -webkit-user-select: text; user-select: text; cursor: text; }
+.cef:empty::before { content: attr(data-ph); color: var(--muted); opacity: .75; pointer-events: none; }
+.cef:focus { border-color: var(--mil); box-shadow: 0 0 0 3px var(--mil-soft); }
+.composer .cef { flex: 1; min-width: 0; border-radius: 23px; }
+form.dish-add .cef.servings { width: 62px; flex: none; text-align: center; padding: 0 4px; }
+form.dish-add .cef.dish-ingr { flex: 1 1 100%; }
+.cef[hidden] { display: none; }
 input.switch { appearance: none; -webkit-appearance: none; flex: none; width: 52px; height: 32px; border-radius: 999px; background: var(--line); position: relative; border: 0; padding: 0; margin: 0; cursor: pointer; transition: background .15s; }
 input.switch::after { content: ''; position: absolute; top: 4px; left: 4px; width: 24px; height: 24px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.3); transition: transform .15s; }
 input.switch:checked { background: var(--mil); }
@@ -385,6 +393,53 @@ input.switch:disabled { opacity: .5; }
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZteWpodXpyd3NrYWxpcnVucmViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzNTI4NzQsImV4cCI6MjEwNzkyODg3NH0.8yxSeNScfIEc7fvqymn9hZyQ8ispIy_zK3rgcgWVrbQ";
 
   const $ = (id) => document.getElementById(id);
+  // Textfelder in bearbeitbare Flächen umwandeln (verhindert die Autofill-Leiste mit Schlüssel/Karte/Standort)
+  (function () {
+    const plain = ('contentEditable' in document.documentElement) ? 'plaintext-only' : 'true';
+    document.querySelectorAll('input[type=text], input[type=number]').forEach(inp => {
+      if (inp.id === 'in-name') return;                      // Registrierung: Name bleibt normal
+      const d = document.createElement('div');
+      d.id = inp.id;
+      d.className = (inp.className ? inp.className + ' ' : '') + 'cef';
+      d.setAttribute('role', 'textbox');
+      d.setAttribute('contenteditable', plain);
+      if (d.contentEditable !== plain && d.contentEditable !== 'true') d.setAttribute('contenteditable', 'true');
+      d.setAttribute('spellcheck', 'false');
+      d.setAttribute('autocapitalize', inp.id === 'in-code' ? 'characters' : 'sentences');
+      d.setAttribute('autocorrect', 'off');
+      ['enterkeyhint', 'aria-label', 'title'].forEach(a => { if (inp.hasAttribute(a)) d.setAttribute(a, inp.getAttribute(a)); });
+      const numeric = inp.type === 'number';
+      d.setAttribute('inputmode', numeric ? 'numeric' : 'text');
+      if (inp.placeholder) d.dataset.ph = inp.placeholder;
+      if (!inp.getAttribute('aria-label') && inp.placeholder) d.setAttribute('aria-label', inp.placeholder);
+      const max = parseInt(inp.getAttribute('maxlength'), 10) || (numeric ? 4 : 400);
+      d.hidden = inp.hidden;
+      d.textContent = inp.getAttribute('value') || '';
+      Object.defineProperty(d, 'value', {
+        get() { return d.textContent.replace(/ /g, ' '); },
+        set(v) { d.textContent = v == null ? '' : String(v); },
+      });
+      d.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); const f = d.closest('form'); if (f && f.requestSubmit) f.requestSubmit(); else if (f) f.dispatchEvent(new Event('submit', { cancelable: true })); }
+      });
+      d.addEventListener('beforeinput', (e) => {
+        if (e.inputType === 'insertParagraph' || e.inputType === 'insertLineBreak') e.preventDefault();
+      });
+      d.addEventListener('input', () => {
+        let t = d.textContent.replace(/[\r\n]+/g, ' ');
+        if (numeric) t = t.replace(/\D+/g, '');
+        if (t.length > max) t = t.slice(0, max);
+        if (t !== d.textContent) { d.textContent = t; const r = document.createRange(); r.selectNodeContents(d); r.collapse(false); const sl = getSelection(); sl.removeAllRanges(); sl.addRange(r); }
+        if (t === '' && d.firstChild) d.textContent = '';
+      });
+      d.addEventListener('paste', (e) => {
+        e.preventDefault();
+        const t = (e.clipboardData || window.clipboardData).getData('text').replace(/[\r\n]+/g, ' ');
+        document.execCommand('insertText', false, numeric ? t.replace(/\D+/g, '') : t);
+      });
+      inp.replaceWith(d);
+    });
+  })();
   const hashStr = (location.hash || '') + '&' + (location.search || '');
   let recoveryMode = /type=recovery/.test(hashStr);       // Link aus der Passwort-vergessen-Mail
   const linkError = (hashStr.match(/error_description=([^&]+)/) || [])[1];
@@ -1032,7 +1087,7 @@ input.switch:disabled { opacity: .5; }
   document.addEventListener('focusin', unlock);
   document.addEventListener('focusout', (e) => { const t = e.target; if (t && t.dataset && t.dataset.ro) setTimeout(() => { if (document.activeElement !== t) t.readOnly = true; }, 200); });
   // Tastatur offen (in jedem Reiter): untere Leiste ausblenden
-  const isField = (el) => el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) && !['checkbox','radio','button','file'].includes(el.type);
+  const isField = (el) => el && (el.isContentEditable || (/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) && !['checkbox','radio','button','file'].includes(el.type)));
   // Tastatur wirklich offen? (Höhe der sichtbaren Fläche deutlich kleiner als die grösste gesehene)
   let maxVH = Math.max(window.innerHeight, window.visualViewport ? visualViewport.height : 0);
   let lastW = window.innerWidth;
@@ -1081,9 +1136,10 @@ input.switch:disabled { opacity: .5; }
   $('emoji-pop').addEventListener('click', (e) => {
     const b = e.target.closest('.emo'); if (!b) return;
     const inp = $('in-chat');
-    const a = inp.selectionStart ?? inp.value.length, z = inp.selectionEnd ?? a;
-    inp.value = inp.value.slice(0, a) + b.textContent + inp.value.slice(z);
-    inp.selectionStart = inp.selectionEnd = a + b.textContent.length;
+    inp.focus();
+    const sel = getSelection();
+    if (!sel.rangeCount || !inp.contains(sel.anchorNode)) { const r = document.createRange(); r.selectNodeContents(inp); r.collapse(false); sel.removeAllRanges(); sel.addRange(r); }
+    document.execCommand('insertText', false, b.textContent);
     updateCompose();
   });
 
