@@ -967,7 +967,20 @@ input.switch:disabled { opacity: .5; }
     const n = norm(name);
     let hit = RECIPE_MAP.find(([a]) => a === n);
     if (!hit) hit = RECIPE_MAP.filter(([a]) => (' ' + n + ' ').includes(' ' + a + ' ') || (n.length > 3 && (' ' + a + ' ').includes(' ' + n + ' '))).sort((x, y) => y[0].length - x[0].length)[0];
+    if (!hit && n.length >= 5) {   // Tippfehler / andere Schreibweisen (z. B. Pleskavica = Pljeskavica)
+      let best = null, bd = 99;
+      RECIPE_MAP.forEach(([a, r]) => { const d = lev(n, a); if (d < bd) { bd = d; best = r; } });
+      if (best && bd <= (n.length >= 9 ? 2 : 1)) hit = [null, best];
+    }
     return hit ? hit[1] : null;
+  }
+  function lev(a, b) {
+    if (Math.abs(a.length - b.length) > 2) return 99;
+    const m = []; for (let i = 0; i <= a.length; i++) { m[i] = [i]; }
+    for (let j = 1; j <= b.length; j++) m[0][j] = j;
+    for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++)
+      m[i][j] = Math.min(m[i - 1][j] + 1, m[i][j - 1] + 1, m[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    return m[a.length][b.length];
   }
   function fmtAmount(v, unit) {
     if (unit === 'g' && v >= 1000) return (Math.round(v / 10) / 100) + ' kg';
@@ -997,13 +1010,14 @@ input.switch:disabled { opacity: .5; }
       else {
         // Unbekanntes Gericht: kostenlose KI fragen (Gemini), sonst Zutaten von Hand
         const btn = $('btn-dish'); btn.disabled = true; btn.textContent = 'Suche …';
-        let err = null, data = null;
+        let err = null, data = null, detail = '';
         try {
           const r = await sb.functions.invoke('dish', { body: { dish, servings } });
           data = r.data;
-          if (r.error) { try { err = (await r.error.context.json()).error || 'ai_failed'; } catch (_) { err = 'ai_failed'; } }
-          else if (data && data.error) err = data.error;
-        } catch (_) { err = 'ai_failed'; }
+          if (r.error) { try { const j = await r.error.context.json(); err = j.error || 'ai_failed'; detail = j.detail || ''; } catch (_) { err = 'ai_failed'; } }
+          else if (data && data.error) { err = data.error; detail = data.detail || ''; }
+        } catch (e) { err = 'ai_failed'; detail = String(e); }
+        if (err) console.warn('dish ai', err, detail);
         btn.disabled = false; btn.textContent = 'Zutaten';
         if (!err && data && Array.isArray(data.items) && data.items.length) {
           items = data.items.map(i => ({ name: i.name, amount: i.amount || '', done: false }));
@@ -1011,7 +1025,7 @@ input.switch:disabled { opacity: .5; }
           $('in-ingr').hidden = false; $('in-ingr').readOnly = false; $('in-ingr').focus();
           $('dish-hint').textContent = err === 'limit' ? 'Tageslimit der KI erreicht. Trag die Zutaten oben mit Komma getrennt ein.'
             : err === 'quota' ? 'Die kostenlose KI ist gerade ausgelastet. Trag die Zutaten mit Komma getrennt ein oder versuche es später.'
-            : 'Dieses Gericht habe ich nicht gefunden. Trag die Zutaten oben mit Komma getrennt ein.';
+            : 'Dieses Gericht habe ich nicht gefunden. Trag die Zutaten oben mit Komma getrennt ein.' + (err ? ' [' + err + (detail ? ': ' + String(detail).slice(0, 120) : '') + ']' : '');
           return;
         }
       }
