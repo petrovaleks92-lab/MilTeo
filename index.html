@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-title" content="Milteo">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>Milteo</title>
-​<!-- Web App Manifest für PWA Installation -->
+​<!-- Web App Manifest -->
 <link rel="manifest" href='data:application/manifest+json,{
 "name": "Milteo Familienplaner",
 "short_name": "Milteo",
@@ -80,15 +80,15 @@ width: 100%; min-height: 46px; padding: 0 14px; background: var(--surface); bord
 .btn.block { width: 100%; }
 .link { background: none; border: 0; color: var(--mil); font-weight: 600; padding: 10px 0; text-decoration: underline; }
 .msg { margin: 10px 0 0; font-size: 14px; color: var(--danger); word-break: break-word; }
-.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
-.chip { min-height: 34px; padding: 0 12px; border-radius: 999px; background: var(--surface); border: 1.5px solid var(--line); font-size: 14px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.chip { min-height: 34px; padding: 0 12px; border-radius: 999px; background: var(--surface); border: 1.5px solid var(--line); font-size: 14px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.chip.selected { background: var(--mil-soft); border-color: var(--mil); font-weight: 600; }
 ul.list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .row { display: flex; align-items: center; gap: 12px; background: var(--surface); border-radius: 14px; padding: 8px 8px 8px 10px; border: 1px solid var(--line); }
-.check { width: 32px; height: 32px; border-radius: 10px; border: 2px solid var(--mil); background: transparent; display: grid; place-items: center; color: var(--on-mil); cursor: pointer; }
+.check { width: 32px; height: 32px; border-radius: 10px; border: 2px solid var(--mil); background: transparent; display: grid; place-items: center; color: var(--on-mil); cursor: pointer; font-weight: bold; }
 .check[aria-checked="true"] { background: var(--mil); }
 .txt { flex: 1; overflow-wrap: anywhere; }
 .row.done .txt { color: var(--muted); text-decoration: line-through; }
-.who { font-size: 13px; color: var(--muted); margin-left: 6px; }
 .del { border: 0; background: transparent; color: var(--muted); font-size: 22px; width: 40px; height: 40px; cursor: pointer; }
 .empty { border: 1.5px dashed var(--line); border-radius: 14px; padding: 26px 18px; text-align: center; color: var(--muted); }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 14px; margin-bottom: 18px; display: grid; gap: 12px; }
@@ -100,35 +100,38 @@ nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface);
 .tab { border: 0; background: transparent; border-radius: 12px; padding: 6px; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 12px; color: var(--muted); cursor: pointer; }
 .tab[aria-selected="true"] { background: var(--mil-soft); color: var(--ink); font-weight: 600; }
 #toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: 86px; background: var(--ink); color: var(--bg); border-radius: 12px; padding: 10px 16px; font-size: 14px; z-index: 9; }
+.ai-box { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 14px; margin-bottom: 16px; }
+.ai-header { font-weight: 600; font-size: 14px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
 </style>
 </head>
 <body>
-​<!-- Screens -->
+​<!-- Auth Screen -->
 <div class="screen" id="screen-auth">
 <div class="narrow">
 <div class="brand big"><div class="word"><span class="a">Mil</span><span class="b">teo</span></div></div>
 <h1 id="auth-title">Anmelden</h1>
 <p class="lead">Einkauf, Aufgaben, Timer und Termine.</p>
-<form id="f-auth" class="card">
+<form id="f-auth" class="card" onsubmit="return false;">
 <div id="auth-name-wrap" hidden>
-<label class="field-label">Dein Name</label>
-<input type="text" id="in-name">
+<label class="field-label" for="in-name">Dein Name</label>
+<input type="text" id="in-name" autocomplete="name">
 </div>
 <div>
-<label class="field-label">E-Mail</label>
-<input type="email" id="in-email" required>
+<label class="field-label" for="in-email">E-Mail</label>
+<input type="email" id="in-email" autocomplete="email" required>
 </div>
 <div>
-<label class="field-label">Passwort</label>
-<input type="password" id="in-pw" required>
+<label class="field-label" for="in-pw">Passwort</label>
+<input type="password" id="in-pw" autocomplete="current-password" required>
 </div>
-<button class="btn block" type="submit" id="auth-submit">Anmelden</button>
+<button class="btn block" type="button" id="auth-submit">Anmelden</button>
 <p class="msg" id="auth-msg"></p>
 </form>
 <button class="link" id="auth-toggle" type="button">Neu hier? Konto erstellen</button>
 </div>
 </div>
-​<div class="screen" id="screen-family" hidden>
+​<!-- Family Choice Screen -->
+<div class="screen" id="screen-family" hidden>
 <div class="narrow">
 <div class="brand big"><div class="word"><span class="a">Mil</span><span class="b">teo</span></div></div>
 <h1 id="fam-hello">Hallo</h1>
@@ -137,67 +140,88 @@ nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface);
 <button class="btn block" id="btn-create" type="button">Neue Familie erstellen</button>
 </div>
 <div class="card">
-<form id="f-join">
-<label class="field-label">Familiencode eingeben</label>
+<form id="f-join" onsubmit="return false;">
+<label class="field-label" for="in-code">Familiencode eingeben</label>
 <input type="text" id="in-code" placeholder="ABCD-EFGH">
-<button class="btn block" type="submit" style="margin-top:8px">Beitreten</button>
+<button class="btn block" id="btn-join" type="button" style="margin-top:8px">Beitreten</button>
 </form>
 </div>
 <p class="msg" id="fam-msg"></p>
 <button class="link" id="fam-logout" type="button">Abmelden</button>
 </div>
 </div>
-​<div class="screen" id="screen-app" hidden>
+​<!-- Main App Screen -->
+<div class="screen" id="screen-app" hidden>
 <div class="wrap">
 <header>
 <div class="brand"><div class="word"><span class="a">Mil</span><span class="b">teo</span></div></div>
 <div class="head-right">
 <div class="today"><strong id="todayDay"></strong><span id="todayDate"></span></div>
-<button class="icon-btn" id="btn-family" type="button" onclick="switchTab('family')">⚙️</button>
+<button class="icon-btn" id="btn-family-gear" type="button" onclick="switchTab('family')">⚙️</button>
 </div>
 </header>
-​<section class="panel" id="p-shop">
+​<!-- Shopping Panel -->
+<section class="panel" id="p-shop">
 <h2>Einkaufsliste</h2>
-<form class="add" id="f-shop">
-<input type="text" id="in-shop" placeholder="Was fehlt?" required>
-<button class="btn" type="submit">Hinzufügen</button>
+<form class="add" id="f-shop" onsubmit="return false;">
+<input type="text" id="in-shop" placeholder="Was fehlt?">
+<button class="btn" id="btn-add-shop" type="button">Hinzufügen</button>
 </form>
-<div id="list-shop"></div>
+​<!-- AI Recipe Ingredient Generator -->
+<div class="ai-box">
+<div class="ai-header">
+<span>✨ Rezept-Zutaten Generator (KI)</span>
+</div>
+<form class="add" id="f-ai" onsubmit="return false;" style="margin-bottom:0;">
+<input type="text" id="in-dish" placeholder="z. B. Spaghetti Carbonara">
+<button class="btn ghost" id="btn-gen-ai" type="button">Zutaten finden</button>
+</form>
+<div id="ai-results" hidden>
+<div class="chips" id="ai-chips"></div>
+<button class="btn small block" id="btn-add-ai-selected" type="button" style="margin-top:8px;">Ausgewählte zur Liste hinzufügen</button>
+</div>
+<p class="msg" id="ai-msg"></p>
+</div>
+​<div id="list-shop"></div>
 </section>
-​<section class="panel" id="p-todos" hidden>
+​<!-- Todos Panel -->
+<section class="panel" id="p-todos" hidden>
 <h2>Aufgaben</h2>
-<form class="add" id="f-todos">
-<input type="text" id="in-todos" placeholder="Was ist zu erledigen?" required>
-<button class="btn" type="submit">Hinzufügen</button>
+<form class="add" id="f-todos" onsubmit="return false;">
+<input type="text" id="in-todos" placeholder="Was ist zu erledigen?">
+<button class="btn" id="btn-add-todo" type="button">Hinzufügen</button>
 </form>
 <div id="list-todos"></div>
 </section>
-​<section class="panel" id="p-timers" hidden>
+​<!-- Timers Panel -->
+<section class="panel" id="p-timers" hidden>
 <h2>Timer</h2>
 <div class="card">
-<form id="f-timer" class="grid2">
-<input type="text" id="in-tlabel" value="Backofen" required>
-<input type="number" id="in-tmin" value="20" min="1" required>
-<button class="btn block" type="submit" style="grid-column: span 2">Starten</button>
+<form id="f-timer" class="grid2" onsubmit="return false;">
+<input type="text" id="in-tlabel" value="Backofen">
+<input type="number" id="in-tmin" value="20" min="1">
+<button class="btn block" id="btn-start-timer" type="button" style="grid-column: span 2">Starten</button>
 </form>
 </div>
 <div id="list-timers"></div>
 </section>
-​<section class="panel" id="p-events" hidden>
+​<!-- Events Panel -->
+<section class="panel" id="p-events" hidden>
 <h2>Termine</h2>
 <div class="card">
-<form id="f-event" style="display:grid; gap:8px;">
-<input type="text" id="in-etitle" placeholder="Titel" required>
+<form id="f-event" style="display:grid; gap:8px;" onsubmit="return false;">
+<input type="text" id="in-etitle" placeholder="Titel">
 <div class="grid2">
-<input type="date" id="in-edate" required>
-<input type="time" id="in-etime" required>
+<input type="date" id="in-edate">
+<input type="time" id="in-etime">
 </div>
-<button class="btn block" type="submit">Eintragen</button>
+<button class="btn block" id="btn-add-event" type="button">Eintragen</button>
 </form>
 </div>
 <div id="list-events"></div>
 </section>
-​<section class="panel" id="p-family" hidden>
+​<!-- Family & Account Panel -->
+<section class="panel" id="p-family" hidden>
 <h2>Familie & Konto</h2>
 <div class="card">
 <p class="field-label">Dein Code</p>
@@ -217,34 +241,34 @@ nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface);
 </div>
 </nav>
 </div>
-<div id="toast" hidden></div>
-​<!-- Supabase Client eingebunden -->
+​<div id="toast" hidden></div>
+​<!-- Supabase JS Client -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
-// Service Worker für PWA Installation
+// Service Worker
 if ('serviceWorker' in navigator) {
 const swCode = "self.addEventListener('fetch', (e) => e.respondWith(fetch(e.request)));";
 const blob = new Blob([swCode], { type: 'application/javascript' });
 navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(() => {});
 }
-​// Korrekte Supabase Konfiguration (API Key angepasst)
+​// Supabase Init
 const SUPABASE_URL = "https://fmyjhuzrwskalirunreb.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZteWpodXpyd3NrYWxpcnVucmViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzNTI4NzQsImV4cCI6MjEwNzkyODg3NH0.8yxSeNScfIEc7fvqymn9hZyQ8ispIy_zK3rgcgWVrbQ";
 ​const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-let fid = null, myId = null, myName = '', currentTab = 'shop';
-​// Datumsanzeige im Header
+let fid = null, myId = null, myName = '', isReg = false;
+let generatedIngredients = [];
+​// Date Header Initialization
 const now = new Date();
 const days = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
 document.getElementById('todayDay').textContent = days[now.getDay()];
 document.getElementById('todayDate').textContent = now.toLocaleDateString('de-CH', { day: 'numeric', month: 'short' });
 ​function showScreen(id) {
-['screen-auth', 'screen-family', 'screen-app'].forEach(s => {
-const el = document.getElementById(s);
-if (el) el.hidden = (s !== 'screen-' + id);
+['auth', 'family', 'app'].forEach(s => {
+const el = document.getElementById('screen-' + s);
+if (el) el.hidden = (s !== id);
 });
 }
 ​function switchTab(tab) {
-currentTab = tab;
 ['shop', 'todos', 'timers', 'events', 'family'].forEach(t => {
 const p = document.getElementById('p-' + t);
 if (p) p.hidden = (t !== tab);
@@ -255,40 +279,51 @@ if (btn) btn.setAttribute('aria-selected', t === tab ? 'true' : 'false');
 ​function toast(msg) {
 const t = document.getElementById('toast');
 if (t) {
-t.textContent = msg; t.hidden = false;
-setTimeout(() => t.hidden = true, 3000);
+t.textContent = msg;
+t.hidden = false;
+setTimeout(() => { t.hidden = true; }, 3000);
 }
 }
-​// Daten laden und Realtime-Subscriptions
+​// Load Data
 function loadData() {
 if (!fid) return;
-loadItems('shopping', 'list-shop');
-loadItems('todos', 'list-todos');
+loadList('shopping', 'list-shop', 'name');
+loadList('todos', 'list-todos', 'title');
 }
-​function loadItems(table, containerId) {
+​function loadList(table, containerId, fieldName) {
 sb.from(table).select('*').eq('family_id', fid).order('created_at', { ascending: false }).then(r => {
-if (r.error) return;
 const el = document.getElementById(containerId);
 if (!el) return;
+if (r.error) {
+el.innerHTML = '<div class="empty">Fehler beim Laden</div>';
+return;
+}
 if (!r.data || r.data.length === 0) {
 el.innerHTML = '<div class="empty">Keine Einträge vorhanden</div>';
 return;
 }
-el.innerHTML = '<ul class="list">' + r.data.map(item => <li class="row ${item.done ? 'done' : ''}"> <button class="check" aria-checked="${item.done}" onclick="toggleItem('${table}', '${item.id}', ${!item.done})">${item.done ? '✓' : ''}</button> <span class="txt">${item.title || item.name}</span> <button class="del" onclick="deleteItem('${table}', '${item.id}')">×</button> </li>).join('') + '</ul>';
+el.innerHTML = '<ul class="list">' + r.data.map(item => <li class="row ${item.done ? 'done' : ''}"> <button class="check" aria-checked="${item.done}" onclick="toggleItem('${table}', '${item.id}', ${!item.done})">${item.done ? '✓' : ''}</button> <span class="txt">${item[fieldName]}</span> <button class="del" onclick="deleteItem('${table}', '${item.id}')">×</button> </li>).join('') + '</ul>';
 });
 }
 ​window.toggleItem = (table, id, done) => {
-sb.from(table).update({ done }).eq('id', id).then(() => loadItems(table, table === 'shopping' ? 'list-shop' : 'list-todos'));
+sb.from(table).update({ done }).eq('id', id).then(() => {
+loadList(table, table === 'shopping' ? 'list-shop' : 'list-todos', table === 'shopping' ? 'name' : 'title');
+});
 };
 ​window.deleteItem = (table, id) => {
-sb.from(table).delete().eq('id', id).then(() => loadItems(table, table === 'shopping' ? 'list-shop' : 'list-todos'));
+sb.from(table).delete().eq('id', id).then(() => {
+loadList(table, table === 'shopping' ? 'list-shop' : 'list-todos', table === 'shopping' ? 'name' : 'title');
+});
 };
 ​function route(session) {
-if (!session) { showScreen('auth'); return; }
+if (!session) {
+showScreen('auth');
+return;
+}
 myId = session.user.id;
 myName = session.user.user_metadata?.name || session.user.email.split('@')[0];
 ​sb.from('members').select('family_id, display_name, families(code)').eq('user_id', myId).maybeSingle().then(r => {
-if (!r.data) {
+if (r.error || !r.data) {
 document.getElementById('fam-hello').textContent = 'Hallo ' + myName;
 showScreen('family');
 return;
@@ -300,16 +335,12 @@ document.getElementById('fam-code').textContent = r.data.families.code;
 showScreen('app');
 switchTab('shop');
 loadData();
-}).catch((err) => {
-console.error(err);
-showScreen('auth');
-});
+}).catch(() => showScreen('auth'));
 }
-​// Auth & Routing Initialisierung
+​// Auth Session Listeners
 sb.auth.getSession().then(({ data }) => route(data.session)).catch(() => showScreen('auth'));
 sb.auth.onAuthStateChange((_, session) => route(session));
-​// Toggle Anmelden / Konto erstellen
-let isReg = false;
+​// Toggle Auth Mode
 document.getElementById('auth-toggle').onclick = () => {
 isReg = !isReg;
 document.getElementById('auth-name-wrap').hidden = !isReg;
@@ -317,57 +348,112 @@ document.getElementById('auth-title').textContent = isReg ? 'Konto erstellen' : 
 document.getElementById('auth-submit').textContent = isReg ? 'Registrieren' : 'Anmelden';
 document.getElementById('auth-msg').textContent = '';
 };
-​// Auth Submit Handler
-document.getElementById('f-auth').onsubmit = async (e) => {
-e.preventDefault();
-const email = document.getElementById('in-email').value;
+​// Perform Login / Signup
+async function handleAuth() {
+const email = document.getElementById('in-email').value.trim();
 const pw = document.getElementById('in-pw').value;
-const name = document.getElementById('in-name').value;
+const name = document.getElementById('in-name').value.trim();
 const msgEl = document.getElementById('auth-msg');
-msgEl.textContent = 'Lädt...';
+​if (!email || !pw) {
+msgEl.textContent = 'Bitte E-Mail und Passwort eingeben.';
+return;
+}
+msgEl.textContent = 'Verarbeite...';
 ​try {
-const res = isReg
-? await sb.auth.signUp({ email, password: pw, options: { data: { name } } })
-: await sb.auth.signInWithPassword({ email, password: pw });
+let res;
+if (isReg) {
+res = await sb.auth.signUp({ email, password: pw, options: { data: { name } } });
+} else {
+res = await sb.auth.signInWithPassword({ email, password: pw });
+}
 ​if (res.error) {
 msgEl.textContent = res.error.message;
 } else {
 msgEl.textContent = '';
-if (isReg) toast('Bestätige deine E-Mail oder melde dich an.');
+if (isReg && !res.data.session) {
+toast('Registriert! Bitte E-Mail bestätigen.');
+}
 }
 } catch (err) {
-msgEl.textContent = err.message || 'Ein Fehler ist aufgetreten.';
+msgEl.textContent = 'Netzwerkfehler oder ungültige Eingabe.';
 }
-};
-​// Einkauf / Todo Formulare
-document.getElementById('f-shop').onsubmit = (e) => {
-e.preventDefault();
+}
+​document.getElementById('auth-submit').onclick = handleAuth;
+​// Add Item to Shopping List
+document.getElementById('btn-add-shop').onclick = () => {
 const input = document.getElementById('in-shop');
 const val = input.value.trim();
 if (!val || !fid) return;
 sb.from('shopping').insert({ family_id: fid, name: val, user_id: myId }).then(() => {
 input.value = '';
-loadItems('shopping', 'list-shop');
+loadList('shopping', 'list-shop', 'name');
 });
 };
-​document.getElementById('f-todos').onsubmit = (e) => {
-e.preventDefault();
+​// Add Item to Todos
+document.getElementById('btn-add-todo').onclick = () => {
 const input = document.getElementById('in-todos');
 const val = input.value.trim();
 if (!val || !fid) return;
 sb.from('todos').insert({ family_id: fid, title: val, user_id: myId }).then(() => {
 input.value = '';
-loadItems('todos', 'list-todos');
+loadList('todos', 'list-todos', 'title');
 });
 };
-​document.getElementById('btn-create').onclick = () => {
+​// AI Ingredient Generator Mock / Handler
+document.getElementById('btn-gen-ai').onclick = () => {
+const dish = document.getElementById('in-dish').value.trim();
+const msgEl = document.getElementById('ai-msg');
+const resultsEl = document.getElementById('ai-results');
+const chipsEl = document.getElementById('ai-chips');
+​if (!dish) {
+msgEl.textContent = 'Bitte ein Gericht eingeben.';
+return;
+}
+​msgEl.textContent = 'Suche Zutaten...';
+resultsEl.hidden = true;
+​// Simulated Smart AI ingredient detection
+setTimeout(() => {
+msgEl.textContent = '';
+const fallbackDatabase = {
+'spaghetti carbonara': ['Spaghetti 500g', 'Pancetta / Speck 150g', 'Eier 4 Stk', 'Parmesankäse', 'Schwarzer Pfeffer'],
+'lasagne': ['Hackfleisch 500g', 'Lasagneplatten', 'Passierte Tomaten', 'Béchamelsauce', 'Geriebener Käse', 'Zwiebeln'],
+'pizza': ['Pizzateig', 'Tomatensauce', 'Mozzarella', 'Oregano']
+};
+​const key = dish.toLowerCase();
+const items = fallbackDatabase[key] || [
+${dish} Hauptzutat, 'Salz & Pfeffer', 'Speiseöl', 'Frische Kräuter'
+];
+​generatedIngredients = items.map(item => ({ name: item, selected: true }));
+renderAiChips();
+resultsEl.hidden = false;
+}, 600);
+};
+​function renderAiChips() {
+const chipsEl = document.getElementById('ai-chips');
+chipsEl.innerHTML = generatedIngredients.map((item, idx) => <div class="chip ${item.selected ? 'selected' : ''}" onclick="toggleAiChip(${idx})"> ${item.selected ? '✓' : '+'} ${item.name} </div>).join('');
+}
+​window.toggleAiChip = (idx) => {
+generatedIngredients[idx].selected = !generatedIngredients[idx].selected;
+renderAiChips();
+};
+​document.getElementById('btn-add-ai-selected').onclick = async () => {
+const selected = generatedIngredients.filter(i => i.selected);
+if (!selected.length || !fid) return;
+​const rows = selected.map(i => ({ family_id: fid, name: i.name, user_id: myId }));
+await sb.from('shopping').insert(rows);
+​document.getElementById('ai-results').hidden = true;
+document.getElementById('in-dish').value = '';
+toast(${selected.length} Zutaten hinzugefügt!);
+loadList('shopping', 'list-shop', 'name');
+};
+​// Family Setup Handlers
+document.getElementById('btn-create').onclick = () => {
 sb.rpc('create_family', { p_display: myName }).then(r => {
 if (r.error) toast('Fehler beim Erstellen');
 else sb.auth.getSession().then(({ data }) => route(data.session));
 });
 };
-​document.getElementById('f-join').onsubmit = (e) => {
-e.preventDefault();
+​document.getElementById('btn-join').onclick = () => {
 const code = document.getElementById('in-code').value.trim();
 sb.rpc('join_family', { p_code: code, p_display: myName }).then(r => {
 if (r.error) document.getElementById('fam-msg').textContent = 'Ungültiger Code';
@@ -376,8 +462,7 @@ else window.location.reload();
 };
 ​const logoutAction = () => sb.auth.signOut();
 document.getElementById('btn-logout').onclick = logoutAction;
-const famLogout = document.getElementById('fam-logout');
-if (famLogout) famLogout.onclick = logoutAction;
+document.getElementById('fam-logout').onclick = logoutAction;
 ​document.getElementById('fam-copy').onclick = () => {
 navigator.clipboard.writeText(document.getElementById('fam-code').textContent);
 toast('Code kopiert!');
