@@ -310,7 +310,12 @@ nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface);
     });
   }
 
-  function addShopText(title) {
+  async function addShopText(title) {
+    // Falls fid leer ist, direkt frisch aus der Datenbank holen
+    if (!fid && myId) {
+      const m = await sb.from('members').select('family_id').eq('user_id', myId).maybeSingle();
+      if (m.data) fid = m.data.family_id;
+    }
     if (!fid || !title.trim()) return Promise.resolve();
     return sb.from('shopping_items').insert([{ family_id: fid, title: title.trim(), created_by: myId }]);
   }
@@ -338,13 +343,8 @@ nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface);
   function startTimer(e) { e.preventDefault(); toast('Timer-Funktion aktiv'); }
   function addEventItem(e) { e.preventDefault(); toast('Termin-Funktion aktiv'); }
 
-  // Direkt-Logik zum Hinzufügen der Zutaten in Supabase
+  // Supersichere KI-Zutaten mit automatischer Familienprüfung
   async function generateAndAddIngredients() {
-    if (!fid) {
-      toast('Fehler: Keine Familie verbunden!');
-      return;
-    }
-
     const dishInput = document.getElementById('in-ai-dish');
     const personsInput = document.getElementById('in-ai-persons');
     const dish = dishInput.value.trim();
