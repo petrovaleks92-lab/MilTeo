@@ -950,7 +950,15 @@ input.switch:disabled { opacity: .5; }
     'tacos al pastor|burrito bowl|bowl': ['Reis:70:g','Bohnen:50:g','Mais:30:g','Poulet oder Hackfleisch:100:g','Avocado:0.5','Tomate:0.5','Salsa, Limette::'],
     'tomatensuppe': ['Pelati (Dosentomaten):200:g','Zwiebel:0.25','Knoblauchzehe:0.5','Bouillon:200:ml','Rahm:20:ml','Basilikum::','Brot::'],
     'kürbissuppe|kuerbissuppe': ['Kürbis (Hokkaido):200:g','Zwiebel:0.25','Kartoffel:50:g','Bouillon:300:ml','Rahm:30:ml','Ingwer, Curry::','Kürbiskerne::'],
-    'omelett|omelette': ['Eier:3','Milch:1:EL','Butter:5:g','Käse, Schinken oder Pilze:40:g','Salz, Pfeffer::']
+    'omelett|omelette': ['Eier:3','Milch:1:EL','Butter:5:g','Käse, Schinken oder Pilze:40:g','Salz, Pfeffer::'],
+    'tavce gravce|tavce grafce|tavche gravche|tavce gravche|tavce|gravce|grafce|tavče gravče': ['Weisse Bohnen (getrocknet, Tetovo-/Gigantes-Bohnen):80:g','Zwiebel:0.5','Rote Peperoni:0.5','Paprika (Pulver, mild):1:TL','Öl:1:EL','Mehl:0.5:TL','Pfefferminze (getrocknet)::','Lorbeerblatt::','Salz::','Peperoncini oder Brot zum Dazu::'],
+    'prebranac|grah|bohnen balkan': ['Weisse Bohnen (getrocknet):80:g','Zwiebeln:1','Knoblauchzehe:0.5','Öl:2:EL','Paprika (Pulver):1:TL','Lorbeerblatt::','Salz, Pfeffer::'],
+    'pasulj|bohnensuppe': ['Weisse Bohnen (getrocknet):70:g','Räucherfleisch oder Rippchen:80:g','Zwiebel:0.5','Karotte:0.25','Paprika (Pulver):1:TL','Mehl:0.5:TL','Lorbeerblatt::','Öl:1:EL','Salz::'],
+    'sopska salata|shopska salata|shopska': ['Tomaten:1.5','Gurke:0.5','Peperoni:0.25','Zwiebel:0.25','Sirene oder Feta:50:g','Öl:1:EL','Essig, Salz::','Petersilie::'],
+    'palacinke|palatschinken': ['Mehl:50:g','Milch:125:ml','Eier:1','Öl:1:TL','Salz::','Nutella, Konfitüre oder Quark::'],
+    'gibanica|banitsa|banica': ['Filoteig:100:g','Feta oder Quark:100:g','Eier:1','Joghurt:50:g','Mineralwasser:30:ml','Öl:1:EL'],
+    'baklava': ['Filoteig:40:g','Nüsse (Walnüsse, Pistazien):40:g','Butter:30:g','Zucker:30:g','Wasser:30:ml','Zitronensaft, Honig::'],
+    'kebapi|kebab balkan|raznjici|ražnjići': ['Schweine- oder Rindfleisch (Würfel):150:g','Zwiebel:0.5','Peperoni:0.25','Paprika (Pulver), Salz, Pfeffer::','Öl::','Fladenbrot:1','Ajvar::']
   };
   const norm = (t) => t.toLowerCase().replace(/ä/g,'ae').replace(/ö/g,'oe').replace(/ü/g,'ue').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'dj').replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
   const RECIPE_MAP = [];
