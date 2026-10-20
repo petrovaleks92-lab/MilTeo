@@ -995,9 +995,25 @@ input.switch:disabled { opacity: .5; }
       const rec = findRecipe(dish);
       if (rec) items = scaleRecipe(rec, servings);
       else {
-        $('in-ingr').hidden = false; $('in-ingr').readOnly = false; $('in-ingr').focus();
-        $('dish-hint').textContent = 'Dieses Gericht kenne ich noch nicht. Trag die Zutaten oben mit Komma getrennt ein.';
-        return;
+        // Unbekanntes Gericht: kostenlose KI fragen (Gemini), sonst Zutaten von Hand
+        const btn = $('btn-dish'); btn.disabled = true; btn.textContent = 'Suche …';
+        let err = null, data = null;
+        try {
+          const r = await sb.functions.invoke('dish', { body: { dish, servings } });
+          data = r.data;
+          if (r.error) { try { err = (await r.error.context.json()).error || 'ai_failed'; } catch (_) { err = 'ai_failed'; } }
+          else if (data && data.error) err = data.error;
+        } catch (_) { err = 'ai_failed'; }
+        btn.disabled = false; btn.textContent = 'Zutaten';
+        if (!err && data && Array.isArray(data.items) && data.items.length) {
+          items = data.items.map(i => ({ name: i.name, amount: i.amount || '', done: false }));
+        } else {
+          $('in-ingr').hidden = false; $('in-ingr').readOnly = false; $('in-ingr').focus();
+          $('dish-hint').textContent = err === 'limit' ? 'Tageslimit der KI erreicht. Trag die Zutaten oben mit Komma getrennt ein.'
+            : err === 'quota' ? 'Die kostenlose KI ist gerade ausgelastet. Trag die Zutaten mit Komma getrennt ein oder versuche es später.'
+            : 'Dieses Gericht habe ich nicht gefunden. Trag die Zutaten oben mit Komma getrennt ein.';
+          return;
+        }
       }
     }
     const row = await addEntry('shop', { type: 'dish', text: dish, servings, items, by: myName });
