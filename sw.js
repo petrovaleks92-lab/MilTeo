@@ -1,5 +1,5 @@
-const CACHE = 'milteo-v3';
-const SHELL = ['./', 'index.html', 'manifest.json', 'icon-192.png', 'icon-512.png'];
+const CACHE = 'milteo-v4';
+const SHELL = ['./', 'index.html', 'manifest.json', 'icon-192.png', 'icon-512.png', 'badge-96.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
@@ -30,8 +30,8 @@ self.addEventListener('push', (e) => {
   try { d = e.data ? e.data.json() : {}; } catch (_) {}
   e.waitUntil(self.registration.showNotification(d.title || 'Milteo', {
     body: d.body || '',
-    icon: 'icon-192.png',
-    badge: 'icon-192.png',
+    icon: 'icon-192.png',      // grosses App-Logo in der Mitteilung
+    badge: 'badge-96.png',     // einfarbiges Symbol für die Statusleiste (Android färbt es selbst)
     tag: d.tag || undefined,
     renotify: !!d.tag,
     vibrate: [250, 120, 250],
