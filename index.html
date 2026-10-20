@@ -79,17 +79,17 @@ width: 100%; min-height: 46px; padding: 0 14px; background: var(--surface); bord
 .btn.small { min-height: 36px; padding: 0 12px; font-size: 14px; }
 .btn.block { width: 100%; }
 .link { background: none; border: 0; color: var(--mil); font-weight: 600; padding: 10px 0; text-decoration: underline; }
-.msg { margin: 0; font-size: 14px; color: var(--danger); }
+.msg { margin: 10px 0 0; font-size: 14px; color: var(--danger); word-break: break-word; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
 .chip { min-height: 34px; padding: 0 12px; border-radius: 999px; background: var(--surface); border: 1.5px solid var(--line); font-size: 14px; }
 ul.list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .row { display: flex; align-items: center; gap: 12px; background: var(--surface); border-radius: 14px; padding: 8px 8px 8px 10px; border: 1px solid var(--line); }
-.check { width: 32px; height: 32px; border-radius: 10px; border: 2px solid var(--mil); background: transparent; display: grid; place-items: center; color: var(--on-mil); }
+.check { width: 32px; height: 32px; border-radius: 10px; border: 2px solid var(--mil); background: transparent; display: grid; place-items: center; color: var(--on-mil); cursor: pointer; }
 .check[aria-checked="true"] { background: var(--mil); }
 .txt { flex: 1; overflow-wrap: anywhere; }
 .row.done .txt { color: var(--muted); text-decoration: line-through; }
 .who { font-size: 13px; color: var(--muted); margin-left: 6px; }
-.del { border: 0; background: transparent; color: var(--muted); font-size: 22px; width: 40px; height: 40px; }
+.del { border: 0; background: transparent; color: var(--muted); font-size: 22px; width: 40px; height: 40px; cursor: pointer; }
 .empty { border: 1.5px dashed var(--line); border-radius: 14px; padding: 26px 18px; text-align: center; color: var(--muted); }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 14px; margin-bottom: 18px; display: grid; gap: 12px; }
 .field-label { font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; margin: 0 0 6px; }
@@ -97,7 +97,7 @@ ul.list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction
 .code { font-family: var(--font-display); font-weight: 700; font-size: 36px; letter-spacing: 0.08em; }
 nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface); border-top: 1px solid var(--line); padding: 8px; z-index: 5; }
 .nav-in { max-width: 640px; margin: 0 auto; display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
-.tab { border: 0; background: transparent; border-radius: 12px; padding: 6px; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 12px; color: var(--muted); }
+.tab { border: 0; background: transparent; border-radius: 12px; padding: 6px; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 12px; color: var(--muted); cursor: pointer; }
 .tab[aria-selected="true"] { background: var(--mil-soft); color: var(--ink); font-weight: 600; }
 #toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: 86px; background: var(--ink); color: var(--bg); border-radius: 12px; padding: 10px 16px; font-size: 14px; z-index: 9; }
 </style>
@@ -159,24 +159,15 @@ nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface);
 ​<section class="panel" id="p-shop">
 <h2>Einkaufsliste</h2>
 <form class="add" id="f-shop">
-<input type="text" id="in-shop" placeholder="Was fehlt?">
+<input type="text" id="in-shop" placeholder="Was fehlt?" required>
 <button class="btn" type="submit">Hinzufügen</button>
 </form>
-​<!-- KI-Zutaten Generator für MilTeo -->
-<div class="card" style="padding: 10px; margin-bottom: 12px; background: var(--mil-soft);">
-<div style="font-size: 14px; font-weight: 600; margin-bottom: 6px; color: var(--mil);">✨ Rezept-Zutaten per KI holen</div>
-<div style="display: flex; gap: 6px;">
-<input type="text" id="in-ai-dish" placeholder="Gericht (z.B. Lasagne)" style="font-size: 14px; min-height: 38px;">
-<input type="number" id="in-ai-persons" value="2" min="1" max="12" style="width: 60px; font-size: 14px; min-height: 38px;" title="Personen">
-<button type="button" class="btn small" onclick="generateAndAddIngredients()">Holen</button>
-</div>
-</div>
-​<div id="list-shop"></div>
+<div id="list-shop"></div>
 </section>
 ​<section class="panel" id="p-todos" hidden>
 <h2>Aufgaben</h2>
 <form class="add" id="f-todos">
-<input type="text" id="in-todos" placeholder="Was ist zu erledigen?">
+<input type="text" id="in-todos" placeholder="Was ist zu erledigen?" required>
 <button class="btn" type="submit">Hinzufügen</button>
 </form>
 <div id="list-todos"></div>
@@ -185,8 +176,8 @@ nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface);
 <h2>Timer</h2>
 <div class="card">
 <form id="f-timer" class="grid2">
-<input type="text" id="in-tlabel" value="Backofen">
-<input type="number" id="in-tmin" value="20" min="1">
+<input type="text" id="in-tlabel" value="Backofen" required>
+<input type="number" id="in-tmin" value="20" min="1" required>
 <button class="btn block" type="submit" style="grid-column: span 2">Starten</button>
 </form>
 </div>
@@ -196,10 +187,10 @@ nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface);
 <h2>Termine</h2>
 <div class="card">
 <form id="f-event" style="display:grid; gap:8px;">
-<input type="text" id="in-etitle" placeholder="Titel">
+<input type="text" id="in-etitle" placeholder="Titel" required>
 <div class="grid2">
-<input type="date" id="in-edate">
-<input type="time" id="in-etime">
+<input type="date" id="in-edate" required>
+<input type="time" id="in-etime" required>
 </div>
 <button class="btn block" type="submit">Eintragen</button>
 </form>
@@ -236,11 +227,16 @@ const swCode = "self.addEventListener('fetch', (e) => e.respondWith(fetch(e.requ
 const blob = new Blob([swCode], { type: 'application/javascript' });
 navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(() => {});
 }
-​// Korrekte Supabase Konfiguration
+​// Korrekte Supabase Konfiguration (API Key angepasst)
 const SUPABASE_URL = "https://fmyjhuzrwskalirunreb.supabase.co";
-const SUPABASE_ANON_KEY = "EyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInRefiI6ImZteWpodXpyd3NrYWxpcnVucmViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzNTI4NzQsImV4cCI6MjEwNzkyODg3NH0.8yxSeNScfIEc7fvqymn9hZyQ8ispIy_zK3rgcgWVrbQ";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZteWpodXpyd3NrYWxpcnVucmViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzNTI4NzQsImV4cCI6MjEwNzkyODg3NH0.8yxSeNScfIEc7fvqymn9hZyQ8ispIy_zK3rgcgWVrbQ";
 ​const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let fid = null, myId = null, myName = '', currentTab = 'shop';
+​// Datumsanzeige im Header
+const now = new Date();
+const days = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
+document.getElementById('todayDay').textContent = days[now.getDay()];
+document.getElementById('todayDate').textContent = now.toLocaleDateString('de-CH', { day: 'numeric', month: 'short' });
 ​function showScreen(id) {
 ['screen-auth', 'screen-family', 'screen-app'].forEach(s => {
 const el = document.getElementById(s);
@@ -263,6 +259,30 @@ t.textContent = msg; t.hidden = false;
 setTimeout(() => t.hidden = true, 3000);
 }
 }
+​// Daten laden und Realtime-Subscriptions
+function loadData() {
+if (!fid) return;
+loadItems('shopping', 'list-shop');
+loadItems('todos', 'list-todos');
+}
+​function loadItems(table, containerId) {
+sb.from(table).select('*').eq('family_id', fid).order('created_at', { ascending: false }).then(r => {
+if (r.error) return;
+const el = document.getElementById(containerId);
+if (!el) return;
+if (!r.data || r.data.length === 0) {
+el.innerHTML = '<div class="empty">Keine Einträge vorhanden</div>';
+return;
+}
+el.innerHTML = '<ul class="list">' + r.data.map(item => <li class="row ${item.done ? 'done' : ''}"> <button class="check" aria-checked="${item.done}" onclick="toggleItem('${table}', '${item.id}', ${!item.done})">${item.done ? '✓' : ''}</button> <span class="txt">${item.title || item.name}</span> <button class="del" onclick="deleteItem('${table}', '${item.id}')">×</button> </li>).join('') + '</ul>';
+});
+}
+​window.toggleItem = (table, id, done) => {
+sb.from(table).update({ done }).eq('id', id).then(() => loadItems(table, table === 'shopping' ? 'list-shop' : 'list-todos'));
+};
+​window.deleteItem = (table, id) => {
+sb.from(table).delete().eq('id', id).then(() => loadItems(table, table === 'shopping' ? 'list-shop' : 'list-todos'));
+};
 ​function route(session) {
 if (!session) { showScreen('auth'); return; }
 myId = session.user.id;
@@ -279,7 +299,9 @@ document.getElementById('fam-code').textContent = r.data.families.code;
 }
 showScreen('app');
 switchTab('shop');
-}).catch(() => {
+loadData();
+}).catch((err) => {
+console.error(err);
 showScreen('auth');
 });
 }
@@ -293,20 +315,49 @@ isReg = !isReg;
 document.getElementById('auth-name-wrap').hidden = !isReg;
 document.getElementById('auth-title').textContent = isReg ? 'Konto erstellen' : 'Anmelden';
 document.getElementById('auth-submit').textContent = isReg ? 'Registrieren' : 'Anmelden';
+document.getElementById('auth-msg').textContent = '';
 };
-​document.getElementById('f-auth').onsubmit = (e) => {
+​// Auth Submit Handler
+document.getElementById('f-auth').onsubmit = async (e) => {
 e.preventDefault();
 const email = document.getElementById('in-email').value;
 const pw = document.getElementById('in-pw').value;
 const name = document.getElementById('in-name').value;
 const msgEl = document.getElementById('auth-msg');
+msgEl.textContent = 'Lädt...';
+​try {
+const res = isReg
+? await sb.auth.signUp({ email, password: pw, options: { data: { name } } })
+: await sb.auth.signInWithPassword({ email, password: pw });
+​if (res.error) {
+msgEl.textContent = res.error.message;
+} else {
 msgEl.textContent = '';
-​const promise = isReg
-? sb.auth.signUp({ email, password: pw, options: { data: { name } } })
-: sb.auth.signInWithPassword({ email, password: pw });
-​promise.then(r => {
-if (r.error) msgEl.textContent = r.error.message;
-else if (isReg) toast('Bestätige die E-Mail oder melde dich an.');
+if (isReg) toast('Bestätige deine E-Mail oder melde dich an.');
+}
+} catch (err) {
+msgEl.textContent = err.message || 'Ein Fehler ist aufgetreten.';
+}
+};
+​// Einkauf / Todo Formulare
+document.getElementById('f-shop').onsubmit = (e) => {
+e.preventDefault();
+const input = document.getElementById('in-shop');
+const val = input.value.trim();
+if (!val || !fid) return;
+sb.from('shopping').insert({ family_id: fid, name: val, user_id: myId }).then(() => {
+input.value = '';
+loadItems('shopping', 'list-shop');
+});
+};
+​document.getElementById('f-todos').onsubmit = (e) => {
+e.preventDefault();
+const input = document.getElementById('in-todos');
+const val = input.value.trim();
+if (!val || !fid) return;
+sb.from('todos').insert({ family_id: fid, title: val, user_id: myId }).then(() => {
+input.value = '';
+loadItems('todos', 'list-todos');
 });
 };
 ​document.getElementById('btn-create').onclick = () => {
@@ -331,54 +382,6 @@ if (famLogout) famLogout.onclick = logoutAction;
 navigator.clipboard.writeText(document.getElementById('fam-code').textContent);
 toast('Code kopiert!');
 };
-​// KI-Zutaten von Cloudflare Worker abrufen
-async function generateAndAddIngredients() {
-const dishInput = document.getElementById('in-ai-dish');
-const personsInput = document.getElementById('in-ai-persons');
-const dish = dishInput ? dishInput.value.trim() : '';
-const persons = personsInput ? (parseInt(personsInput.value) || 2) : 2;
-​if (!dish) {
-toast('Bitte gib ein Gericht ein!');
-return;
-}
-​toast('Generiere Zutaten mit KI...');
-​try {
-const response = await fetch("https://curly-base-7807.petrov-aleks92.workers.dev", {
-method: "POST",
-headers: {
-"Content-Type": "application/json"
-},
-body: JSON.stringify({ dish: dish, persons: persons })
-});
-​if (!response.ok) throw new Error('Fehler bei der Anfrage');
-​const ingredients = await response.json();
-​if (Array.isArray(ingredients)) {
-if (fid) {
-// Zutaten in Supabase eintragen
-const itemsToInsert = ingredients.map(item => ({
-family_id: fid,
-title: item,
-user_id: myId
-}));
-​const { error } = await sb.from('shopping_items').insert(itemsToInsert);
-if (error) {
-console.error("Supabase error:", error);
-// Fallback: Einzeln versuchen
-for (const item of ingredients) {
-await sb.from('shopping_items').insert([{ family_id: fid, title: item, user_id: myId }]).catch(() => {});
-}
-}
-}
-toast(${ingredients.length} Zutaten hinzugefügt!);
-if (dishInput) dishInput.value = '';
-} else {
-throw new Error('Ungültiges Format');
-}
-} catch (err) {
-console.error(err);
-toast('Konnte Zutaten nicht generieren.');
-}
-}
 </script>
 </body>
 </html>
