@@ -2,7 +2,7 @@
 <html lang="de-CH">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#F2F5FA" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0E1424" media="(prefers-color-scheme: dark)">
@@ -11,32 +11,50 @@
 <meta name="apple-mobile-web-app-title" content="Milteo">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>Milteo</title>
-
-<!-- PWA -->
-<link rel="manifest" href="manifest.json">
-<link rel="icon" href="icon-192.png" type="image/png">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
+​<!-- Web App Manifest für PWA Installation -->
+<link rel="manifest" href='data:application/manifest+json,{
+"name": "Milteo Familienplaner",
+"short_name": "Milteo",
+"start_url": "/",
+"display": "standalone",
+"background_color": "#F2F5FA",
+"theme_color": "#1F8A4C",
+"icons": [
+{
+"src": "https://api.iconify.design/lucide:home.svg?color=%231F8A4C",
+"sizes": "192x192",
+"type": "image/svg+xml",
+"purpose": "any maskable"
+},
+{
+"src": "https://api.iconify.design/lucide:home.svg?color=%231F8A4C",
+"sizes": "512x512",
+"type": "image/svg+xml",
+"purpose": "any maskable"
+}
+]
+}'>
+​<link rel="icon" href="https://api.iconify.design/lucide:home.svg?color=%231F8A4C" type="image/svg+xml">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=DM+Sans:wght@400;500;600&display=swap">
 <style>
 :root {
-  --bg: #F2F5FA; --surface: #FFFFFF; --ink: #16213A; --muted: #5C6884; --line: #DDE3EF;
-  --mil: #1F8A4C; --on-mil: #FFFFFF; --mil-soft: #DDF3E4; --teo: #EDB800; --teo-soft: #FFF1BF;
-  --danger: #B93A26; --font-display: "Bricolage Grotesque", system-ui, sans-serif; --font-body: "DM Sans", system-ui, sans-serif;
+--bg: #F2F5FA; --surface: #FFFFFF; --ink: #16213A; --muted: #5C6884; --line: #DDE3EF;
+--mil: #1F8A4C; --on-mil: #FFFFFF; --mil-soft: #DDF3E4; --teo: #EDB800; --teo-soft: #FFF1BF;
+--danger: #B93A26; --font-display: "Bricolage Grotesque", system-ui, sans-serif; --font-body: "DM Sans", system-ui, sans-serif;
 }
 @media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0E1424; --surface: #172038; --ink: #EAF0FF; --muted: #9AA7C7; --line: #27324F;
-    --mil: #4CD27E; --on-mil: #05210F; --mil-soft: #123A24; --teo: #F5CB3D; --teo-soft: #46391A; --danger: #FF8A75;
-  }
+:root {
+--bg: #0E1424; --surface: #172038; --ink: #EAF0FF; --muted: #9AA7C7; --line: #27324F;
+--mil: #4CD27E; --on-mil: #05210F; --mil-soft: #123A24; --teo: #F5CB3D; --teo-soft: #46391A; --danger: #FF8A75;
 }
-* { box-sizing: border-box; }
-[hidden] { display: none !important; }
+}
+​{ box-sizing: border-box; }
 html, body { margin: 0; }
 body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.4; }
 button, input, select { font: inherit; color: inherit; }
 button { cursor: pointer; }
 .wrap, .narrow { max-width: 640px; margin: 0 auto; padding: 16px; }
-.wrap { padding-bottom: 190px; }
+.wrap { padding-bottom: 110px; }
 .narrow { max-width: 440px; padding-top: 40px; }
 header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
 .brand { display: flex; align-items: center; gap: 10px; }
@@ -53,7 +71,7 @@ h2 { font-family: var(--font-display); font-size: 22px; margin: 0 0 12px; }
 .panel[hidden] { display: none; }
 form.add { display: flex; gap: 8px; margin-bottom: 10px; }
 input[type=text], input[type=number], input[type=date], input[type=time], input[type=email], input[type=password], select {
-  width: 100%; min-height: 46px; padding: 0 14px; background: var(--surface); border: 1.5px solid var(--line); border-radius: 12px;
+width: 100%; min-height: 46px; padding: 0 14px; background: var(--surface); border: 1.5px solid var(--line); border-radius: 12px;
 }
 .btn { min-height: 46px; padding: 0 18px; border: 0; border-radius: 12px; font-weight: 600; background: var(--mil); color: var(--on-mil); }
 .btn.ghost { background: transparent; color: var(--muted); border: 1.5px solid var(--line); }
@@ -77,1148 +95,290 @@ ul.list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction
 .field-label { font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; margin: 0 0 6px; }
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .code { font-family: var(--font-display); font-weight: 700; font-size: 36px; letter-spacing: 0.08em; }
-nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface); border-top: 1px solid var(--line); padding: 10px 10px calc(env(safe-area-inset-bottom, 0px) + 22px); z-index: 5; box-shadow: 0 -4px 16px rgba(0,0,0,.08); }
-.nav-in { max-width: 640px; margin: 0 auto; display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; }
-.tab { border: 0; background: transparent; border-radius: 16px; padding: 10px 2px; min-height: 68px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 12px; color: var(--muted); position: relative; }
-.tab .ic { font-size: 26px; line-height: 1; }
+nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface); border-top: 1px solid var(--line); padding: 8px; z-index: 5; }
+.nav-in { max-width: 640px; margin: 0 auto; display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+.tab { border: 0; background: transparent; border-radius: 12px; padding: 6px; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 12px; color: var(--muted); }
 .tab[aria-selected="true"] { background: var(--mil-soft); color: var(--ink); font-weight: 600; }
-#toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: 150px; background: var(--ink); color: var(--bg); border-radius: 12px; padding: 10px 16px; font-size: 14px; z-index: 9; }
-.chat { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 8px; padding: 4px 2px 10px; }
-.m-row { display: flex; }
-.m-row.mine { justify-content: flex-end; }
-.bubble { max-width: 82%; background: var(--surface); border: 1px solid var(--line); border-radius: 16px 16px 16px 4px; padding: 8px 12px; overflow-wrap: anywhere; }
-.m-row.mine .bubble { background: var(--mil-soft); border-color: transparent; border-radius: 16px 16px 4px 16px; }
-.bubble .from { font-size: 12px; font-weight: 600; color: var(--muted); }
-.bubble .when { font-size: 11px; color: var(--muted); margin-top: 2px; text-align: right; }
-.dot { position: absolute; top: 6px; right: 20%; width: 11px; height: 11px; border-radius: 50%; background: var(--danger); border: 2px solid var(--surface); }
-.hint { margin: 0; font-size: 13px; color: var(--muted); }
-.msg.ok { color: var(--mil); }
-.check-row { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--muted); }
-.check-row input { width: 20px; height: 20px; accent-color: var(--mil); flex: none; }
-
-/* Chat-Ansicht: volle Höhe, Eingabe direkt über der Tastatur bzw. über der Leiste */
-body.in-chat { overflow: hidden; overscroll-behavior: none; }
-body.in-chat .wrap { position: fixed; top: var(--vvt, 0px); left: 0; right: 0; margin: 0 auto; height: var(--vvh, 100dvh); display: flex; flex-direction: column; padding-bottom: calc(var(--nav-h, 112px) + 8px); }
-body.in-chat header { flex: none; margin-bottom: 8px; }
-body.in-chat #p-chat { flex: 1; min-height: 0; display: flex; flex-direction: column; }
-body.in-chat #p-chat h2 { flex: none; margin-bottom: 6px; }
-body.in-chat.composing nav { display: none; }
-body.in-chat.composing .wrap { padding-bottom: 8px; padding-top: 8px; }
-body.in-chat.composing header, body.in-chat.composing #p-chat h2 { display: none; }
-body.composing #toast { bottom: 90px; }
-.composer { flex: none; display: flex; align-items: center; gap: 4px; padding-top: 6px; }
-.composer input[type=text] { flex: 1; min-width: 0; border-radius: 23px; }
-.ic-btn { flex: none; width: 46px; height: 46px; border-radius: 50%; border: 0; background: transparent; color: var(--muted); display: grid; place-items: center; padding: 0; }
-.ic-btn svg { width: 24px; height: 24px; }
-.ic-btn.primary { background: var(--mil); color: var(--on-mil); }
-.emoji-pop { flex: none; max-height: 200px; overflow-y: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 8px; margin-top: 6px; display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px; }
-.emoji-pop button { border: 0; background: transparent; font-size: 26px; line-height: 1; padding: 7px 0; border-radius: 10px; }
-.emoji-pop button:active { background: var(--mil-soft); }
-.rec-bar { flex: none; display: flex; align-items: center; gap: 10px; padding-top: 6px; }
-.rec-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--danger); animation: blink 1s infinite; margin-left: 6px; }
-.rec-time { flex: 1; font-weight: 600; font-variant-numeric: tabular-nums; }
-@keyframes blink { 50% { opacity: .25; } }
-.bubble.media { padding: 4px; }
-.bubble.media .from, .bubble.media .when, .bubble.media .cap { padding-left: 8px; padding-right: 8px; }
-.bubble .cap { padding-top: 4px; }
-.chat-img { display: block; width: 240px; max-width: 100%; min-height: 80px; max-height: 320px; object-fit: cover; border-radius: 12px; background: var(--line); cursor: zoom-in; }
-.player { display: flex; align-items: center; gap: 10px; min-width: 200px; padding: 4px 8px 0 4px; }
-.pbtn { width: 38px; height: 38px; border-radius: 50%; border: 0; background: var(--mil); color: var(--on-mil); display: grid; place-items: center; flex: none; padding: 0; }
-.player .bar { flex: 1; height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
-.player .bar i { display: block; height: 100%; width: 0; background: var(--mil); }
-.player .dur { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; min-width: 34px; text-align: right; }
-#lightbox { position: fixed; inset: 0; background: rgba(0,0,0,.92); z-index: 30; display: grid; place-items: center; padding: 12px; }
-#lightbox img { max-width: 100%; max-height: 100%; object-fit: contain; }
-#lightbox .x { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 10px); right: 12px; width: 44px; height: 44px; border-radius: 50%; border: 0; background: rgba(255,255,255,.18); color: #fff; font-size: 22px; }
-
-/* Einkauf: Gericht mit Zutaten */
-.dish { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
-.dish .dish-head { border: 0; border-radius: 0; background: transparent; }
-.plus { width: 36px; height: 36px; border-radius: 10px; border: 2px solid var(--teo); background: var(--teo-soft); color: var(--ink); font-size: 24px; font-weight: 700; line-height: 1; display: grid; place-items: center; flex: none; padding: 0; }
-.dish.open .plus { background: var(--teo); }
-.dish ul.sub { list-style: none; margin: 0; padding: 8px; display: flex; flex-direction: column; gap: 4px; border-top: 1px solid var(--line); }
-.sub-row { display: flex; align-items: center; gap: 10px; padding: 3px 2px 3px 6px; }
-.sub-row .amt { color: var(--muted); font-size: 13px; margin-left: 8px; }
-.sub-row.done .txt { color: var(--muted); text-decoration: line-through; }
-.sub-row .check { width: 28px; height: 28px; border-radius: 8px; }
-.sub-row .del { width: 34px; height: 34px; font-size: 20px; }
-form.dish-add input.servings { width: 62px; flex: none; text-align: center; padding: 0 4px; }
-
-/* Schalter */
-.switch-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 40px; }
-input.switch { appearance: none; -webkit-appearance: none; flex: none; width: 52px; height: 32px; border-radius: 999px; background: var(--line); position: relative; border: 0; padding: 0; margin: 0; cursor: pointer; transition: background .15s; }
-input.switch::after { content: ''; position: absolute; top: 4px; left: 4px; width: 24px; height: 24px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.3); transition: transform .15s; }
-input.switch:checked { background: var(--mil); }
-input.switch:checked::after { transform: translateX(20px); }
-input.switch:disabled { opacity: .5; }
-.push-types { display: grid; gap: 2px; padding-left: 8px; border-left: 3px solid var(--line); }
+#toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: 86px; background: var(--ink); color: var(--bg); border-radius: 12px; padding: 10px 16px; font-size: 14px; z-index: 9; }
 </style>
 </head>
 <body>
-
-<!-- Screens -->
+​<!-- Screens -->
 <div class="screen" id="screen-auth">
-  <div class="narrow">
-    <div class="brand big"><div class="word"><span class="a">Mil</span><span class="b">teo</span></div></div>
-    <h1 id="auth-title">Anmelden</h1>
-    <p class="lead" id="auth-lead">Einkauf, Aufgaben, Timer und Termine.</p>
-    <form id="f-auth" class="card">
-      <div id="auth-name-wrap" hidden>
-        <label class="field-label" for="in-name">Dein Name</label>
-        <input type="text" id="in-name" name="name" autocomplete="name" enterkeyhint="next">
-      </div>
-      <div>
-        <label class="field-label" for="in-email">E-Mail</label>
-        <input type="email" id="in-email" name="email" autocomplete="username" enterkeyhint="next" required>
-      </div>
-      <div id="auth-pw-wrap">
-        <label class="field-label" for="in-pw">Passwort</label>
-        <input type="password" id="in-pw" name="password" autocomplete="current-password" enterkeyhint="go" required>
-      </div>
-      <label class="check-row" id="auth-remember-wrap"><input type="checkbox" id="in-remember" checked> Passwort speichern</label>
-      <button class="btn block" type="submit" id="auth-submit">Anmelden</button>
-      <p class="msg" id="auth-msg"></p>
-    </form>
-    <button class="link" id="auth-forgot" type="button">Passwort vergessen?</button><br>
-    <button class="link" id="auth-toggle" type="button">Neu hier? Konto erstellen</button>
-  </div>
+<div class="narrow">
+<div class="brand big"><div class="word"><span class="a">Mil</span><span class="b">teo</span></div></div>
+<h1 id="auth-title">Anmelden</h1>
+<p class="lead">Einkauf, Aufgaben, Timer und Termine.</p>
+<form id="f-auth" class="card">
+<div id="auth-name-wrap" hidden>
+<label class="field-label">Dein Name</label>
+<input type="text" id="in-name">
 </div>
-
-<div class="screen" id="screen-reset" hidden>
-  <div class="narrow">
-    <div class="brand big"><div class="word"><span class="a">Mil</span><span class="b">teo</span></div></div>
-    <h1>Neues Passwort</h1>
-    <p class="lead">Wähle ein neues Passwort für dein Konto.</p>
-    <form id="f-reset" class="card">
-      <div>
-        <label class="field-label" for="in-newpw">Neues Passwort</label>
-        <input type="password" id="in-newpw" autocomplete="new-password" enterkeyhint="next" minlength="6" required>
-      </div>
-      <div>
-        <label class="field-label" for="in-newpw2">Wiederholen</label>
-        <input type="password" id="in-newpw2" autocomplete="new-password" enterkeyhint="go" minlength="6" required>
-      </div>
-      <button class="btn block" type="submit">Passwort speichern</button>
-      <p class="msg" id="reset-msg"></p>
-    </form>
-    <button class="link" id="reset-cancel" type="button">Abbrechen</button>
-  </div>
+<div>
+<label class="field-label">E-Mail</label>
+<input type="email" id="in-email" required>
 </div>
-  </div>
+<div>
+<label class="field-label">Passwort</label>
+<input type="password" id="in-pw" required>
 </div>
-
-<div class="screen" id="screen-family" hidden>
-  <div class="narrow">
-    <div class="brand big"><div class="word"><span class="a">Mil</span><span class="b">teo</span></div></div>
-    <h1 id="fam-hello">Hallo</h1>
-    <p class="lead">Verknüpfe dein Konto mit deiner Familie.</p>
-    <div class="card">
-      <button class="btn block" id="btn-create" type="button">Neue Familie erstellen</button>
-    </div>
-    <div class="card">
-      <form id="f-join">
-        <label class="field-label">Familiencode eingeben</label>
-        <input type="text" id="in-code" enterkeyhint="go" placeholder="ABCD-EFGH">
-        <button class="btn block" type="submit" style="margin-top:8px">Beitreten</button>
-      </form>
-    </div>
-    <p class="msg" id="fam-msg"></p>
-    <button class="link" id="fam-logout" type="button">Abmelden</button>
-  </div>
+<button class="btn block" type="submit" id="auth-submit">Anmelden</button>
+<p class="msg" id="auth-msg"></p>
+</form>
+<button class="link" id="auth-toggle" type="button">Neu hier? Konto erstellen</button>
 </div>
-
-<div class="screen" id="screen-app" hidden>
-  <div class="wrap">
-    <header>
-      <div class="brand"><div class="word"><span class="a">Mil</span><span class="b">teo</span></div></div>
-      <div class="head-right">
-        <div class="today"><strong id="todayDay"></strong><span id="todayDate"></span></div>
-        <button class="icon-btn" id="btn-family" type="button" onclick="switchTab('family')">⚙️</button>
-      </div>
-    </header>
-
-    <section class="panel" id="p-shop">
-      <h2>Einkaufsliste</h2>
-      <form class="add" id="f-shop">
-        <input type="text" id="in-shop" enterkeyhint="send" placeholder="Was fehlt?">
-        <button class="btn" type="submit">Hinzufügen</button>
-      </form>
-      <p class="field-label" style="margin-top:14px">🍽️ Gericht → Zutaten (KI)</p>
-      <form class="add dish-add" id="f-dish">
-        <input type="text" id="in-dish" enterkeyhint="go" placeholder="z. B. Lasagne" maxlength="80" autocomplete="off">
-        <input type="number" id="in-servings" class="servings" value="4" min="1" max="20" inputmode="numeric" aria-label="Anzahl Personen" title="Anzahl Personen">
-        <button class="btn" type="submit" id="btn-dish">Zutaten</button>
-      </form>
-      <p class="hint" style="margin-bottom:14px">Die Zahl ist die Anzahl Personen. Die Zutaten erscheinen unter dem Gericht, mit + aufklappbar.</p>
-      <div id="list-shop"></div>
-    </section>
-
-    <section class="panel" id="p-todos" hidden>
-      <h2>Aufgaben</h2>
-      <form class="add" id="f-todos">
-        <input type="text" id="in-todos" enterkeyhint="send" placeholder="Was ist zu erledigen?">
-        <button class="btn" type="submit">Hinzufügen</button>
-      </form>
-      <div id="list-todos"></div>
-    </section>
-
-    <section class="panel" id="p-timers" hidden>
-      <h2>Timer</h2>
-      <div class="card">
-        <form id="f-timer" class="grid2">
-          <input type="text" id="in-tlabel" enterkeyhint="next" value="Backofen">
-          <input type="number" id="in-tmin" value="20" min="1">
-          <button class="btn block" type="submit" style="grid-column: span 2">Starten</button>
-        </form>
-      </div>
-      <div id="list-timers"></div>
-    </section>
-
-    <section class="panel" id="p-events" hidden>
-      <h2>Termine</h2>
-      <div class="card">
-        <form id="f-event" style="display:grid; gap:8px;">
-          <input type="text" id="in-etitle" enterkeyhint="done" placeholder="Titel">
-          <div class="grid2">
-            <input type="date" id="in-edate">
-            <input type="time" id="in-etime">
-          </div>
-          <select id="in-eremind" aria-label="Erinnerung">
-            <option value="">🔕 Keine Erinnerung</option>
-            <option value="0">🔔 Zur Startzeit</option>
-            <option value="5">🔔 5 Minuten vorher</option>
-            <option value="15" selected>🔔 15 Minuten vorher</option>
-            <option value="30">🔔 30 Minuten vorher</option>
-            <option value="60">🔔 1 Stunde vorher</option>
-            <option value="1440">🔔 1 Tag vorher</option>
-          </select>
-          <p class="hint">Ohne Uhrzeit kommt die Erinnerung um 08:00 Uhr.</p>
-          <button class="btn block" type="submit">Eintragen</button>
-        </form>
-      </div>
-      <div id="list-events"></div>
-    </section>
-
-    <section class="panel" id="p-chat" hidden>
-      <h2>Familien-Chat</h2>
-      <div id="list-chat" class="chat" aria-live="polite"></div>
-      <div id="emoji-pop" class="emoji-pop" hidden></div>
-      <div id="rec-bar" class="rec-bar" hidden>
-        <button type="button" class="ic-btn" id="rec-cancel" aria-label="Aufnahme verwerfen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg></button>
-        <span class="rec-dot"></span><span class="rec-time" id="rec-time">0:00</span>
-        <button type="button" class="ic-btn primary" id="rec-send" aria-label="Sprachnachricht senden"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg></button>
-      </div>
-      <form class="composer" id="f-chat" autocomplete="off">
-        <button type="button" class="ic-btn" id="btn-emoji" aria-label="Emojis"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9h.01M15 9h.01"/></svg></button>
-        <input type="text" id="in-chat" enterkeyhint="send" placeholder="Nachricht" autocomplete="off" maxlength="2000">
-        <button type="button" class="ic-btn" id="btn-attach" aria-label="Bild oder GIF senden"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5l-8.6 8.6a5 5 0 01-7.1-7.1l8.6-8.6a3.3 3.3 0 014.7 4.7l-8.6 8.6a1.7 1.7 0 01-2.4-2.4l7.9-7.9"/></svg></button>
-        <button type="button" class="ic-btn" id="btn-mic" aria-label="Sprachnachricht aufnehmen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/></svg></button>
-        <button type="submit" class="ic-btn primary" id="btn-send" aria-label="Senden" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg></button>
-        <input type="file" id="in-file" accept="image/*" hidden>
-      </form>
-    </section>
-
-    <section class="panel" id="p-family" hidden>
-      <h2>Familie & Konto</h2>
-      <div class="card">
-        <label class="field-label" for="in-myname">Dein Name</label>
-        <form id="f-name" style="display:flex; gap:8px;">
-          <input type="text" id="in-myname" enterkeyhint="done" maxlength="40" autocomplete="nickname">
-          <button class="btn" type="submit">Speichern</button>
-        </form>
-      </div>
-      <div class="card">
-        <p class="field-label">Benachrichtigungen</p>
-        <label class="switch-row"><span>Auf diesem Gerät erhalten</span><input type="checkbox" class="switch" id="sw-push" role="switch"></label>
-        <div class="push-types" id="push-types" hidden>
-          <label class="switch-row"><span>💬 Chat</span><input type="checkbox" class="switch" id="sw-chat" role="switch" checked></label>
-          <label class="switch-row"><span>⏱️ Timer</span><input type="checkbox" class="switch" id="sw-timer" role="switch" checked></label>
-          <label class="switch-row"><span>📅 Termine</span><input type="checkbox" class="switch" id="sw-event" role="switch" checked></label>
-        </div>
-        <p class="hint" id="push-status">…</p>
-        <button class="btn ghost small" id="btn-push-test" type="button" hidden>Testmitteilung senden</button>
-      </div>
-      <div class="card">
-        <p class="field-label">Mitglieder</p>
-        <div id="list-members"></div>
-      </div>
-      <div class="card">
-        <p class="field-label">Dein Code</p>
-        <div class="code" id="fam-code">-</div>
-        <button class="btn small" id="fam-copy" type="button">Code kopieren</button>
-      </div>
-      <div class="card">
-        <p class="field-label">Familie wechseln</p>
-        <p class="lead" style="margin:0">Verlasse deine Familie, um eine neue zu gründen oder mit einem Code einer anderen beizutreten. Die Einträge bleiben in der alten Familie erhalten.</p>
-        <button class="btn danger" id="btn-leave" type="button">Familie verlassen</button>
-      </div>
-      <button class="btn ghost small" id="btn-logout" type="button">Abmelden</button>
-    </section>
-  </div>
-
-  <nav>
-    <div class="nav-in">
-      <button class="tab" id="t-shop" aria-selected="true" onclick="switchTab('shop')"><span class="ic" aria-hidden="true">🛒</span><span>Einkauf</span></button>
-      <button class="tab" id="t-todos" onclick="switchTab('todos')"><span class="ic" aria-hidden="true">✅</span><span>Aufgaben</span></button>
-      <button class="tab" id="t-timers" onclick="switchTab('timers')"><span class="ic" aria-hidden="true">⏱️</span><span>Timer</span></button>
-      <button class="tab" id="t-events" onclick="switchTab('events')"><span class="ic" aria-hidden="true">📅</span><span>Termine</span></button>
-      <button class="tab" id="t-chat" onclick="switchTab('chat')"><span class="ic" aria-hidden="true">💬</span><span>Chat</span><span class="dot" id="chat-dot" hidden></span></button>
-      <button class="tab" id="t-family" onclick="switchTab('family')"><span class="ic" aria-hidden="true">👪</span><span>Familie</span></button>
-    </div>
-  </nav>
 </div>
-<div id="lightbox" hidden><button class="x" type="button" aria-label="Schliessen">✕</button><img alt=""></div>
+​<div class="screen" id="screen-family" hidden>
+<div class="narrow">
+<div class="brand big"><div class="word"><span class="a">Mil</span><span class="b">teo</span></div></div>
+<h1 id="fam-hello">Hallo</h1>
+<p class="lead">Verknüpfe dein Konto mit deiner Familie.</p>
+<div class="card">
+<button class="btn block" id="btn-create" type="button">Neue Familie erstellen</button>
+</div>
+<div class="card">
+<form id="f-join">
+<label class="field-label">Familiencode eingeben</label>
+<input type="text" id="in-code" placeholder="ABCD-EFGH">
+<button class="btn block" type="submit" style="margin-top:8px">Beitreten</button>
+</form>
+</div>
+<p class="msg" id="fam-msg"></p>
+<button class="link" id="fam-logout" type="button">Abmelden</button>
+</div>
+</div>
+​<div class="screen" id="screen-app" hidden>
+<div class="wrap">
+<header>
+<div class="brand"><div class="word"><span class="a">Mil</span><span class="b">teo</span></div></div>
+<div class="head-right">
+<div class="today"><strong id="todayDay"></strong><span id="todayDate"></span></div>
+<button class="icon-btn" id="btn-family" type="button" onclick="switchTab('family')">⚙️</button>
+</div>
+</header>
+​<section class="panel" id="p-shop">
+<h2>Einkaufsliste</h2>
+<form class="add" id="f-shop">
+<input type="text" id="in-shop" placeholder="Was fehlt?">
+<button class="btn" type="submit">Hinzufügen</button>
+</form>
+​<!-- KI-Zutaten Generator für MilTeo -->
+<div class="card" style="padding: 10px; margin-bottom: 12px; background: var(--mil-soft);">
+<div style="font-size: 14px; font-weight: 600; margin-bottom: 6px; color: var(--mil);">✨ Rezept-Zutaten per KI holen</div>
+<div style="display: flex; gap: 6px;">
+<input type="text" id="in-ai-dish" placeholder="Gericht (z.B. Lasagne)" style="font-size: 14px; min-height: 38px;">
+<input type="number" id="in-ai-persons" value="2" min="1" max="12" style="width: 60px; font-size: 14px; min-height: 38px;" title="Personen">
+<button type="button" class="btn small" onclick="generateAndAddIngredients()">Holen</button>
+</div>
+</div>
+​<div id="list-shop"></div>
+</section>
+​<section class="panel" id="p-todos" hidden>
+<h2>Aufgaben</h2>
+<form class="add" id="f-todos">
+<input type="text" id="in-todos" placeholder="Was ist zu erledigen?">
+<button class="btn" type="submit">Hinzufügen</button>
+</form>
+<div id="list-todos"></div>
+</section>
+​<section class="panel" id="p-timers" hidden>
+<h2>Timer</h2>
+<div class="card">
+<form id="f-timer" class="grid2">
+<input type="text" id="in-tlabel" value="Backofen">
+<input type="number" id="in-tmin" value="20" min="1">
+<button class="btn block" type="submit" style="grid-column: span 2">Starten</button>
+</form>
+</div>
+<div id="list-timers"></div>
+</section>
+​<section class="panel" id="p-events" hidden>
+<h2>Termine</h2>
+<div class="card">
+<form id="f-event" style="display:grid; gap:8px;">
+<input type="text" id="in-etitle" placeholder="Titel">
+<div class="grid2">
+<input type="date" id="in-edate">
+<input type="time" id="in-etime">
+</div>
+<button class="btn block" type="submit">Eintragen</button>
+</form>
+</div>
+<div id="list-events"></div>
+</section>
+​<section class="panel" id="p-family" hidden>
+<h2>Familie & Konto</h2>
+<div class="card">
+<p class="field-label">Dein Code</p>
+<div class="code" id="fam-code">-</div>
+<button class="btn small" id="fam-copy" type="button">Code kopieren</button>
+</div>
+<button class="btn ghost small" id="btn-logout" type="button">Abmelden</button>
+</section>
+</div>
+​<nav>
+<div class="nav-in">
+<button class="tab" id="t-shop" aria-selected="true" onclick="switchTab('shop')">Einkauf</button>
+<button class="tab" id="t-todos" onclick="switchTab('todos')">Aufgaben</button>
+<button class="tab" id="t-timers" onclick="switchTab('timers')">Timer</button>
+<button class="tab" id="t-events" onclick="switchTab('events')">Termine</button>
+<button class="tab" id="t-family" onclick="switchTab('family')">Familie</button>
+</div>
+</nav>
+</div>
 <div id="toast" hidden></div>
-
-<!-- Supabase Client eingebunden -->
+​<!-- Supabase Client eingebunden -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
-  // Service Worker für PWA Installation
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
-  }
-
-  // Korrekte Supabase Konfiguration
-  const SUPABASE_URL = "https://fmyjhuzrwskalirunreb.supabase.co";
-  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZteWpodXpyd3NrYWxpcnVucmViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzNTI4NzQsImV4cCI6MjEwNzkyODg3NH0.8yxSeNScfIEc7fvqymn9hZyQ8ispIy_zK3rgcgWVrbQ";
-
-  const $ = (id) => document.getElementById(id);
-  const hashStr = (location.hash || '') + '&' + (location.search || '');
-  let recoveryMode = /type=recovery/.test(hashStr);       // Link aus der Passwort-vergessen-Mail
-  const linkError = (hashStr.match(/error_description=([^&]+)/) || [])[1];
-  const appUrl = () => location.origin + location.pathname.replace(/index\.html$/, '');
-
-  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  let fid = null, myId = null, myName = '', currentTab = 'shop';
-  let entries = [];
-  const openDishes = new Set();
-  try { JSON.parse(localStorage.getItem('milteo_open_dishes') || '[]').forEach(i => openDishes.add(i)); } catch (_) {}
-  let chatMsgs = [], chatChannel = null, stickBottom = true, rec = null, playing = null;
-  const chatIds = new Set();
-  const urlCache = new Map();
-
-  function showScreen(id) {
-    ['screen-auth', 'screen-reset', 'screen-family', 'screen-app'].forEach(s => {
-      const el = document.getElementById(s);
-      if (el) el.hidden = (s !== 'screen-' + id);
-    });
-  }
-
-  function switchTab(tab) {
-    if (currentTab === 'chat' && tab !== 'chat') { if (rec) stopRec(false); closeEmoji(); stopPlaying(); }
-    currentTab = tab;
-    document.body.classList.toggle('in-chat', tab === 'chat');
-    if (tab === 'family' && fid) loadMembers();
-    if (tab === 'chat') { const dot = $('chat-dot'); if (dot) dot.hidden = true; if (fid) loadChat(); }
-    ['shop', 'todos', 'timers', 'events', 'chat', 'family'].forEach(t => {
-      const p = document.getElementById('p-' + t);
-      if (p) p.hidden = (t !== tab);
-      const btn = document.getElementById('t-' + t);
-      if (btn) btn.setAttribute('aria-selected', t === tab ? 'true' : 'false');
-    });
-    updateCompose();
-    syncViewport();
-    if (tab === 'chat') requestAnimationFrame(() => { const l = $('list-chat'); stickBottom = true; l.scrollTop = l.scrollHeight; });
-  }
-
-  // Höhe/Position der sichtbaren Fläche (über der Tastatur) und der unteren Leiste
-  function syncViewport() {
-    const r = document.documentElement.style;
-    const vv = window.visualViewport;
-    if (vv && document.body.classList.contains('in-chat')) {
-      r.setProperty('--vvh', vv.height + 'px');
-      r.setProperty('--vvt', vv.offsetTop + 'px');
-    } else { r.removeProperty('--vvh'); r.removeProperty('--vvt'); }
-    const nav = document.querySelector('nav');
-    if (nav && nav.offsetHeight > 0) r.setProperty('--nav-h', nav.offsetHeight + 'px');
-  }
-  if (window.visualViewport) {
-    visualViewport.addEventListener('resize', syncViewport);
-    visualViewport.addEventListener('scroll', syncViewport);
-  }
-  window.addEventListener('resize', syncViewport);
-
-  function toast(msg) {
-    const t = document.getElementById('toast');
-    if (t) {
-      t.textContent = msg; t.hidden = false;
-      setTimeout(() => t.hidden = true, 3000);
-    }
-  }
-
-  function route(session) {
-    if (!session) { showScreen('auth'); return; }
-    if (recoveryMode) { showScreen('reset'); return; }
-    myId = session.user.id;
-    myName = session.user.user_metadata?.name || session.user.email.split('@')[0];
-    const nameInput = document.getElementById('in-myname');
-    if (nameInput) nameInput.value = myName;
-    
-    sb.from('members').select('family_id, display_name, families(code)').eq('user_id', myId).maybeSingle().then(r => {
-      if (!r.data) {
-        document.getElementById('fam-hello').textContent = 'Hallo ' + myName;
-        showScreen('family');
-        return;
-      }
-      fid = r.data.family_id;
-      if (r.data.families) {
-        document.getElementById('fam-code').textContent = r.data.families.code;
-      }
-      showScreen('app');
-      switchTab(location.hash === '#chat' ? 'chat' : 'shop');
-      loadEntries();
-      subscribeChat();
-      loadChat();
-      syncPush();
-      refreshPushUI();
-    }).catch(() => {
-      showScreen('auth');
-    });
-  }
-
-  // Auth & Routing Initialisierung
-  sb.auth.getSession().then(({ data }) => route(data.session)).catch(() => showScreen('auth'));
-  sb.auth.onAuthStateChange((event, session) => {
-    if (event === 'PASSWORD_RECOVERY') recoveryMode = true;
-    route(session);
-  });
-
-  function friendlyAuthError(err) {
-    const m = String((err && (err.message || err.msg)) || '');
-    const code = String((err && (err.code || err.status)) || '');
-    if (/invalid login credentials/i.test(m)) return 'E-Mail oder Passwort stimmt nicht.';
-    if (/email not confirmed/i.test(m)) return 'Bitte bestätige zuerst deine E-Mail (Link im Postfach).';
-    if (/already registered|already been registered/i.test(m)) return 'Zu dieser E-Mail gibt es schon ein Konto. Melde dich an oder nutze „Passwort vergessen“.';
-    if (/rate limit|too many|429/i.test(m + ' ' + code)) return 'Zu viele E-Mails in kurzer Zeit. Bitte warte ein paar Minuten.';
-    if (/at least \d+ char/i.test(m)) return 'Das Passwort braucht mindestens 6 Zeichen.';
-    if (/same password|different from the old/i.test(m)) return 'Das neue Passwort muss sich vom alten unterscheiden.';
-    if (/session.*missing|not authenticated|expired/i.test(m)) return 'Der Link ist abgelaufen. Fordere einen neuen an.';
-    return m || 'Etwas ist schiefgelaufen.';
-  }
-
-  // Modi: Anmelden / Konto erstellen / Passwort vergessen
-  let authMode = 'login';
-  function setMode(mode) {
-    authMode = mode;
-    const reg = mode === 'register', forgot = mode === 'forgot';
-    $('auth-name-wrap').hidden = !reg;
-    $('auth-pw-wrap').hidden = forgot;
-    $('in-pw').required = !forgot;
-    $('in-pw').autocomplete = reg ? 'new-password' : 'current-password';
-    $('auth-remember-wrap').hidden = forgot;
-    $('auth-title').textContent = reg ? 'Konto erstellen' : forgot ? 'Passwort vergessen' : 'Anmelden';
-    $('auth-lead').textContent = forgot ? 'Wir senden dir einen Link zum Zurücksetzen per E-Mail.' : 'Einkauf, Aufgaben, Timer und Termine.';
-    $('auth-submit').textContent = reg ? 'Registrieren' : forgot ? 'Link senden' : 'Anmelden';
-    $('auth-forgot').hidden = mode !== 'login';
-    $('auth-toggle').textContent = forgot ? 'Zurück zur Anmeldung' : reg ? 'Schon ein Konto? Anmelden' : 'Neu hier? Konto erstellen';
-    const msg = $('auth-msg'); msg.textContent = ''; msg.classList.remove('ok');
-  }
-  $('auth-toggle').onclick = () => setMode(authMode === 'login' ? 'register' : 'login');
-  $('auth-forgot').onclick = () => setMode('forgot');
-  try { $('in-remember').checked = localStorage.getItem('milteo_save_pw') !== '0'; } catch (_) {}
-  if (linkError) {
-    setMode('forgot');
-    $('auth-msg').textContent = 'Der Link ist abgelaufen oder ungültig. Fordere hier einen neuen an.';
-    try { history.replaceState(null, '', location.pathname); } catch (_) {}
-  }
-
-  // Passwort im Browser/Passwortmanager speichern (optional)
-  async function rememberPassword(email, pw, keep) {
-    try { localStorage.setItem('milteo_save_pw', keep ? '1' : '0'); } catch (_) {}
-    try {
-      if (keep && window.PasswordCredential && navigator.credentials) {
-        await navigator.credentials.store(new PasswordCredential({ id: email, password: pw, name: email }));
-      } else if (!keep && navigator.credentials && navigator.credentials.preventSilentAccess) {
-        await navigator.credentials.preventSilentAccess();
-      }
-    } catch (_) {}
-  }
-
-  $('f-auth').onsubmit = async (e) => {
-    e.preventDefault();
-    const email = $('in-email').value.trim();
-    const pw = $('in-pw').value;
-    const name = $('in-name').value.trim();
-    const msgEl = $('auth-msg');
-    msgEl.textContent = ''; msgEl.classList.remove('ok');
-    const btn = $('auth-submit');
-    btn.disabled = true;
-    try {
-      if (authMode === 'forgot') {
-        const r = await sb.auth.resetPasswordForEmail(email, { redirectTo: appUrl() });
-        if (r.error) { msgEl.textContent = friendlyAuthError(r.error); return; }
-        msgEl.classList.add('ok');
-        msgEl.textContent = 'Wenn es ein Konto mit dieser E-Mail gibt, ist ein Link unterwegs. Schau auch im Spam-Ordner nach.';
-        return;
-      }
-      if (authMode === 'register') {
-        const r = await sb.auth.signUp({ email, password: pw, options: { data: { name }, emailRedirectTo: appUrl() } });
-        if (r.error) { msgEl.textContent = friendlyAuthError(r.error); return; }
-        await rememberPassword(email, pw, $('in-remember').checked);
-        toast('Bestätige die E-Mail oder melde dich an.');
-        return;
-      }
-      const r = await sb.auth.signInWithPassword({ email, password: pw });
-      if (r.error) { msgEl.textContent = friendlyAuthError(r.error); return; }
-      await rememberPassword(email, pw, $('in-remember').checked);
-    } finally { btn.disabled = false; }
-  };
-
-  // Neues Passwort festlegen (nach Klick auf den Link in der E-Mail)
-  $('f-reset').onsubmit = async (e) => {
-    e.preventDefault();
-    const p1 = $('in-newpw').value, p2 = $('in-newpw2').value, msg = $('reset-msg');
-    msg.textContent = '';
-    if (p1.length < 6) { msg.textContent = 'Mindestens 6 Zeichen.'; return; }
-    if (p1 !== p2) { msg.textContent = 'Die Passwörter stimmen nicht überein.'; return; }
-    const r = await sb.auth.updateUser({ password: p1 });
-    if (r.error) { msg.textContent = friendlyAuthError(r.error); return; }
-    recoveryMode = false;
-    try { history.replaceState(null, '', location.pathname); } catch (_) {}
-    const { data } = await sb.auth.getSession();
-    let keep = true; try { keep = localStorage.getItem('milteo_save_pw') !== '0'; } catch (_) {}
-    if (data.session) await rememberPassword(data.session.user.email, p1, keep);
-    toast('Passwort geändert');
-    route(data.session);
-  };
-  $('reset-cancel').onclick = async () => {
-    recoveryMode = false;
-    try { history.replaceState(null, '', location.pathname); } catch (_) {}
-    await sb.auth.signOut();
-    showScreen('auth');
-  };
-
-  document.getElementById('btn-create').onclick = () => {
-    sb.rpc('create_family', { p_display: myName }).then(r => {
-      if (r.error) toast('Fehler beim Erstellen');
-      else sb.auth.getSession().then(({ data }) => route(data.session));
-    });
-  };
-
-  document.getElementById('f-join').onsubmit = (e) => {
-    e.preventDefault();
-    const code = document.getElementById('in-code').value.trim();
-    sb.rpc('join_family', { p_code: code, p_display: myName }).then(r => {
-      if (r.error) document.getElementById('fam-msg').textContent = 'Ungültiger Code';
-      else window.location.reload();
-    });
-  };
-
-  const logoutAction = async () => {
-    try {
-      const sub = await currentSub();
-      if (sub) await sb.from('push_subscriptions').delete().eq('endpoint', sub.endpoint);
-    } catch (_) {}
-    unsubscribeChat();
-    await sb.auth.signOut();
-  };
-  document.getElementById('btn-logout').onclick = logoutAction;
-  const famLogout = document.getElementById('fam-logout');
-  if (famLogout) famLogout.onclick = logoutAction;
-
-  document.getElementById('f-name').onsubmit = async (e) => {
-    e.preventDefault();
-    const name = document.getElementById('in-myname').value.trim();
-    if (!name) { toast('Bitte einen Namen eingeben'); return; }
-    const r = await sb.auth.updateUser({ data: { name } });
-    if (r.error) { toast('Name konnte nicht gespeichert werden'); return; }
-    myName = name;
-    await sb.rpc('set_my_display_name', { p_name: name });
-    loadMembers();
-    toast('Name gespeichert');
-  };
-
-  document.getElementById('btn-leave').onclick = async () => {
-    if (!confirm('Familie wirklich verlassen? Du siehst die Einträge dann nicht mehr, kannst aber mit dem Code wieder beitreten.')) return;
-    const r = await sb.rpc('leave_family');
-    if (r.error) { toast('Verlassen nicht möglich: ' + r.error.message); return; }
-    fid = null; entries = []; unsubscribeChat();
-    document.getElementById('fam-code').textContent = '-';
-    const { data } = await sb.auth.getSession();
-    route(data.session);
-    toast('Du hast die Familie verlassen.');
-  };
-
-  document.getElementById('fam-copy').onclick = () => {
-    navigator.clipboard.writeText(document.getElementById('fam-code').textContent);
-    toast('Code kopiert!');
-  };
-
-  // ---------- Mitglieder ----------
-  async function loadMembers() {
-    if (!fid) return;
-    const r = await sb.from('members').select('user_id, display_name, created_at').eq('family_id', fid).order('created_at');
-    const el = document.getElementById('list-members');
-    if (r.error) { el.innerHTML = '<div class="empty">Mitglieder konnten nicht geladen werden.</div>'; return; }
-    el.innerHTML = '<ul class="list">' + r.data.map(m => `
-      <li class="row"><span class="txt">${esc(m.display_name || 'Ohne Namen')}${m.user_id === myId ? '<span class="who">(du)</span>' : ''}</span></li>`).join('') + '</ul>';
-  }
-
-  // ---------- Daten (Tabelle "entries") ----------
-  const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-
-  async function loadEntries() {
-    if (!fid) return;
-    const r = await sb.from('entries').select('*').eq('family_id', fid).order('created_at');
-    if (r.error) { toast('Fehler beim Laden'); return; }
-    entries = r.data;
-    renderAll();
-    loadMembers();
-  }
-  async function addEntry(kind, data) {
-    const r = await sb.from('entries').insert({ family_id: fid, kind, data }).select().single();
-    if (r.error) { toast('Fehler beim Speichern'); return null; }
-    loadEntries();
-    return r.data;
-  }
-  async function updateEntry(id, data) {
-    const r = await sb.from('entries').update({ data }).eq('id', id);
-    if (r.error) toast('Fehler beim Speichern'); else loadEntries();
-  }
-  async function delEntry(id) {
-    const r = await sb.from('entries').delete().eq('id', id);
-    if (r.error) toast('Fehler beim Löschen'); else loadEntries();
-  }
-
-  function saveOpen() { try { localStorage.setItem('milteo_open_dishes', JSON.stringify([...openDishes])); } catch (_) {} }
-
-  function dishHtml(e) {
-    const d = e.data, items = Array.isArray(d.items) ? d.items : [];
-    const open = openDishes.has(e.id);
-    const done = items.filter(i => i.done).length;
-    const sub = items.map((i, n) => `
-      <li class="sub-row ${i.done ? 'done' : ''}">
-        <button class="check" type="button" role="checkbox" aria-checked="${!!i.done}" data-act="item" data-id="${e.id}" data-i="${n}">${i.done ? '✓' : ''}</button>
-        <span class="txt">${esc(i.name)}${i.amount ? `<span class="amt">${esc(i.amount)}</span>` : ''}</span>
-        <button class="del" type="button" aria-label="Zutat löschen" data-act="item-del" data-id="${e.id}" data-i="${n}">×</button>
-      </li>`).join('');
-    return `<li class="dish ${open ? 'open' : ''}">
-      <div class="row dish-head">
-        <button class="plus" type="button" aria-expanded="${open}" aria-label="${open ? 'Zutaten ausblenden' : 'Zutaten anzeigen'}" data-act="dish" data-id="${e.id}">${open ? '−' : '+'}</button>
-        <span class="txt"><strong>🍽️ ${esc(d.text || 'Gericht')}</strong><span class="who">${done}/${items.length}${d.servings ? ' · ' + esc(d.servings) + ' Pers.' : ''}</span></span>
-        <button class="del" type="button" aria-label="Gericht löschen" data-act="del" data-id="${e.id}">×</button>
-      </div>
-      ${open ? `<ul class="sub">${sub || '<li class="who">Keine Zutaten</li>'}</ul>` : ''}
-    </li>`;
-  }
-
-  function renderChecklist(kind) {
-    const el = document.getElementById('list-' + kind);
-    const items = entries.filter(e => e.kind === kind);
-    if (!items.length) { el.innerHTML = '<div class="empty">Noch nichts da.</div>'; return; }
-    el.innerHTML = '<ul class="list">' + items.map(e => {
-      if (kind === 'shop' && e.data.type === 'dish') return dishHtml(e);
-      return `
-      <li class="row ${e.data.done ? 'done' : ''}">
-        <button class="check" type="button" role="checkbox" aria-checked="${!!e.data.done}" data-act="toggle" data-id="${e.id}">${e.data.done ? '✓' : ''}</button>
-        <span class="txt">${esc(e.data.text || '')}</span>
-        <button class="del" type="button" aria-label="Löschen" data-act="del" data-id="${e.id}">×</button>
-      </li>`;
-    }).join('') + '</ul>';
-  }
-
-  function fmtLeft(ms) {
-    const s = Math.max(0, Math.ceil(ms / 1000));
-    return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
-  }
-  const notified = new Set();
-  function renderTimers() {
-    const el = document.getElementById('list-timers');
-    const items = entries.filter(e => e.kind === 'timers');
-    if (!items.length) { el.innerHTML = '<div class="empty">Kein Timer läuft.</div>'; return; }
-    el.innerHTML = '<ul class="list">' + items.map(e => {
-      const left = e.data.end - Date.now();
-      return `<li class="row"><span class="txt">${esc(e.data.label || 'Timer')}
-        <span class="who timer-left" data-end="${e.data.end}" data-id="${e.id}">${left > 0 ? fmtLeft(left) : 'Fertig!'}</span></span>
-        <button class="del" type="button" aria-label="Löschen" data-act="del" data-id="${e.id}">×</button></li>`;
-    }).join('') + '</ul>';
-  }
-  function renderEvents() {
-    const el = document.getElementById('list-events');
-    const items = entries.filter(e => e.kind === 'events')
-      .sort((a, b) => ((a.data.date || '') + (a.data.time || '')).localeCompare((b.data.date || '') + (b.data.time || '')));
-    if (!items.length) { el.innerHTML = '<div class="empty">Keine Termine.</div>'; return; }
-    el.innerHTML = '<ul class="list">' + items.map(e => {
-      const d = e.data.date ? new Date(e.data.date + 'T00:00').toLocaleDateString('de-CH', { weekday: 'short', day: 'numeric', month: 'short' }) : '';
-      return `<li class="row"><span class="txt">${esc(e.data.title || '')}<span class="who">${d} ${esc(e.data.time || '')}</span>${(e.data.remind !== null && e.data.remind !== undefined && e.data.remind !== '') ? `<span class="who">🔔 ${remindText(Number(e.data.remind))}</span>` : ''}</span>
-        <button class="del" type="button" aria-label="Löschen" data-act="del" data-id="${e.id}">×</button></li>`;
-    }).join('') + '</ul>';
-  }
-  function renderAll() { renderChecklist('shop'); renderChecklist('todos'); renderTimers(); renderEvents(); }
-
-  // Tick für Timer
-  setInterval(() => {
-    document.querySelectorAll('.timer-left').forEach(s => {
-      const left = Number(s.dataset.end) - Date.now();
-      s.textContent = left > 0 ? fmtLeft(left) : 'Fertig!';
-      if (left <= 0 && !notified.has(s.dataset.id)) {
-        notified.add(s.dataset.id);
-        toast('⏰ Timer abgelaufen!');
-        try { navigator.vibrate && navigator.vibrate([300, 150, 300]); } catch (_) {}
-      }
-    });
-  }, 1000);
-
-  // Klicks in Listen (Abhaken / Löschen)
-  document.addEventListener('click', (ev) => {
-    const b = ev.target.closest('[data-act]');
-    if (!b) return;
-    const id = b.dataset.id;
-    const act = b.dataset.act;
-    if (act === 'del') delEntry(id);
-    if (act === 'toggle') {
-      const e = entries.find(x => x.id === id);
-      if (e) updateEntry(id, { ...e.data, done: !e.data.done });
-    }
-    if (act === 'dish') {
-      if (openDishes.has(id)) openDishes.delete(id); else openDishes.add(id);
-      saveOpen();
-      renderChecklist('shop');
-    }
-    if (act === 'item' || act === 'item-del') {
-      const e = entries.find(x => x.id === id);
-      if (!e) return;
-      const items = (e.data.items || []).map(i => ({ ...i }));
-      const n = Number(b.dataset.i);
-      if (!items[n]) return;
-      if (act === 'item') items[n].done = !items[n].done; else items.splice(n, 1);
-      e.data = { ...e.data, items };       // sofort anzeigen, dann speichern
-      renderChecklist('shop');
-      updateEntry(id, e.data);
-    }
-  });
-
-  // Formulare
-  function bindAdd(formId, inputId, kind) {
-    document.getElementById(formId).onsubmit = (e) => {
-      e.preventDefault();
-      const inp = document.getElementById(inputId);
-      const text = inp.value.trim();
-      if (!text) return;
-      addEntry(kind, { text, done: false, by: myName });
-      inp.value = '';
-    };
-  }
-  bindAdd('f-shop', 'in-shop', 'shop');
-  bindAdd('f-todos', 'in-todos', 'todos');
-
-  function dishErrorText(code) {
-    return ({
-      no_key: 'Die KI ist noch nicht eingerichtet.',
-      bad_key: 'Der KI-Schlüssel ist ungültig.',
-      no_credit: 'Das KI-Guthaben ist aufgebraucht.',
-      limit: 'Tageslimit erreicht (40 Gerichte pro Tag).',
-      'no family': 'Du bist in keiner Familie.',
-    })[code] || 'Die KI ist gerade nicht erreichbar. Bitte nochmal versuchen.';
-  }
-  $('f-dish').onsubmit = async (e) => {
-    e.preventDefault();
-    const dish = $('in-dish').value.trim();
-    const servings = Math.min(20, Math.max(1, parseInt($('in-servings').value, 10) || 4));
-    if (dish.length < 2 || !fid) return;
-    const btn = $('btn-dish');
-    btn.disabled = true; btn.textContent = 'Suche …';
-    try {
-      const r = await sb.functions.invoke('dish', { body: { dish, servings } });
-      let err = null, data = r.data;
-      if (r.error) {
-        try { err = (await r.error.context.json()).error || 'ai_failed'; } catch (_) { err = 'ai_failed'; }
-      } else if (data && data.error) err = data.error;
-      if (err) { toast(dishErrorText(err)); return; }
-      if (!data || !Array.isArray(data.items) || !data.items.length) { toast('Dazu habe ich keine Zutaten gefunden.'); return; }
-      const row = await addEntry('shop', {
-        type: 'dish', text: data.dish || dish, servings,
-        items: data.items.map(i => ({ name: i.name, amount: i.amount || '', done: false })),
-        by: myName,
-      });
-      if (row) { openDishes.add(row.id); saveOpen(); renderChecklist('shop'); $('in-dish').value = ''; }
-    } finally { btn.disabled = false; btn.textContent = 'Zutaten'; }
-  };
-
-  document.getElementById('f-timer').onsubmit = (e) => {
-    e.preventDefault();
-    const label = document.getElementById('in-tlabel').value.trim() || 'Timer';
-    const min = Number(document.getElementById('in-tmin').value);
-    if (!(min > 0)) return;
-    addEntry('timers', { label, end: Date.now() + min * 60000 });
-  };
-  document.getElementById('f-event').onsubmit = (e) => {
-    e.preventDefault();
-    const title = document.getElementById('in-etitle').value.trim();
-    const date = document.getElementById('in-edate').value;
-    const time = document.getElementById('in-etime').value;
-    if (!title || !date) { toast('Titel und Datum fehlen'); return; }
-    const rv = document.getElementById('in-eremind').value;
-    addEntry('events', { title, date, time, remind: rv === '' ? null : Number(rv) });
-    document.getElementById('in-etitle').value = '';
-  };
-
-
-  // ---------- Erinnerungstext ----------
-  function remindText(m) {
-    if (m === 0) return 'zur Startzeit';
-    if (m === 1440) return '1 Tag vorher';
-    if (m === 60) return '1 Std. vorher';
-    return m + ' Min. vorher';
-  }
-
-  // ---------- Chat ----------
-  const EMOJIS = '😀 😃 😄 😁 😆 😅 😂 🤣 😊 😇 🙂 😉 😍 🥰 😘 😋 😜 🤪 😎 🤩 🥳 😏 😒 😔 😢 😭 😤 😡 🤯 😱 😴 🤔 🙄 😬 🤗 🤭 🤫 😷 🤒 🥵 🥶 👍 👎 👏 🙌 🙏 💪 👋 ✌️ 🤞 👌 🤝 ❤️ 🧡 💛 💚 💙 💜 🖤 💔 💕 💖 🔥 ✨ 🎉 🎂 🎁 🍕 🍔 🍟 🍝 🍎 🍌 🍓 🥦 🥕 🍞 🧀 🍫 🍦 ☕ 🍺 🍷 🐶 🐱 🐻 🐼 🦊 🐸 🌞 ⭐ 🌈 ☔ ❄️ 🚗 🚲 ⚽ 🎮 📚 🏠 ✅ ❌ ❓ 💤 👀'.split(' ');
-  const fmtDur = (ms) => { const t = Math.round((ms || 0) / 1000); return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0'); };
-
-  async function mediaUrl(path) {
-    const c = urlCache.get(path);
-    if (c && c.exp > Date.now()) return c.url;
-    const r = await sb.storage.from('chat-media').createSignedUrl(path, 3600);
-    if (r.error || !r.data) return null;
-    urlCache.set(path, { url: r.data.signedUrl, exp: Date.now() + 3300 * 1000 });
-    return r.data.signedUrl;
-  }
-
-  function msgHtml(m) {
-    const mine = m.user_id === myId;
-    const dt = new Date(m.created_at);
-    const when = dt.toLocaleDateString('de-CH', { day: '2-digit', month: '2-digit' }) + ' ' + dt.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' });
-    let inner = '';
-    if (m.media_path) {
-      if (String(m.media_type || '').startsWith('audio') || m.duration_ms != null) {
-        inner = `<div class="player"><button type="button" class="pbtn play" data-act="play" data-path="${esc(m.media_path)}" data-id="${m.id}" aria-label="Abspielen">▶</button><div class="bar"><i></i></div><span class="dur">${fmtDur(m.duration_ms)}</span></div>`;
-      } else {
-        inner = `<img class="chat-img" data-path="${esc(m.media_path)}" alt="Bild" loading="lazy">`;
-      }
-    }
-    if (m.body) inner += `<div>${esc(m.body)}</div>`;
-    return `<div class="m-row ${mine ? 'mine' : ''}" data-mid="${m.id}"><div class="bubble">${mine ? '' : `<div class="from">${esc(m.display_name || '')}</div>`}${inner}<div class="when">${when}</div></div></div>`;
-  }
-
-  function hydrateMedia(root) {
-    root.querySelectorAll('img.chat-img:not([src])').forEach(img => {
-      mediaUrl(img.dataset.path).then(u => { if (u) img.src = u; else img.alt = 'Bild nicht verfügbar'; });
-    });
-  }
-
-  function renderChat() {
-    const el = $('list-chat');
-    if (!el) return;
-    if (!chatMsgs.length) { el.innerHTML = '<div class="empty">Noch keine Nachrichten. Schreib die erste!</div>'; return; }
-    el.innerHTML = chatMsgs.map(msgHtml).join('');
-    hydrateMedia(el);
-    if (stickBottom) el.scrollTop = el.scrollHeight;
-  }
-  function addMsg(m) {
-    if (chatIds.has(m.id)) return;
-    chatIds.add(m.id);
-    chatMsgs.push(m);
-    const el = $('list-chat');
-    const first = !el.querySelector('.m-row');
-    if (first) { renderChat(); return; }
-    el.insertAdjacentHTML('beforeend', msgHtml(m));
-    hydrateMedia(el);
-    if (stickBottom) el.scrollTop = el.scrollHeight;
-  }
-  $('list-chat').addEventListener('scroll', () => {
-    const l = $('list-chat');
-    stickBottom = l.scrollHeight - l.scrollTop - l.clientHeight < 80;
-  });
-  async function loadChat() {
-    if (!fid) return;
-    const r = await sb.from('messages').select('*').eq('family_id', fid).order('created_at', { ascending: false }).limit(100);
-    if (r.error) return;
-    const fresh = r.data.reverse();
-    if (fresh.length === chatMsgs.length && fresh.every((m, i) => m.id === chatMsgs[i].id)) return;
-    chatMsgs = fresh; chatIds.clear(); fresh.forEach(m => chatIds.add(m.id));
-    renderChat();
-  }
-  function subscribeChat() {
-    if (chatChannel || !fid) return;
-    chatChannel = sb.channel('chat-' + fid)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: 'family_id=eq.' + fid }, (p) => {
-        addMsg(p.new);
-        if (currentTab !== 'chat' && p.new.user_id !== myId) $('chat-dot').hidden = false;
-      })
-      .subscribe();
-  }
-  function unsubscribeChat() {
-    if (chatChannel) { sb.removeChannel(chatChannel); chatChannel = null; }
-    chatMsgs = []; chatIds.clear();
-    stopPlaying();
-    renderChat();
-  }
-
-  // Eingabezeile: Senden-Taste nur bei Text, sonst Mikrofon
-  function updateCompose() {
-    const has = $('in-chat').value.trim().length > 0;
-    const recording = !!rec;
-    $('btn-send').hidden = !has || recording;
-    $('btn-mic').hidden = has || recording;
-    $('btn-attach').hidden = recording;
-    $('btn-emoji').hidden = recording;
-    $('in-chat').hidden = recording;
-    $('rec-bar').hidden = !recording;
-    const typing = currentTab === 'chat' && document.activeElement === $('in-chat');
-    document.body.classList.toggle('composing', typing);
-    syncViewport();
-  }
-  $('in-chat').addEventListener('input', updateCompose);
-  $('in-chat').addEventListener('focus', () => { closeEmoji(); updateCompose(); setTimeout(() => { const l = $('list-chat'); l.scrollTop = l.scrollHeight; }, 300); });
-  $('in-chat').addEventListener('blur', () => setTimeout(updateCompose, 150));
-
-  async function sendMessage(fields) {
-    const r = await sb.from('messages').insert({ family_id: fid, display_name: myName, ...fields }).select().single();
-    if (r.error) { console.error(r.error); toast('Senden nicht möglich'); return null; }
-    stickBottom = true;
-    addMsg(r.data);
-    sb.functions.invoke('notify', { body: { message_id: r.data.id } }).catch(() => {});
-    return r.data;
-  }
-  $('f-chat').onsubmit = async (e) => {
-    e.preventDefault();
-    const inp = $('in-chat');
-    const body = inp.value.trim();
-    if (!body || !fid) return;
-    inp.value = ''; updateCompose();
-    const m = await sendMessage({ body });
-    if (!m) { inp.value = body; updateCompose(); }
-    inp.focus();
-  };
-
-  // Emojis
-  function closeEmoji() { $('emoji-pop').hidden = true; }
-  $('emoji-pop').innerHTML = EMOJIS.map(x => `<button type="button" class="emo">${x}</button>`).join('');
-  $('btn-emoji').onclick = () => {
-    const pop = $('emoji-pop');
-    pop.hidden = !pop.hidden;
-    if (!pop.hidden) { $('in-chat').blur(); stickBottom = true; }
-  };
-  $('emoji-pop').addEventListener('click', (e) => {
-    const b = e.target.closest('.emo'); if (!b) return;
-    const inp = $('in-chat');
-    const a = inp.selectionStart ?? inp.value.length, z = inp.selectionEnd ?? a;
-    inp.value = inp.value.slice(0, a) + b.textContent + inp.value.slice(z);
-    inp.selectionStart = inp.selectionEnd = a + b.textContent.length;
-    updateCompose();
-  });
-
-  // Bilder / GIFs
-  function shrinkImage(file) {
-    return new Promise((resolve) => {
-      if (file.type === 'image/gif') return resolve(file);        // GIF bleibt animiert
-      const url = URL.createObjectURL(file);
-      const img = new Image();
-      img.onload = () => {
-        const max = 1280, k = Math.min(1, max / Math.max(img.width, img.height));
-        const c = document.createElement('canvas');
-        c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
-        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-        URL.revokeObjectURL(url);
-        c.toBlob(b => resolve(b || file), 'image/jpeg', 0.82);
-      };
-      img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
-      img.src = url;
-    });
-  }
-  async function uploadMedia(blob, ext, type) {
-    const path = `${fid}/${(crypto.randomUUID ? crypto.randomUUID() : Date.now() + '-' + Math.random().toString(16).slice(2))}.${ext}`;
-    const r = await sb.storage.from('chat-media').upload(path, blob, { contentType: type, upsert: false });
-    if (r.error) { console.error(r.error); toast('Hochladen fehlgeschlagen'); return null; }
-    return path;
-  }
-  $('btn-attach').onclick = () => { closeEmoji(); $('in-file').click(); };
-  $('in-file').onchange = async () => {
-    const f = $('in-file').files[0];
-    $('in-file').value = '';
-    if (!f || !fid) return;
-    if (!f.type.startsWith('image/')) { toast('Nur Bilder und GIFs'); return; }
-    if (f.size > 12 * 1024 * 1024) { toast('Datei zu gross (max. 12 MB)'); return; }
-    toast('Sende Bild …');
-    const blob = await shrinkImage(f);
-    const type = blob.type || 'image/jpeg';
-    const ext = type === 'image/gif' ? 'gif' : type === 'image/png' ? 'png' : 'jpg';
-    const path = await uploadMedia(blob, ext, type);
-    if (path) await sendMessage({ body: '', media_path: path, media_type: type });
-  };
-
-  // Lightbox
-  document.addEventListener('click', (e) => {
-    const img = e.target.closest && e.target.closest('img.chat-img');
-    if (img && img.src) { const lb = $('lightbox'); lb.innerHTML = ''; const i = new Image(); i.src = img.src; lb.appendChild(i); lb.hidden = false; return; }
-    if (e.target.closest && e.target.closest('#lightbox')) $('lightbox').hidden = true;
-  });
-
-  // Sprachnachrichten: aufnehmen
-  function pickMime() {
-    if (!window.MediaRecorder) return '';
-    return ['audio/webm;codecs=opus', 'audio/mp4', 'audio/webm', 'audio/ogg;codecs=opus'].find(t => MediaRecorder.isTypeSupported(t)) || '';
-  }
-  async function startRec() {
-    if (!navigator.mediaDevices || !window.MediaRecorder) { toast('Aufnehmen wird hier nicht unterstützt'); return; }
-    closeEmoji();
-    let stream;
-    try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
-    catch (_) { toast('Mikrofon nicht erlaubt'); return; }
-    const mime = pickMime();
-    const mr = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
-    rec = { mr, stream, chunks: [], t0: Date.now(), send: false, mime: mr.mimeType || mime || 'audio/webm' };
-    mr.ondataavailable = (ev) => { if (ev.data && ev.data.size) rec.chunks.push(ev.data); };
-    mr.onstop = async () => {
-      const r = rec; rec = null;
-      r.stream.getTracks().forEach(t => t.stop());
-      clearInterval(r.timer);
-      updateCompose();
-      if (!r.send) return;
-      const dur = Date.now() - r.t0;
-      if (dur < 600) { toast('Zu kurz'); return; }
-      const type = r.mime.split(';')[0];
-      const blob = new Blob(r.chunks, { type });
-      const ext = type.includes('mp4') ? 'm4a' : type.includes('ogg') ? 'ogg' : 'webm';
-      toast('Sende Sprachnachricht …');
-      const path = await uploadMedia(blob, ext, type);
-      if (path) await sendMessage({ body: '', media_path: path, media_type: type, duration_ms: dur });
-    };
-    mr.start();
-    rec.timer = setInterval(() => {
-      const ms = Date.now() - rec.t0;
-      $('rec-time').textContent = fmtDur(ms);
-      if (ms > 5 * 60 * 1000) stopRec(true);
-    }, 250);
-    $('rec-time').textContent = '0:00';
-    updateCompose();
-  }
-  function stopRec(send) {
-    if (!rec) return;
-    rec.send = !!send;
-    if (rec.mr.state !== 'inactive') rec.mr.stop();
-  }
-  $('btn-mic').onclick = startRec;
-  $('rec-cancel').onclick = () => stopRec(false);
-  $('rec-send').onclick = () => stopRec(true);
-
-  // Sprachnachrichten: abspielen
-  function stopPlaying() {
-    if (playing) { playing.audio.pause(); playing.btn.textContent = '▶'; const bar = playing.btn.parentElement.querySelector('.bar i'); if (bar) bar.style.width = '0'; playing = null; }
-  }
-  $('list-chat').addEventListener('click', async (e) => {
-    const b = e.target.closest('button.play'); if (!b) return;
-    if (playing && playing.btn === b) { stopPlaying(); return; }
-    stopPlaying();
-    const url = await mediaUrl(b.dataset.path);
-    if (!url) { toast('Nicht abspielbar'); return; }
-    const audio = new Audio(url);
-    const bar = b.parentElement.querySelector('.bar i');
-    playing = { audio, btn: b };
-    b.textContent = '⏸';
-    audio.ontimeupdate = () => { if (audio.duration && isFinite(audio.duration) && bar) bar.style.width = (audio.currentTime / audio.duration * 100) + '%'; };
-    audio.onended = () => { if (playing && playing.audio === audio) stopPlaying(); };
-    audio.onerror = () => { stopPlaying(); toast('Nicht abspielbar'); };
-    audio.play().catch(() => { stopPlaying(); toast('Nicht abspielbar'); });
-  });
-
-  // ---------- Benachrichtigungen (Web Push) ----------
-  const VAPID_PUBLIC = "BG3TGJ8OaMAQO8dHTAltbR8rE0N4dghKsnpjt3sqnagXoJOPM7ZEjO2atPk9PP6tAjtQ8A5LGLKiWiEf_AHmVyI";
-  const pushSupported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
-  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-  function b64ToU8(b64) {
-    const s = (b64 + '='.repeat((4 - b64.length % 4) % 4)).replace(/-/g, '+').replace(/_/g, '/');
-    return Uint8Array.from(atob(s), c => c.charCodeAt(0));
-  }
-  function swReady() {
-    return Promise.race([navigator.serviceWorker.ready, new Promise(r => setTimeout(() => r(null), 2500))]);
-  }
-  async function currentSub() {
-    if (!pushSupported) return null;
-    const reg = await swReady();
-    return reg ? reg.pushManager.getSubscription() : null;
-  }
-  function typeFlags() {
-    return { n_chat: $('sw-chat').checked, n_timer: $('sw-timer').checked, n_event: $('sw-event').checked };
-  }
-  async function saveSub(sub) {
-    const j = sub.toJSON();
-    return sb.from('push_subscriptions').upsert({ endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth, user_id: myId, ...typeFlags() }, { onConflict: 'endpoint' });
-  }
-  // Beim Start: bestehendes Abo auffrischen und Schalter aus der Datenbank übernehmen
-  async function syncPush() {
-    try {
-      if (!pushSupported || Notification.permission !== 'granted') return;
-      const sub = await currentSub();
-      if (!sub) return;
-      const r = await sb.from('push_subscriptions').select('n_chat,n_timer,n_event').eq('endpoint', sub.endpoint).maybeSingle();
-      if (r.data) {
-        $('sw-chat').checked = r.data.n_chat; $('sw-timer').checked = r.data.n_timer; $('sw-event').checked = r.data.n_event;
-        const j = sub.toJSON();
-        await sb.from('push_subscriptions').update({ p256dh: j.keys.p256dh, auth: j.keys.auth, user_id: myId }).eq('endpoint', sub.endpoint);
-      } else await saveSub(sub);
-    } catch (_) {}
-  }
-  async function refreshPushUI() {
-    const st = $('push-status'), master = $('sw-push'), types = $('push-types'), test = $('btn-push-test');
-    test.hidden = true; types.hidden = true;
-    if (!pushSupported) {
-      const standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
-      master.checked = false; master.disabled = true;
-      st.textContent = (isIOS && !standalone)
-        ? 'Auf dem iPhone: Seite zuerst über Teilen → „Zum Home-Bildschirm“ installieren und die App von dort öffnen.'
-        : 'Dieses Gerät oder dieser Browser unterstützt keine Benachrichtigungen.';
-      return;
-    }
-    master.disabled = false;
-    if (Notification.permission === 'denied') {
-      master.checked = false;
-      st.textContent = 'Benachrichtigungen sind blockiert. Erlaube sie in den Website-Einstellungen des Browsers.';
-      return;
-    }
-    let sub = null;
-    try { sub = await currentSub(); } catch (_) {}
-    const on = !!sub && Notification.permission === 'granted';
-    master.checked = on; types.hidden = !on; test.hidden = !on;
-    st.textContent = on ? 'Aktiv: Du wirst auch bei geschlossener App benachrichtigt.' : 'Aus: Auf diesem Gerät kommen keine Mitteilungen.';
-  }
-  $('sw-push').onchange = async () => {
-    const master = $('sw-push');
-    try {
-      if (master.checked) {
-        const perm = await Notification.requestPermission();
-        if (perm !== 'granted') { toast('Benachrichtigungen nicht erlaubt'); return; }
-        const reg = await swReady();
-        if (!reg) throw new Error('Service Worker nicht bereit');
-        let sub = await reg.pushManager.getSubscription();
-        if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToU8(VAPID_PUBLIC) });
-        const r = await saveSub(sub);
-        if (r.error) throw r.error;
-        toast('Benachrichtigungen ein');
-      } else {
-        const sub = await currentSub();
-        if (sub) { await sb.from('push_subscriptions').delete().eq('endpoint', sub.endpoint); await sub.unsubscribe(); }
-        toast('Benachrichtigungen aus');
-      }
-    } catch (err) { console.error(err); toast('Das hat nicht geklappt'); }
-    refreshPushUI();
-  };
-  ['sw-chat', 'sw-timer', 'sw-event'].forEach(id => {
-    $(id).onchange = async () => {
-      const sub = await currentSub();
-      if (!sub) return;
-      const r = await sb.from('push_subscriptions').update(typeFlags()).eq('endpoint', sub.endpoint);
-      if (r.error) toast('Speichern fehlgeschlagen');
-    };
-  });
-  $('btn-push-test').onclick = async () => {
-    const r = await sb.functions.invoke('notify', { body: { test: true } });
-    if (r.error) toast('Test fehlgeschlagen');
-    else toast(r.data && r.data.sent > 0 ? 'Testmitteilung gesendet' : 'Keine Zustellung, bitte aus- und wieder einschalten');
-  };
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.addEventListener('message', (ev) => {
-      if (ev.data && ev.data.type === 'open' && String(ev.data.url || '').endsWith('#chat')) switchTab('chat');
-    });
-  }
-
-  // Datum im Kopf + automatische Aktualisierung
-  const now = new Date();
-  document.getElementById('todayDay').textContent = now.toLocaleDateString('de-CH', { weekday: 'long' });
-  document.getElementById('todayDate').textContent = now.toLocaleDateString('de-CH', { day: 'numeric', month: 'long' });
-  setInterval(() => { loadEntries(); if (currentTab === 'chat') loadChat(); }, 15000);
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) loadEntries(); });
+// Service Worker für PWA Installation
+if ('serviceWorker' in navigator) {
+const swCode = "self.addEventListener('fetch', (e) => e.respondWith(fetch(e.request)));";
+const blob = new Blob([swCode], { type: 'application/javascript' });
+navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(() => {});
+}
+​// Korrekte Supabase Konfiguration
+const SUPABASE_URL = "https://fmyjhuzrwskalirunreb.supabase.co";
+const SUPABASE_ANON_KEY = "EyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInRefiI6ImZteWpodXpyd3NrYWxpcnVucmViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzNTI4NzQsImV4cCI6MjEwNzkyODg3NH0.8yxSeNScfIEc7fvqymn9hZyQ8ispIy_zK3rgcgWVrbQ";
+​const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let fid = null, myId = null, myName = '', currentTab = 'shop';
+​function showScreen(id) {
+['screen-auth', 'screen-family', 'screen-app'].forEach(s => {
+const el = document.getElementById(s);
+if (el) el.hidden = (s !== 'screen-' + id);
+});
+}
+​function switchTab(tab) {
+currentTab = tab;
+['shop', 'todos', 'timers', 'events', 'family'].forEach(t => {
+const p = document.getElementById('p-' + t);
+if (p) p.hidden = (t !== tab);
+const btn = document.getElementById('t-' + t);
+if (btn) btn.setAttribute('aria-selected', t === tab ? 'true' : 'false');
+});
+}
+​function toast(msg) {
+const t = document.getElementById('toast');
+if (t) {
+t.textContent = msg; t.hidden = false;
+setTimeout(() => t.hidden = true, 3000);
+}
+}
+​function route(session) {
+if (!session) { showScreen('auth'); return; }
+myId = session.user.id;
+myName = session.user.user_metadata?.name || session.user.email.split('@')[0];
+​sb.from('members').select('family_id, display_name, families(code)').eq('user_id', myId).maybeSingle().then(r => {
+if (!r.data) {
+document.getElementById('fam-hello').textContent = 'Hallo ' + myName;
+showScreen('family');
+return;
+}
+fid = r.data.family_id;
+if (r.data.families) {
+document.getElementById('fam-code').textContent = r.data.families.code;
+}
+showScreen('app');
+switchTab('shop');
+}).catch(() => {
+showScreen('auth');
+});
+}
+​// Auth & Routing Initialisierung
+sb.auth.getSession().then(({ data }) => route(data.session)).catch(() => showScreen('auth'));
+sb.auth.onAuthStateChange((_, session) => route(session));
+​// Toggle Anmelden / Konto erstellen
+let isReg = false;
+document.getElementById('auth-toggle').onclick = () => {
+isReg = !isReg;
+document.getElementById('auth-name-wrap').hidden = !isReg;
+document.getElementById('auth-title').textContent = isReg ? 'Konto erstellen' : 'Anmelden';
+document.getElementById('auth-submit').textContent = isReg ? 'Registrieren' : 'Anmelden';
+};
+​document.getElementById('f-auth').onsubmit = (e) => {
+e.preventDefault();
+const email = document.getElementById('in-email').value;
+const pw = document.getElementById('in-pw').value;
+const name = document.getElementById('in-name').value;
+const msgEl = document.getElementById('auth-msg');
+msgEl.textContent = '';
+​const promise = isReg
+? sb.auth.signUp({ email, password: pw, options: { data: { name } } })
+: sb.auth.signInWithPassword({ email, password: pw });
+​promise.then(r => {
+if (r.error) msgEl.textContent = r.error.message;
+else if (isReg) toast('Bestätige die E-Mail oder melde dich an.');
+});
+};
+​document.getElementById('btn-create').onclick = () => {
+sb.rpc('create_family', { p_display: myName }).then(r => {
+if (r.error) toast('Fehler beim Erstellen');
+else sb.auth.getSession().then(({ data }) => route(data.session));
+});
+};
+​document.getElementById('f-join').onsubmit = (e) => {
+e.preventDefault();
+const code = document.getElementById('in-code').value.trim();
+sb.rpc('join_family', { p_code: code, p_display: myName }).then(r => {
+if (r.error) document.getElementById('fam-msg').textContent = 'Ungültiger Code';
+else window.location.reload();
+});
+};
+​const logoutAction = () => sb.auth.signOut();
+document.getElementById('btn-logout').onclick = logoutAction;
+const famLogout = document.getElementById('fam-logout');
+if (famLogout) famLogout.onclick = logoutAction;
+​document.getElementById('fam-copy').onclick = () => {
+navigator.clipboard.writeText(document.getElementById('fam-code').textContent);
+toast('Code kopiert!');
+};
+​// KI-Zutaten von Cloudflare Worker abrufen
+async function generateAndAddIngredients() {
+const dishInput = document.getElementById('in-ai-dish');
+const personsInput = document.getElementById('in-ai-persons');
+const dish = dishInput ? dishInput.value.trim() : '';
+const persons = personsInput ? (parseInt(personsInput.value) || 2) : 2;
+​if (!dish) {
+toast('Bitte gib ein Gericht ein!');
+return;
+}
+​toast('Generiere Zutaten mit KI...');
+​try {
+const response = await fetch("https://curly-base-7807.petrov-aleks92.workers.dev", {
+method: "POST",
+headers: {
+"Content-Type": "application/json"
+},
+body: JSON.stringify({ dish: dish, persons: persons })
+});
+​if (!response.ok) throw new Error('Fehler bei der Anfrage');
+​const ingredients = await response.json();
+​if (Array.isArray(ingredients)) {
+if (fid) {
+// Zutaten in Supabase eintragen
+const itemsToInsert = ingredients.map(item => ({
+family_id: fid,
+title: item,
+user_id: myId
+}));
+​const { error } = await sb.from('shopping_items').insert(itemsToInsert);
+if (error) {
+console.error("Supabase error:", error);
+// Fallback: Einzeln versuchen
+for (const item of ingredients) {
+await sb.from('shopping_items').insert([{ family_id: fid, title: item, user_id: myId }]).catch(() => {});
+}
+}
+}
+toast(${ingredients.length} Zutaten hinzugefügt!);
+if (dishInput) dishInput.value = '';
+} else {
+throw new Error('Ungültiges Format');
+}
+} catch (err) {
+console.error(err);
+toast('Konnte Zutaten nicht generieren.');
+}
+}
 </script>
 </body>
 </html>
