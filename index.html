@@ -81,7 +81,7 @@ input[type=text], input[type=number], input[type=date], input[type=time], input[
 .btn.small { min-height: 36px; padding: 0 12px; font-size: 14px; }
 .btn.block { width: 100%; }
 .link { background: none; border: 0; color: var(--mil); font-weight: 600; padding: 10px 0; text-decoration: underline; }
-.msg { margin: 8px 0 0; font-size: 14px; color: var(--danger); }
+.msg { margin: 0; font-size: 14px; color: var(--danger); }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
 .chip { min-height: 34px; padding: 0 12px; border-radius: 999px; background: var(--surface); border: 1.5px solid var(--line); font-size: 14px; }
 ul.list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
@@ -112,22 +112,22 @@ nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface);
     <div class="brand big"><div class="word"><span class="a">Mil</span><span class="b">teo</span></div></div>
     <h1 id="auth-title">Anmelden</h1>
     <p class="lead">Einkauf, Aufgaben, Timer und Termine.</p>
-    <div class="card">
+    <form id="f-auth" class="card">
       <div id="auth-name-wrap" hidden>
         <label class="field-label">Dein Name</label>
         <input type="text" id="in-name">
       </div>
       <div>
         <label class="field-label">E-Mail</label>
-        <input type="email" id="in-email">
+        <input type="email" id="in-email" required>
       </div>
       <div>
         <label class="field-label">Passwort</label>
-        <input type="password" id="in-pw">
+        <input type="password" id="in-pw" required>
       </div>
-      <button class="btn block" type="button" id="auth-submit">Anmelden</button>
+      <button class="btn block" type="submit" id="auth-submit">Anmelden</button>
       <p class="msg" id="auth-msg"></p>
-    </div>
+    </form>
     <button class="link" id="auth-toggle" type="button">Neu hier? Konto erstellen</button>
   </div>
 </div>
@@ -141,9 +141,11 @@ nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface);
       <button class="btn block" id="btn-create" type="button">Neue Familie erstellen</button>
     </div>
     <div class="card">
-      <label class="field-label">Familiencode eingeben</label>
-      <input type="text" id="in-code" placeholder="ABCD-EFGH">
-      <button class="btn block" type="button" id="btn-join" style="margin-top:8px">Beitreten</button>
+      <form id="f-join">
+        <label class="field-label">Familiencode eingeben</label>
+        <input type="text" id="in-code" placeholder="ABCD-EFGH">
+        <button class="btn block" type="submit" style="margin-top:8px">Beitreten</button>
+      </form>
     </div>
     <p class="msg" id="fam-msg"></p>
     <button class="link" id="fam-logout" type="button">Abmelden</button>
@@ -410,38 +412,32 @@ nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface);
     document.getElementById('auth-submit').textContent = isReg ? 'Registrieren' : 'Anmelden';
   };
 
-  // Bombenfester Login-Klick-Handler ohne Formular-Blockaden
-  document.getElementById('auth-submit').onclick = () => {
+  // Original-Formular-Handler mit e.preventDefault() und Rückmeldung
+  document.getElementById('f-auth').onsubmit = async (e) => {
+    e.preventDefault();
     const email = document.getElementById('in-email').value.trim();
     const pw = document.getElementById('in-pw').value;
     const name = document.getElementById('in-name').value.trim();
     const msgEl = document.getElementById('auth-msg');
-    msgEl.textContent = '';
     
-    if (!email || !pw) {
-      msgEl.textContent = 'Bitte E-Mail und Passwort eingeben.';
-      return;
-    }
-
     msgEl.textContent = 'Verbinde...';
     
-    const promise = isReg 
-      ? sb.auth.signUp({ email, password: pw, options: { data: { name } } })
-      : sb.auth.signInWithPassword({ email, password: pw });
+    try {
+      const res = isReg 
+        ? await sb.auth.signUp({ email, password: pw, options: { data: { name } } })
+        : await sb.auth.signInWithPassword({ email, password: pw });
 
-    promise.then(r => {
-      if (r.error) {
-        msgEl.textContent = r.error.message;
+      if (res.error) {
+        msgEl.textContent = res.error.message;
       } else if (isReg) {
-        msgEl.textContent = '';
-        toast('Registriert! Bestätige die E-Mail.');
+        msgEl.textContent = 'Registriert! Bestätige die E-Mail.';
       } else {
         msgEl.textContent = '';
         window.location.reload();
       }
-    }).catch((err) => {
-      msgEl.textContent = 'Fehler: ' + err.message;
-    });
+    } catch (err) {
+      msgEl.textContent = 'Verbindungsfehler: ' + err.message;
+    }
   };
 
   document.getElementById('btn-create').onclick = () => {
@@ -451,7 +447,8 @@ nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface);
     });
   };
 
-  document.getElementById('btn-join').onclick = () => {
+  document.getElementById('f-join').onsubmit = (e) => {
+    e.preventDefault();
     const code = document.getElementById('in-code').value.trim();
     sb.rpc('join_family', { p_code: code, p_display: myName }).then(r => {
       if (r.error) document.getElementById('fam-msg').textContent = 'Ungültiger Code';
