@@ -447,7 +447,11 @@ input.switch:disabled { opacity: .5; }
   const linkError = (hashStr.match(/error_description=([^&]+)/) || [])[1];
   const appUrl = () => location.origin + location.pathname.replace(/index\.html$/, '');
 
-  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  // Kein Browser-Lock: verhindert, dass eine hängende App-Instanz Anmeldung und Sitzung blockiert
+  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, lock: async (name, timeout, fn) => await fn() },
+  });
+  function clearStaleAuth() { try { Object.keys(localStorage).filter(k => /^sb-.*-auth-token/.test(k)).forEach(k => localStorage.removeItem(k)); } catch (_) {} }
   let fid = null, myId = null, myName = '', currentTab = 'shop';
   let entries = [];
   const openDishes = new Set();
@@ -545,7 +549,9 @@ input.switch:disabled { opacity: .5; }
   }
 
   // Auth & Routing Initialisierung
-  sb.auth.getSession().then(({ data }) => route(data.session)).catch(() => showScreen('auth'));
+  Promise.race([sb.auth.getSession(), new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 8000))])
+    .then(({ data }) => route(data.session))
+    .catch(() => { clearStaleAuth(); showScreen('auth'); });
   sb.auth.onAuthStateChange((event, session) => {
     if (event === 'PASSWORD_RECOVERY') recoveryMode = true;
     route(session);
@@ -626,7 +632,8 @@ input.switch:disabled { opacity: .5; }
         toast('Bestätige die E-Mail oder melde dich an.');
         return;
       }
-      const r = await sb.auth.signInWithPassword({ email, password: pw });
+      const r = await Promise.race([sb.auth.signInWithPassword({ email, password: pw }), new Promise(res => setTimeout(() => res({ error: { message: 'timeout' } }), 15000))]);
+      if (r.error && r.error.message === 'timeout') { clearStaleAuth(); msgEl.textContent = 'Keine Antwort vom Server. Prüfe die Verbindung und versuche es nochmal.'; return; }
       if (r.error) { msgEl.textContent = friendlyAuthError(r.error); return; }
       await rememberPassword(email, pw, $('in-remember').checked);
     } finally { btn.disabled = false; }
