@@ -82,6 +82,7 @@ nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface);
 .tab { border: 0; background: transparent; border-radius: 16px; padding: 10px 2px; min-height: 68px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 12px; color: var(--muted); position: relative; }
 .tab .ic { font-size: 26px; line-height: 1; }
 .tab[aria-selected="true"] { background: var(--mil-soft); color: var(--ink); font-weight: 600; }
+#toast .undo-btn { margin-left: 10px; border: 0; background: transparent; color: var(--teo); font-weight: 700; text-decoration: underline; padding: 4px 2px; }
 #toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: 150px; background: var(--ink); color: var(--bg); border-radius: 12px; padding: 10px 16px; font-size: 14px; z-index: 9; }
 .chat { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 8px; padding: 4px 2px 10px; }
 .m-row { display: flex; }
@@ -402,6 +403,8 @@ input.switch:disabled { opacity: .5; }
         <p class="field-label">Dein Code</p>
         <div class="code" id="fam-code">-</div>
         <button class="btn small" id="fam-copy" type="button">Code kopieren</button>
+        <button class="btn ghost small" id="fam-newcode" type="button">Neuen Code erzeugen</button>
+        <p class="hint">Falls der Code in falsche Hände geraten ist: Mit einem neuen Code können keine weiteren Personen mit dem alten beitreten. Aktuelle Mitglieder bleiben dabei.</p>
       </div>
       <div class="card">
         <p class="field-label">Familie wechseln</p>
@@ -593,13 +596,36 @@ input.switch:disabled { opacity: .5; }
   }
   window.addEventListener('resize', syncViewport);
 
-  function toast(msg) {
+  let toastTimer = null;
+  function toast(msg, ms) {
     const t = document.getElementById('toast');
-    if (t) {
-      t.textContent = msg; t.hidden = false;
-      setTimeout(() => t.hidden = true, 3000);
-    }
+    if (!t) return;
+    t.textContent = msg; t.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.hidden = true, ms || 3000);
   }
+  // Löschen mit "Rückgängig" für ein paar Sekunden; erst danach wird wirklich gelöscht
+  let pendingUndo = null;
+  function commitPending() {
+    if (!pendingUndo) return;
+    const p = pendingUndo; pendingUndo = null;
+    clearTimeout(p.timer);
+    p.commit();
+  }
+  function withUndo(msg, apply, commit, undo) {
+    commitPending();                       // vorheriges Löschen endgültig machen
+    apply();
+    const t = document.getElementById('toast');
+    t.textContent = ''; 
+    const span = document.createElement('span'); span.textContent = msg + ' ';
+    const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'undo-btn'; btn.textContent = 'Rückgängig';
+    t.append(span, btn); t.hidden = false;
+    clearTimeout(toastTimer);
+    const p = { commit, timer: setTimeout(() => { t.hidden = true; commitPending(); }, 6000) };
+    pendingUndo = p;
+    btn.onclick = () => { if (pendingUndo !== p) return; clearTimeout(p.timer); pendingUndo = null; t.hidden = true; undo(); toast('Wiederhergestellt'); };
+  }
+  window.addEventListener('pagehide', () => commitPending());
 
   function route(session) {
     if (!session) { showScreen('auth'); return; }
@@ -756,8 +782,11 @@ input.switch:disabled { opacity: .5; }
   document.getElementById('f-join').onsubmit = (e) => {
     e.preventDefault();
     const code = document.getElementById('in-code').value.trim();
-    sb.rpc('join_family', { p_code: code, p_display: myName }).then(r => {
-      if (r.error) document.getElementById('fam-msg').textContent = 'Ungültiger Code';
+    sb.rpc('join_family_v2', { p_code: code, p_display: myName }).then(r => {
+      const msg = document.getElementById('fam-msg');
+      if (r.error) msg.textContent = 'Beitreten ist gerade nicht möglich. Lade die App neu und versuche es nochmal.';
+      else if (r.data === 'throttled') msg.textContent = 'Zu viele Versuche. Bitte warte eine Stunde und versuche es dann nochmal.';
+      else if (r.data !== 'ok') msg.textContent = 'Ungültiger Code';
       else window.location.reload();
     });
   };
@@ -797,6 +826,13 @@ input.switch:disabled { opacity: .5; }
     toast('Du hast die Familie verlassen.');
   };
 
+  document.getElementById('fam-newcode').onclick = async () => {
+    if (!confirm('Neuen Familiencode erzeugen? Der alte Code funktioniert danach nicht mehr. Aktuelle Mitglieder bleiben in der Familie.')) return;
+    const r = await sb.rpc('regenerate_family_code');
+    if (r.error || !r.data) { toast('Das hat nicht geklappt'); return; }
+    document.getElementById('fam-code').textContent = r.data;
+    toast('Neuer Code: ' + r.data, 5000);
+  };
   document.getElementById('fam-copy').onclick = () => {
     navigator.clipboard.writeText(document.getElementById('fam-code').textContent);
     toast('Code kopiert!');
@@ -817,7 +853,7 @@ input.switch:disabled { opacity: .5; }
   const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
   async function loadEntries() {
-    if (!fid) return;
+    if (!fid || pendingUndo) return;
     const r = await sb.from('entries').select('*').eq('family_id', fid).order('created_at');
     if (r.error) { toast('Fehler beim Laden'); return; }
     entries = r.data;
@@ -835,8 +871,13 @@ input.switch:disabled { opacity: .5; }
     if (r.error) toast('Fehler beim Speichern'); else loadEntries();
   }
   async function delEntry(id) {
-    const r = await sb.from('entries').delete().eq('id', id);
-    if (r.error) toast('Fehler beim Löschen'); else loadEntries();
+    const idx = entries.findIndex(x => x.id === id);
+    if (idx < 0) return;
+    const gone = entries[idx];
+    withUndo('Gelöscht.',
+      () => { entries = entries.filter(x => x.id !== id); renderAll(); },
+      async () => { const r = await sb.from('entries').delete().eq('id', id); if (r.error) toast('Fehler beim Löschen'); loadEntries(); },
+      () => { entries.splice(Math.min(idx, entries.length), 0, gone); renderAll(); });
   }
 
   function recipeHtml(e) {
@@ -971,10 +1012,20 @@ input.switch:disabled { opacity: .5; }
       const items = (e.data.items || []).map(i => ({ ...i }));
       const n = Number(b.dataset.i);
       if (!items[n]) return;
-      if (act === 'item') items[n].done = !items[n].done; else items.splice(n, 1);
-      e.data = { ...e.data, items };       // sofort anzeigen, dann speichern
-      renderChecklist('shop');
-      updateEntry(id, e.data);
+      if (act === 'item') {
+        items[n].done = !items[n].done;
+        e.data = { ...e.data, items };       // sofort anzeigen, dann speichern
+        renderChecklist('shop'); renderHome();
+        updateEntry(id, e.data);
+      } else {
+        const before = e.data, name = items[n].name;
+        items.splice(n, 1);
+        const after = { ...e.data, items };
+        withUndo('„' + name + '“ gelöscht.',
+          () => { e.data = after; renderChecklist('shop'); renderHome(); },
+          () => { updateEntry(id, after); },
+          () => { e.data = before; renderChecklist('shop'); renderHome(); });
+      }
     }
   });
 
@@ -1149,7 +1200,7 @@ input.switch:disabled { opacity: .5; }
           $('in-ingr').hidden = false; $('in-ingr').readOnly = false; $('in-ingr').focus();
           $('dish-hint').textContent = err === 'limit' ? 'Tageslimit der KI erreicht. Trag die Zutaten oben mit Komma getrennt ein.'
             : err === 'quota' ? 'Die kostenlose KI ist gerade ausgelastet. Trag die Zutaten mit Komma getrennt ein oder versuche es später.'
-            : 'Dazu habe ich nichts gefunden. Formuliere es anders oder trag die Zutaten oben mit Komma getrennt ein.' + (err ? ' [' + err + (detail ? ': ' + String(detail).slice(0, 120) : '') + ']' : '');
+            : 'Dazu habe ich nichts gefunden. Formuliere es anders oder trag die Zutaten oben mit Komma getrennt ein.';
           return;
         }
       }
