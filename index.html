@@ -298,7 +298,7 @@ input.switch:disabled { opacity: .5; }
       </form>
       <p class="field-label" style="margin-top:14px">🍽️ Gericht → Zutaten</p>
       <form class="add dish-add" id="f-dish">
-        <input type="text" id="in-dish" enterkeyhint="go" placeholder="Gericht, z. B. Lasagne" maxlength="80" autocomplete="off">
+        <input type="text" id="in-dish" enterkeyhint="go" placeholder="Gericht oder Wunsch, z. B. Lasagne" maxlength="200" autocomplete="off">
         <input type="number" id="in-servings" class="servings" value="4" min="1" max="20" inputmode="numeric" aria-label="Anzahl Personen" title="Anzahl Personen">
         <input type="text" id="in-ingr" class="dish-ingr" placeholder="Zutaten, mit Komma getrennt (leer = Vorschlag)" maxlength="400" autocomplete="off" enterkeyhint="go" hidden>
         <button class="btn" type="submit" id="btn-dish">Zutaten</button>
@@ -853,7 +853,7 @@ input.switch:disabled { opacity: .5; }
     recipeBusy.add(id); renderChecklist('shop');
     let err = null, steps = null;
     try {
-      const r = await sb.functions.invoke('dish', { body: { mode: 'recipe', dish: e.data.text, servings: e.data.servings || 4, ingredients: (e.data.items || []).map(i => i.name) } });
+      const r = await sb.functions.invoke('dish', { body: { mode: 'recipe', dish: e.data.text, request: e.data.request || '', servings: e.data.servings || 4, ingredients: (e.data.items || []).map(i => i.name) } });
       if (r.error) { try { err = (await r.error.context.json()).error || 'ai_failed'; } catch (_) { err = 'ai_failed'; } }
       else if (r.data && r.data.error) err = r.data.error; else steps = r.data && r.data.steps;
     } catch (_) { err = 'ai_failed'; }
@@ -1124,10 +1124,11 @@ input.switch:disabled { opacity: .5; }
     const servings = Math.min(20, Math.max(1, parseInt($('in-servings').value, 10) || 4));
     const typed = $('in-ingr').value.split(/[,;\n]/).map(x => x.trim()).filter(Boolean);
     if (dish.length < 2 || !fid) return;
-    let items;
+    let items, request = '', dishName = dish;
     if (typed.length) items = typed.map(name => ({ name, amount: '', done: false }));
     else {
-      const rec = findRecipe(dish);
+      const isSentence = dish.split(/\s+/).length >= 4 || /[?!]/.test(dish);
+      const rec = isSentence ? null : findRecipe(dish);
       if (rec) items = scaleRecipe(rec, servings);
       else {
         // Unbekanntes Gericht: kostenlose KI fragen (Gemini), sonst Zutaten von Hand
@@ -1143,16 +1144,17 @@ input.switch:disabled { opacity: .5; }
         btn.disabled = false; btn.textContent = 'Zutaten';
         if (!err && data && Array.isArray(data.items) && data.items.length) {
           items = data.items.map(i => ({ name: i.name, amount: i.amount || '', done: false }));
+          if (isSentence) { request = dish; dishName = data.dish || dish; }
         } else {
           $('in-ingr').hidden = false; $('in-ingr').readOnly = false; $('in-ingr').focus();
           $('dish-hint').textContent = err === 'limit' ? 'Tageslimit der KI erreicht. Trag die Zutaten oben mit Komma getrennt ein.'
             : err === 'quota' ? 'Die kostenlose KI ist gerade ausgelastet. Trag die Zutaten mit Komma getrennt ein oder versuche es später.'
-            : 'Dieses Gericht habe ich nicht gefunden. Trag die Zutaten oben mit Komma getrennt ein.' + (err ? ' [' + err + (detail ? ': ' + String(detail).slice(0, 120) : '') + ']' : '');
+            : 'Dazu habe ich nichts gefunden. Formuliere es anders oder trag die Zutaten oben mit Komma getrennt ein.' + (err ? ' [' + err + (detail ? ': ' + String(detail).slice(0, 120) : '') + ']' : '');
           return;
         }
       }
     }
-    const row = await addEntry('shop', { type: 'dish', text: dish, servings, items, by: myName });
+    const row = await addEntry('shop', { type: 'dish', text: dishName, servings, items, by: myName, ...(request ? { request } : {}) });
     if (row) {
       openDishes.add(row.id); saveOpen(); renderChecklist('shop');
       $('in-dish').value = ''; $('in-ingr').value = ''; $('in-ingr').hidden = true;
