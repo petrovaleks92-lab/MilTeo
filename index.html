@@ -782,7 +782,10 @@ input.switch:disabled { opacity: .5; }
   document.getElementById('f-join').onsubmit = (e) => {
     e.preventDefault();
     const code = document.getElementById('in-code').value.trim();
-    sb.rpc('join_family_v2', { p_code: code, p_display: myName }).then(r => {
+    // Neue Funktion mit Versuchsbegrenzung; falls sie auf dem Server noch fehlt, die bisherige verwenden
+    sb.rpc('join_family_v2', { p_code: code, p_display: myName }).then(r0 => (r0.error && /could not find|does not exist|PGRST202/i.test(r0.error.message + ' ' + (r0.error.code || '')))
+      ? sb.rpc('join_family', { p_code: code, p_display: myName }).then(r1 => r1.error ? (/invalid code/i.test(r1.error.message) ? { data: 'invalid' } : r1) : { data: 'ok' })
+      : r0).then(r => {
       const msg = document.getElementById('fam-msg');
       if (r.error) msg.textContent = 'Beitreten ist gerade nicht möglich. Lade die App neu und versuche es nochmal.';
       else if (r.data === 'throttled') msg.textContent = 'Zu viele Versuche. Bitte warte eine Stunde und versuche es dann nochmal.';
