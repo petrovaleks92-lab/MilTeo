@@ -1139,10 +1139,13 @@ input.switch:disabled { opacity: .5; }
   const norm = (t) => t.toLowerCase().replace(/ä/g,'ae').replace(/ö/g,'oe').replace(/ü/g,'ue').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'dj').replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
   const RECIPE_MAP = [];
   Object.keys(RECIPES).forEach(k => k.split('|').forEach(a => RECIPE_MAP.push([norm(a), RECIPES[k]])));
+  const FILLER = new Set(['mit','und','nach','art','selber','selbst','selbstgemacht','hausgemacht','machen','rezept','klassisch','klassische','klassischer','fuer','zum','zur','von','dem','der','die','das','ein','eine','einen','ich','moechte','will','kochen','heute']);
   function findRecipe(name) {
-    const n = norm(name);
+    // Nur das ganze Gericht erkennen. "Gyros Brot" oder "Gyrosbrot" meint nur einen Teil und geht an die KI.
+    const words = norm(name).split(' ').filter(w => w && !FILLER.has(w));
+    const n = words.join(' ');
+    if (!n) return null;
     let hit = RECIPE_MAP.find(([a]) => a === n);
-    if (!hit) hit = RECIPE_MAP.filter(([a]) => (' ' + n + ' ').includes(' ' + a + ' ') || (n.length > 3 && (' ' + a + ' ').includes(' ' + n + ' '))).sort((x, y) => y[0].length - x[0].length)[0];
     if (!hit && n.length >= 5) {   // Tippfehler / andere Schreibweisen (z. B. Pleskavica = Pljeskavica)
       let best = null, bd = 99;
       RECIPE_MAP.forEach(([a, r]) => { const d = lev(n, a); if (d < bd) { bd = d; best = r; } });
@@ -1207,6 +1210,13 @@ input.switch:disabled { opacity: .5; }
           return;
         }
       }
+    }
+    if (items.length === 1 && !typed.length) {
+      // Nur eine Sache gemeint (z. B. "Gyrosbrot"): als normalen Eintrag in die Liste
+      const it = items[0];
+      const row1 = await addEntry('shop', { text: ((it.amount ? it.amount + ' ' : '') + it.name).trim(), done: false, by: myName });
+      if (row1) { $('in-dish').value = ''; $('in-ingr').value = ''; $('in-ingr').hidden = true; toast('Zur Liste hinzugefügt: ' + it.name); }
+      return;
     }
     const row = await addEntry('shop', { type: 'dish', text: dishName, servings, items, by: myName, ...(request ? { request } : {}) });
     if (row) {
