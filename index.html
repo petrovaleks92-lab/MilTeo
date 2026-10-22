@@ -55,6 +55,8 @@ form.add { display: flex; gap: 8px; margin-bottom: 10px; }
 input[type=text], input[type=number], input[type=date], input[type=time], input[type=email], input[type=password], select {
   width: 100%; min-height: 46px; padding: 0 14px; background: var(--surface); border: 1.5px solid var(--line); border-radius: 12px;
 }
+.lang-sel { margin-top: 12px; }
+.who-by { display: block; font-size: .8rem; color: var(--muted); }
 .btn { min-height: 46px; padding: 0 18px; border: 0; border-radius: 12px; font-weight: 600; background: var(--mil); color: var(--on-mil); }
 .btn.ghost { background: transparent; color: var(--muted); border: 1.5px solid var(--line); }
 .btn.danger { background: transparent; color: var(--danger); border: 1.5px solid var(--danger); }
@@ -222,6 +224,7 @@ input.switch:disabled { opacity: .5; }
     </form>
     <button class="link" id="auth-forgot" type="button">Passwort vergessen?</button><br>
     <button class="link" id="auth-toggle" type="button">Neu hier? Konto erstellen</button>
+    <select id="sel-lang-auth" class="lang-sel" aria-label="Sprache"></select>
   </div>
 </div>
 
@@ -385,6 +388,10 @@ input.switch:disabled { opacity: .5; }
         </form>
       </div>
       <div class="card">
+        <label class="field-label" for="sel-lang">Sprache</label>
+        <select id="sel-lang"></select>
+      </div>
+      <div class="card">
         <p class="field-label">Benachrichtigungen</p>
         <label class="switch-row"><span>Auf diesem Gerät erhalten</span><input type="checkbox" class="switch" id="sw-push" role="switch"></label>
         <div class="push-types" id="push-types" hidden>
@@ -431,6 +438,7 @@ input.switch:disabled { opacity: .5; }
 
 <!-- Supabase Client eingebunden -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="i18n.js"></script>
 <script>
   // Service Worker für PWA Installation
   if ('serviceWorker' in navigator) {
@@ -489,6 +497,94 @@ input.switch:disabled { opacity: .5; }
       inp.replaceWith(d);
     });
   })();
+
+  // ---------- Sprachen ----------
+  document.documentElement.lang = I18N.lang;
+  const staticTexts = [];
+  (function collect() {
+    const norm1 = (x) => x.trim().replace(/\s+/g, ' ');
+    const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    while (w.nextNode()) {
+      const n = w.currentNode;
+      if (n.parentElement && n.parentElement.closest('script,[contenteditable],select#sel-lang,select#sel-lang-auth')) continue;
+      const k = norm1(n.nodeValue);
+      if (k && I18N.has(k)) staticTexts.push({ n, k });
+    }
+    document.querySelectorAll('[placeholder],[aria-label],[title],[data-ph]').forEach(el => {
+      ['placeholder', 'aria-label', 'title', 'data-ph'].forEach(a => {
+        const v = el.getAttribute(a);
+        if (v && I18N.has(norm1(v))) staticTexts.push({ el, a, k: norm1(v) });
+      });
+    });
+  })();
+  function applyStatic() {
+    staticTexts.forEach(o => {
+      if (o.n) {
+        if (!o.n.isConnected) return;
+        const m = o.n.nodeValue.match(/^(\s*)[\s\S]*?(\s*)$/);
+        o.n.nodeValue = m[1] + T(o.k) + m[2];
+      } else o.el.setAttribute(o.a, T(o.k));
+    });
+    document.documentElement.lang = I18N.lang;
+  }
+  function renderToday() {
+    const d = new Date();
+    $('todayDay').textContent = d.toLocaleDateString(I18N.loc(), { weekday: 'long' });
+    $('todayDate').textContent = d.toLocaleDateString(I18N.loc(), { day: 'numeric', month: 'long' });
+  }
+  function fillLangSelects() {
+    ['sel-lang', 'sel-lang-auth'].forEach(id => {
+      const el = $(id); if (!el) return;
+      el.innerHTML = I18N.LANGS.map(l => `<option value="${l[0]}">${l[1]}</option>`).join('');
+      el.value = I18N.lang;
+      el.onchange = () => changeLang(el.value);
+    });
+  }
+  function changeLang(l) {
+    I18N.set(l);
+    ['sel-lang', 'sel-lang-auth'].forEach(id => { const el = $(id); if (el) el.value = l; });
+    applyStatic(); renderToday();
+    try { setMode(authMode); } catch (_) {}
+    if (myName && $('fam-hello')) $('fam-hello').textContent = T('Hallo') + ' ' + myName;
+    try { renderAll(); renderChat(); refreshPushUI(); loadMembers(); } catch (_) {}
+  }
+
+  // Inhalte (Gerichte, Zutaten, Rezeptschritte) in die gewählte Sprache übersetzen: kostenlose KI, Ergebnis wird auf dem Gerät gemerkt
+  const trStore = {}, trPending = new Set(), trFailed = new Set();
+  let trTimer = null;
+  function trMap() {
+    const l = I18N.lang;
+    if (!trStore[l]) { try { trStore[l] = JSON.parse(localStorage.getItem('milteo_tr_' + l) || '{}'); } catch (_) { trStore[l] = {}; } }
+    return trStore[l];
+  }
+  function tx(text) {
+    const l = I18N.lang;
+    if (l === 'de' || !text || typeof text !== 'string') return text;
+    const m = trMap();
+    if (m[text]) return m[text];
+    const key = l + '|' + text;
+    if (text.length <= 400 && !trFailed.has(key) && !trPending.has(key)) { trPending.add(key); clearTimeout(trTimer); trTimer = setTimeout(flushTr, 500); }
+    return text;
+  }
+  async function flushTr() {
+    const l = I18N.lang;
+    const keys = [...trPending].filter(k => k.startsWith(l + '|')).slice(0, 60);
+    if (!keys.length) return;
+    keys.forEach(k => trPending.delete(k));
+    const texts = keys.map(k => k.slice(l.length + 1));
+    let out = null;
+    try {
+      const r = await sb.functions.invoke('dish', { body: { mode: 'translate', lang: l, texts } });
+      if (!r.error && r.data && Array.isArray(r.data.texts) && r.data.texts.length === texts.length) out = r.data.texts;
+    } catch (_) {}
+    if (!out) { keys.forEach(k => trFailed.add(k)); return; }
+    const m = trMap();
+    texts.forEach((x, i) => { if (typeof out[i] === 'string' && out[i].trim()) m[x] = out[i].trim(); else trFailed.add(l + '|' + x); });
+    const ks = Object.keys(m); if (ks.length > 1500) ks.slice(0, ks.length - 1500).forEach(k => delete m[k]);
+    try { localStorage.setItem('milteo_tr_' + l, JSON.stringify(m)); } catch (_) {}
+    if (l === I18N.lang) { try { renderChecklist('shop'); } catch (_) {} }
+    if (trPending.size) { clearTimeout(trTimer); trTimer = setTimeout(flushTr, 300); }
+  }
   const hashStr = (location.hash || '') + '&' + (location.search || '');
   let recoveryMode = /type=recovery/.test(hashStr);       // Link aus der Passwort-vergessen-Mail
   const linkError = (hashStr.match(/error_description=([^&]+)/) || [])[1];
@@ -503,7 +599,8 @@ input.switch:disabled { opacity: .5; }
   let entries = [];
   const openDishes = new Set();
   try { JSON.parse(localStorage.getItem('milteo_open_dishes') || '[]').forEach(i => openDishes.add(i)); } catch (_) {}
-  let chatUnread = 0, memberCount = 0; let chatMsgs = [], chatChannel = null, stickBottom = true, rec = null, playing = null;
+  let chatUnread = 0, memberCount = 0, memberNames = {};
+  const byHtml = (e) => { const n = memberNames[e.created_by] || (e.data && e.data.by) || ''; return n ? `<span class="who-by">${T('von')} ${esc(n)}</span>` : ''; }; let chatMsgs = [], chatChannel = null, stickBottom = true, rec = null, playing = null;
   const chatIds = new Set();
   const urlCache = new Map();
 
@@ -550,32 +647,32 @@ input.switch:disabled { opacity: .5; }
   // Startseite: Begrüssung, "Als Nächstes" und Infos auf den Kacheln
   function renderHome() {
     const h = new Date().getHours();
-    $('home-hello').textContent = (h < 11 ? 'Guten Morgen' : h < 18 ? 'Guten Tag' : 'Guten Abend') + (myName ? ', ' + myName : '');
-    $('home-sub').textContent = new Date().toLocaleDateString('de-CH', { weekday: 'long', day: 'numeric', month: 'long' });
+    $('home-hello').textContent = (h < 11 ? T('Guten Morgen') : h < 18 ? T('Guten Tag') : T('Guten Abend')) + (myName ? ', ' + myName : '');
+    $('home-sub').textContent = new Date().toLocaleDateString(I18N.loc(), { weekday: 'long', day: 'numeric', month: 'long' });
     const E = entries || [];
     const shopOpen = E.filter(e => e.kind === 'shop').reduce((n, e) => n + (e.data.type === 'dish' ? (e.data.items || []).filter(i => !i.done).length : (e.data.done ? 0 : 1)), 0);
     const shopAny = E.some(e => e.kind === 'shop');
-    $('ti-shop').textContent = !shopAny ? 'Liste ist leer' : shopOpen ? shopOpen + ' offen' : 'Alles besorgt ✓';
+    $('ti-shop').textContent = !shopAny ? T('Liste ist leer') : shopOpen ? T('{n} offen', { n: shopOpen }) : T('Alles besorgt ✓');
     const todosAll = E.filter(e => e.kind === 'todos'), todosOpen = todosAll.filter(e => !e.data.done).length;
-    $('ti-todos').textContent = !todosAll.length ? 'Nichts zu tun' : todosOpen ? todosOpen + ' offen' : 'Alles erledigt ✓';
+    $('ti-todos').textContent = !todosAll.length ? T('Nichts zu tun') : todosOpen ? T('{n} offen', { n: todosOpen }) : T('Alles erledigt ✓');
     const run = E.filter(e => e.kind === 'timers' && e.data.end > Date.now());
-    $('ti-timers').textContent = run.length ? run.length + (run.length === 1 ? ' läuft' : ' laufen') : 'Kein Timer aktiv';
+    $('ti-timers').textContent = run.length ? T(run.length === 1 ? '{n} läuft' : '{n} laufen', { n: run.length }) : T('Kein Timer aktiv');
     const today = new Date(); today.setHours(0, 0, 0, 0);
     const evs = E.filter(e => e.kind === 'events' && e.data.date && new Date(e.data.date + 'T' + (e.data.time || '23:59')) >= new Date())
       .sort((a, b) => ((a.data.date) + (a.data.time || '')).localeCompare((b.data.date) + (b.data.time || '')));
     const fmtEv = (e) => {
       const d = new Date(e.data.date + 'T00:00'), diff = Math.round((d - today) / 86400000);
-      const day = diff === 0 ? 'Heute' : diff === 1 ? 'Morgen' : d.toLocaleDateString('de-CH', { weekday: 'short', day: 'numeric', month: 'short' });
+      const day = diff === 0 ? T('Heute') : diff === 1 ? T('Morgen') : d.toLocaleDateString(I18N.loc(), { weekday: 'short', day: 'numeric', month: 'short' });
       return day + (e.data.time ? ' ' + e.data.time : '') + ' · ' + (e.data.title || '');
     };
-    $('ti-events').textContent = evs.length ? fmtEv(evs[0]) : 'Keine Termine';
+    $('ti-events').textContent = evs.length ? fmtEv(evs[0]) : T('Keine Termine');
     const last = chatMsgs[chatMsgs.length - 1];
-    $('ti-chat').textContent = last ? ((last.user_id === myId ? 'Du' : (last.display_name || '')) + ': ' + (last.media_path ? (String(last.media_type || '').startsWith('audio') ? '🎤 Sprachnachricht' : '📷 Bild') : (last.body || ''))) : 'Noch keine Nachrichten';
+    $('ti-chat').textContent = last ? ((last.user_id === myId ? T('Du') : (last.display_name || '')) + ': ' + (last.media_path ? (String(last.media_type || '').startsWith('audio') ? T('🎤 Sprachnachricht') : T('📷 Bild')) : (last.body || ''))) : T('Noch keine Nachrichten');
     const bd = $('tb-chat'); bd.hidden = !chatUnread; bd.textContent = chatUnread > 9 ? '9+' : chatUnread;
-    $('ti-family').textContent = memberCount ? memberCount + (memberCount === 1 ? ' Mitglied' : ' Mitglieder') : 'Familie & Konto';
+    $('ti-family').textContent = memberCount ? T(memberCount === 1 ? '{n} Mitglied' : '{n} Mitglieder', { n: memberCount }) : T('Familie & Konto');
     const nx = $('home-next');
-    if (run.length) { nx.hidden = false; $('home-next-ic').textContent = '⏱️'; $('home-next-k').textContent = 'Läuft gerade'; $('home-next-t').textContent = run.map(r => r.data.label || 'Timer').join(', '); }
-    else if (evs.length) { nx.hidden = false; $('home-next-ic').textContent = '📅'; $('home-next-k').textContent = 'Als Nächstes'; $('home-next-t').textContent = fmtEv(evs[0]); }
+    if (run.length) { nx.hidden = false; $('home-next-ic').textContent = '⏱️'; $('home-next-k').textContent = T('Läuft gerade'); $('home-next-t').textContent = run.map(r => r.data.label || T('Timer')).join(', '); }
+    else if (evs.length) { nx.hidden = false; $('home-next-ic').textContent = '📅'; $('home-next-k').textContent = T('Als Nächstes'); $('home-next-t').textContent = fmtEv(evs[0]); }
     else nx.hidden = true;
   }
 
@@ -618,12 +715,12 @@ input.switch:disabled { opacity: .5; }
     const t = document.getElementById('toast');
     t.textContent = ''; 
     const span = document.createElement('span'); span.textContent = msg + ' ';
-    const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'undo-btn'; btn.textContent = 'Rückgängig';
+    const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'undo-btn'; btn.textContent = T('Rückgängig');
     t.append(span, btn); t.hidden = false;
     clearTimeout(toastTimer);
     const p = { commit, timer: setTimeout(() => { t.hidden = true; commitPending(); }, 6000) };
     pendingUndo = p;
-    btn.onclick = () => { if (pendingUndo !== p) return; clearTimeout(p.timer); pendingUndo = null; t.hidden = true; undo(); toast('Wiederhergestellt'); };
+    btn.onclick = () => { if (pendingUndo !== p) return; clearTimeout(p.timer); pendingUndo = null; t.hidden = true; undo(); toast(T('Wiederhergestellt')); };
   }
   window.addEventListener('pagehide', () => commitPending());
 
@@ -637,7 +734,7 @@ input.switch:disabled { opacity: .5; }
     
     sb.from('members').select('family_id, display_name, families(code)').eq('user_id', myId).maybeSingle().then(r => {
       if (!r.data) {
-        document.getElementById('fam-hello').textContent = 'Hallo ' + myName;
+        document.getElementById('fam-hello').textContent = T('Hallo') + ' ' + myName;
         showScreen('family');
         return;
       }
@@ -669,14 +766,14 @@ input.switch:disabled { opacity: .5; }
   function friendlyAuthError(err) {
     const m = String((err && (err.message || err.msg)) || '');
     const code = String((err && (err.code || err.status)) || '');
-    if (/invalid login credentials/i.test(m)) return 'E-Mail oder Passwort stimmt nicht.';
-    if (/email not confirmed/i.test(m)) return 'Bitte bestätige zuerst deine E-Mail (Link im Postfach).';
-    if (/already registered|already been registered/i.test(m)) return 'Zu dieser E-Mail gibt es schon ein Konto. Melde dich an oder nutze „Passwort vergessen“.';
-    if (/rate limit|too many|429/i.test(m + ' ' + code)) return 'Zu viele E-Mails in kurzer Zeit. Bitte warte ein paar Minuten.';
-    if (/at least \d+ char/i.test(m)) return 'Das Passwort braucht mindestens 6 Zeichen.';
-    if (/same password|different from the old/i.test(m)) return 'Das neue Passwort muss sich vom alten unterscheiden.';
-    if (/session.*missing|not authenticated|expired/i.test(m)) return 'Der Link ist abgelaufen. Fordere einen neuen an.';
-    return m || 'Etwas ist schiefgelaufen.';
+    if (/invalid login credentials/i.test(m)) return T('E-Mail oder Passwort stimmt nicht.');
+    if (/email not confirmed/i.test(m)) return T('Bitte bestätige zuerst deine E-Mail (Link im Postfach).');
+    if (/already registered|already been registered/i.test(m)) return T('Zu dieser E-Mail gibt es schon ein Konto. Melde dich an oder nutze „Passwort vergessen“.');
+    if (/rate limit|too many|429/i.test(m + ' ' + code)) return T('Zu viele E-Mails in kurzer Zeit. Bitte warte ein paar Minuten.');
+    if (/at least \d+ char/i.test(m)) return T('Das Passwort braucht mindestens 6 Zeichen.');
+    if (/same password|different from the old/i.test(m)) return T('Das neue Passwort muss sich vom alten unterscheiden.');
+    if (/session.*missing|not authenticated|expired/i.test(m)) return T('Der Link ist abgelaufen. Fordere einen neuen an.');
+    return m || T('Etwas ist schiefgelaufen.');
   }
 
   // Modi: Anmelden / Konto erstellen / Passwort vergessen
@@ -689,11 +786,11 @@ input.switch:disabled { opacity: .5; }
     $('in-pw').required = !forgot;
     $('in-pw').autocomplete = reg ? 'new-password' : 'current-password';
     $('auth-remember-wrap').hidden = forgot;
-    $('auth-title').textContent = reg ? 'Konto erstellen' : forgot ? 'Passwort vergessen' : 'Anmelden';
-    $('auth-lead').textContent = forgot ? 'Wir senden dir einen Link zum Zurücksetzen per E-Mail.' : 'Einkauf, Aufgaben, Timer und Termine.';
-    $('auth-submit').textContent = reg ? 'Registrieren' : forgot ? 'Link senden' : 'Anmelden';
+    $('auth-title').textContent = reg ? T('Konto erstellen') : forgot ? T('Passwort vergessen') : T('Anmelden');
+    $('auth-lead').textContent = forgot ? T('Wir senden dir einen Link zum Zurücksetzen per E-Mail.') : T('Einkauf, Aufgaben, Timer und Termine.');
+    $('auth-submit').textContent = reg ? T('Registrieren') : forgot ? T('Link senden') : T('Anmelden');
     $('auth-forgot').hidden = mode !== 'login';
-    $('auth-toggle').textContent = forgot ? 'Zurück zur Anmeldung' : reg ? 'Schon ein Konto? Anmelden' : 'Neu hier? Konto erstellen';
+    $('auth-toggle').textContent = forgot ? T('Zurück zur Anmeldung') : reg ? T('Schon ein Konto? Anmelden') : T('Neu hier? Konto erstellen');
     const msg = $('auth-msg'); msg.textContent = ''; msg.classList.remove('ok');
   }
   $('auth-toggle').onclick = () => setMode(authMode === 'login' ? 'register' : 'login');
@@ -701,7 +798,7 @@ input.switch:disabled { opacity: .5; }
   try { $('in-remember').checked = localStorage.getItem('milteo_save_pw') !== '0'; } catch (_) {}
   if (linkError) {
     setMode('forgot');
-    $('auth-msg').textContent = 'Der Link ist abgelaufen oder ungültig. Fordere hier einen neuen an.';
+    $('auth-msg').textContent = T('Der Link ist abgelaufen oder ungültig. Fordere hier einen neuen an.');
     try { history.replaceState(null, '', location.pathname); } catch (_) {}
   }
 
@@ -731,18 +828,18 @@ input.switch:disabled { opacity: .5; }
         const r = await sb.auth.resetPasswordForEmail(email, { redirectTo: appUrl() });
         if (r.error) { msgEl.textContent = friendlyAuthError(r.error); return; }
         msgEl.classList.add('ok');
-        msgEl.textContent = 'Wenn es ein Konto mit dieser E-Mail gibt, ist ein Link unterwegs. Schau auch im Spam-Ordner nach.';
+        msgEl.textContent = T('Wenn es ein Konto mit dieser E-Mail gibt, ist ein Link unterwegs. Schau auch im Spam-Ordner nach.');
         return;
       }
       if (authMode === 'register') {
         const r = await sb.auth.signUp({ email, password: pw, options: { data: { name }, emailRedirectTo: appUrl() } });
         if (r.error) { msgEl.textContent = friendlyAuthError(r.error); return; }
         await rememberPassword(email, pw, $('in-remember').checked);
-        toast('Bestätige die E-Mail oder melde dich an.');
+        toast(T('Bestätige die E-Mail oder melde dich an.'));
         return;
       }
       const r = await Promise.race([sb.auth.signInWithPassword({ email, password: pw }), new Promise(res => setTimeout(() => res({ error: { message: 'timeout' } }), 15000))]);
-      if (r.error && r.error.message === 'timeout') { clearStaleAuth(); msgEl.textContent = 'Keine Antwort vom Server. Prüfe die Verbindung und versuche es nochmal.'; return; }
+      if (r.error && r.error.message === 'timeout') { clearStaleAuth(); msgEl.textContent = T('Keine Antwort vom Server. Prüfe die Verbindung und versuche es nochmal.'); return; }
       if (r.error) { msgEl.textContent = friendlyAuthError(r.error); return; }
       await rememberPassword(email, pw, $('in-remember').checked);
     } finally { btn.disabled = false; }
@@ -753,8 +850,8 @@ input.switch:disabled { opacity: .5; }
     e.preventDefault();
     const p1 = $('in-newpw').value, p2 = $('in-newpw2').value, msg = $('reset-msg');
     msg.textContent = '';
-    if (p1.length < 6) { msg.textContent = 'Mindestens 6 Zeichen.'; return; }
-    if (p1 !== p2) { msg.textContent = 'Die Passwörter stimmen nicht überein.'; return; }
+    if (p1.length < 6) { msg.textContent = T('Mindestens 6 Zeichen.'); return; }
+    if (p1 !== p2) { msg.textContent = T('Die Passwörter stimmen nicht überein.'); return; }
     const r = await sb.auth.updateUser({ password: p1 });
     if (r.error) { msg.textContent = friendlyAuthError(r.error); return; }
     recoveryMode = false;
@@ -762,7 +859,7 @@ input.switch:disabled { opacity: .5; }
     const { data } = await sb.auth.getSession();
     let keep = true; try { keep = localStorage.getItem('milteo_save_pw') !== '0'; } catch (_) {}
     if (data.session) await rememberPassword(data.session.user.email, p1, keep);
-    toast('Passwort geändert');
+    toast(T('Passwort geändert'));
     route(data.session);
   };
   $('reset-cancel').onclick = async () => {
@@ -774,7 +871,7 @@ input.switch:disabled { opacity: .5; }
 
   document.getElementById('btn-create').onclick = () => {
     sb.rpc('create_family', { p_display: myName }).then(r => {
-      if (r.error) toast('Fehler beim Erstellen');
+      if (r.error) toast(T('Fehler beim Erstellen'));
       else sb.auth.getSession().then(({ data }) => route(data.session));
     });
   };
@@ -787,9 +884,9 @@ input.switch:disabled { opacity: .5; }
       ? sb.rpc('join_family', { p_code: code, p_display: myName }).then(r1 => r1.error ? (/invalid code/i.test(r1.error.message) ? { data: 'invalid' } : r1) : { data: 'ok' })
       : r0).then(r => {
       const msg = document.getElementById('fam-msg');
-      if (r.error) msg.textContent = 'Beitreten ist gerade nicht möglich. Lade die App neu und versuche es nochmal.';
-      else if (r.data === 'throttled') msg.textContent = 'Zu viele Versuche. Bitte warte eine Stunde und versuche es dann nochmal.';
-      else if (r.data !== 'ok') msg.textContent = 'Ungültiger Code';
+      if (r.error) msg.textContent = T('Beitreten ist gerade nicht möglich. Lade die App neu und versuche es nochmal.');
+      else if (r.data === 'throttled') msg.textContent = T('Zu viele Versuche. Bitte warte eine Stunde und versuche es dann nochmal.');
+      else if (r.data !== 'ok') msg.textContent = T('Ungültiger Code');
       else window.location.reload();
     });
   };
@@ -809,36 +906,36 @@ input.switch:disabled { opacity: .5; }
   document.getElementById('f-name').onsubmit = async (e) => {
     e.preventDefault();
     const name = document.getElementById('in-myname').value.trim();
-    if (!name) { toast('Bitte einen Namen eingeben'); return; }
+    if (!name) { toast(T('Bitte einen Namen eingeben')); return; }
     const r = await sb.auth.updateUser({ data: { name } });
-    if (r.error) { toast('Name konnte nicht gespeichert werden'); return; }
+    if (r.error) { toast(T('Name konnte nicht gespeichert werden')); return; }
     myName = name;
     await sb.rpc('set_my_display_name', { p_name: name });
     loadMembers();
-    toast('Name gespeichert');
+    toast(T('Name gespeichert'));
   };
 
   document.getElementById('btn-leave').onclick = async () => {
-    if (!confirm('Familie wirklich verlassen? Du siehst die Einträge dann nicht mehr, kannst aber mit dem Code wieder beitreten.')) return;
+    if (!confirm(T('Familie wirklich verlassen? Du siehst die Einträge dann nicht mehr, kannst aber mit dem Code wieder beitreten.'))) return;
     const r = await sb.rpc('leave_family');
-    if (r.error) { toast('Verlassen nicht möglich: ' + r.error.message); return; }
+    if (r.error) { toast(T('Verlassen nicht möglich: ') + r.error.message); return; }
     fid = null; entries = []; unsubscribeChat();
     document.getElementById('fam-code').textContent = '-';
     const { data } = await sb.auth.getSession();
     route(data.session);
-    toast('Du hast die Familie verlassen.');
+    toast(T('Du hast die Familie verlassen.'));
   };
 
   document.getElementById('fam-newcode').onclick = async () => {
-    if (!confirm('Neuen Familiencode erzeugen? Der alte Code funktioniert danach nicht mehr. Aktuelle Mitglieder bleiben in der Familie.')) return;
+    if (!confirm(T('Neuen Familiencode erzeugen? Der alte Code funktioniert danach nicht mehr. Aktuelle Mitglieder bleiben in der Familie.'))) return;
     const r = await sb.rpc('regenerate_family_code');
-    if (r.error || !r.data) { toast('Das hat nicht geklappt'); return; }
+    if (r.error || !r.data) { toast(T('Das hat nicht geklappt')); return; }
     document.getElementById('fam-code').textContent = r.data;
-    toast('Neuer Code: ' + r.data, 5000);
+    toast(T('Neuer Code: ') + r.data, 5000);
   };
   document.getElementById('fam-copy').onclick = () => {
     navigator.clipboard.writeText(document.getElementById('fam-code').textContent);
-    toast('Code kopiert!');
+    toast(T('Code kopiert!'));
   };
 
   // ---------- Mitglieder ----------
@@ -846,10 +943,10 @@ input.switch:disabled { opacity: .5; }
     if (!fid) return;
     const r = await sb.from('members').select('user_id, display_name, created_at').eq('family_id', fid).order('created_at');
     const el = document.getElementById('list-members');
-    if (!r.error) { memberCount = r.data.length; renderHome(); }
-    if (r.error) { el.innerHTML = '<div class="empty">Mitglieder konnten nicht geladen werden.</div>'; return; }
+    if (!r.error) { memberCount = r.data.length; memberNames = {}; r.data.forEach(m => { memberNames[m.user_id] = m.display_name || ''; }); renderAll(); }
+    if (r.error) { el.innerHTML = '<div class="empty">' + T('Mitglieder konnten nicht geladen werden.') + '</div>'; return; }
     el.innerHTML = '<ul class="list">' + r.data.map(m => `
-      <li class="row"><span class="txt">${esc(m.display_name || 'Ohne Namen')}${m.user_id === myId ? '<span class="who">(du)</span>' : ''}</span></li>`).join('') + '</ul>';
+      <li class="row"><span class="txt">${esc(m.display_name || T('Ohne Namen'))}${m.user_id === myId ? `<span class="who">${T('(du)')}</span>` : ''}</span></li>`).join('') + '</ul>';
   }
 
   // ---------- Daten (Tabelle "entries") ----------
@@ -858,37 +955,37 @@ input.switch:disabled { opacity: .5; }
   async function loadEntries() {
     if (!fid || pendingUndo) return;
     const r = await sb.from('entries').select('*').eq('family_id', fid).order('created_at');
-    if (r.error) { toast('Fehler beim Laden'); return; }
+    if (r.error) { toast(T('Fehler beim Laden')); return; }
     entries = r.data;
     renderAll();
     loadMembers();
   }
   async function addEntry(kind, data) {
     const r = await sb.from('entries').insert({ family_id: fid, kind, data }).select().single();
-    if (r.error) { toast('Fehler beim Speichern'); return null; }
+    if (r.error) { toast(T('Fehler beim Speichern')); return null; }
     loadEntries();
     return r.data;
   }
   async function updateEntry(id, data) {
     const r = await sb.from('entries').update({ data }).eq('id', id);
-    if (r.error) toast('Fehler beim Speichern'); else loadEntries();
+    if (r.error) toast(T('Fehler beim Speichern')); else loadEntries();
   }
   async function delEntry(id) {
     const idx = entries.findIndex(x => x.id === id);
     if (idx < 0) return;
     const gone = entries[idx];
-    withUndo('Gelöscht.',
+    withUndo(T('Gelöscht.'),
       () => { entries = entries.filter(x => x.id !== id); renderAll(); },
-      async () => { const r = await sb.from('entries').delete().eq('id', id); if (r.error) toast('Fehler beim Löschen'); loadEntries(); },
+      async () => { const r = await sb.from('entries').delete().eq('id', id); if (r.error) toast(T('Fehler beim Löschen')); loadEntries(); },
       () => { entries.splice(Math.min(idx, entries.length), 0, gone); renderAll(); });
   }
 
   function recipeHtml(e) {
     const steps = Array.isArray(e.data.steps) ? e.data.steps : null;
     const shown = steps && recipeOpen.has(e.id);
-    const label = recipeBusy.has(e.id) ? 'Rezept wird geladen …' : shown ? '📖 Rezept ausblenden' : steps ? '📖 Rezept anzeigen' : '📖 Rezept Schritt für Schritt (optional)';
+    const label = recipeBusy.has(e.id) ? T('Rezept wird geladen …') : shown ? T('📖 Rezept ausblenden') : steps ? T('📖 Rezept anzeigen') : T('📖 Rezept Schritt für Schritt (optional)');
     let h = `<div class="recipe"><button class="btn ghost small" type="button" data-act="recipe" data-id="${e.id}" ${recipeBusy.has(e.id) ? 'disabled' : ''}>${label}</button>`;
-    if (shown) h += '<ol class="steps">' + steps.map((t, n) => `<li class="step ${stepsDone.has(e.id + ':' + n) ? 'done' : ''}" data-act="step" data-id="${e.id}" data-i="${n}"><span class="n">${n + 1}</span><span class="st">${esc(t)}</span></li>`).join('') + '</ol><p class="hint" style="margin-top:8px">Tippe auf einen Schritt, um ihn abzuhaken.</p>';
+    if (shown) h += '<ol class="steps">' + steps.map((t, n) => `<li class="step ${stepsDone.has(e.id + ':' + n) ? 'done' : ''}" data-act="step" data-id="${e.id}" data-i="${n}"><span class="n">${n + 1}</span><span class="st">${esc(tx(t))}</span></li>`).join('') + '</ol><p class="hint" style="margin-top:8px">Tippe auf einen Schritt, um ihn abzuhaken.</p>';
     return h + '</div>';
   }
   async function loadRecipe(id) {
@@ -903,7 +1000,7 @@ input.switch:disabled { opacity: .5; }
     } catch (_) { err = 'ai_failed'; }
     recipeBusy.delete(id);
     if (err || !Array.isArray(steps) || !steps.length) {
-      toast(err === 'limit' ? 'Tageslimit der KI erreicht' : err === 'quota' ? 'KI gerade ausgelastet, später nochmal' : 'Rezept konnte nicht geladen werden');
+      toast(err === 'limit' ? T('Tageslimit der KI erreicht') : err === 'quota' ? T('KI gerade ausgelastet, später nochmal') : T('Rezept konnte nicht geladen werden'));
       renderChecklist('shop'); return;
     }
     e.data = { ...e.data, steps };
@@ -921,30 +1018,30 @@ input.switch:disabled { opacity: .5; }
     const sub = items.map((i, n) => `
       <li class="sub-row ${i.done ? 'done' : ''}">
         <button class="check" type="button" role="checkbox" aria-checked="${!!i.done}" data-act="item" data-id="${e.id}" data-i="${n}">${i.done ? '✓' : ''}</button>
-        <span class="txt">${esc(i.name)}${i.amount ? `<span class="amt">${esc(i.amount)}</span>` : ''}</span>
-        <button class="del" type="button" aria-label="Zutat löschen" data-act="item-del" data-id="${e.id}" data-i="${n}">×</button>
+        <span class="txt">${esc(tx(i.name))}${i.amount ? `<span class="amt">${esc(I18N.unit(i.amount))}</span>` : ''}</span>
+        <button class="del" type="button" aria-label="${T('Zutat löschen')}" data-act="item-del" data-id="${e.id}" data-i="${n}">×</button>
       </li>`).join('');
     return `<li class="dish ${open ? 'open' : ''}">
       <div class="row dish-head">
-        <button class="plus" type="button" aria-expanded="${open}" aria-label="${open ? 'Zutaten ausblenden' : 'Zutaten anzeigen'}" data-act="dish" data-id="${e.id}">${open ? '−' : '+'}</button>
-        <span class="txt"><strong>🍽️ ${esc(d.text || 'Gericht')}</strong><span class="who">${done}/${items.length}${d.servings ? ' · ' + esc(d.servings) + ' Pers.' : ''}</span></span>
-        <button class="del" type="button" aria-label="Gericht löschen" data-act="del" data-id="${e.id}">×</button>
+        <button class="plus" type="button" aria-expanded="${open}" aria-label="${open ? T('Zutaten ausblenden') : T('Zutaten anzeigen')}" data-act="dish" data-id="${e.id}">${open ? '−' : '+'}</button>
+        <span class="txt"><strong>🍽️ ${esc(tx(d.text || '') || T('Gericht'))}</strong><span class="who">${done}/${items.length}${d.servings ? ' · ' + esc(d.servings) + ' ' + T('Pers.') : ''}</span></span>
+        <button class="del" type="button" aria-label="${T('Gericht löschen')}" data-act="del" data-id="${e.id}">×</button>
       </div>
-      ${open ? `<ul class="sub">${sub || '<li class="who">Keine Zutaten</li>'}</ul>${recipeHtml(e)}` : ''}
+      ${open ? `<ul class="sub">${sub || `<li class="who">${T('Keine Zutaten')}</li>`}</ul>${recipeHtml(e)}` : ''}
     </li>`;
   }
 
   function renderChecklist(kind) {
     const el = document.getElementById('list-' + kind);
     const items = entries.filter(e => e.kind === kind);
-    if (!items.length) { el.innerHTML = '<div class="empty">Noch nichts da.</div>'; return; }
+    if (!items.length) { el.innerHTML = '<div class="empty">' + T('Noch nichts da.') + '</div>'; return; }
     el.innerHTML = '<ul class="list">' + items.map(e => {
       if (kind === 'shop' && e.data.type === 'dish') return dishHtml(e);
       return `
       <li class="row ${e.data.done ? 'done' : ''}">
         <button class="check" type="button" role="checkbox" aria-checked="${!!e.data.done}" data-act="toggle" data-id="${e.id}">${e.data.done ? '✓' : ''}</button>
-        <span class="txt">${esc(e.data.text || '')}</span>
-        <button class="del" type="button" aria-label="Löschen" data-act="del" data-id="${e.id}">×</button>
+        <span class="txt">${esc(kind === 'shop' ? tx(e.data.text || '') : (e.data.text || ''))}${kind === 'todos' ? byHtml(e) : ''}</span>
+        <button class="del" type="button" aria-label="${T('Löschen')}" data-act="del" data-id="${e.id}">×</button>
       </li>`;
     }).join('') + '</ul>';
   }
@@ -957,23 +1054,23 @@ input.switch:disabled { opacity: .5; }
   function renderTimers() {
     const el = document.getElementById('list-timers');
     const items = entries.filter(e => e.kind === 'timers');
-    if (!items.length) { el.innerHTML = '<div class="empty">Kein Timer läuft.</div>'; return; }
+    if (!items.length) { el.innerHTML = '<div class="empty">' + T('Kein Timer läuft.') + '</div>'; return; }
     el.innerHTML = '<ul class="list">' + items.map(e => {
       const left = e.data.end - Date.now();
-      return `<li class="row"><span class="txt">${esc(e.data.label || 'Timer')}
-        <span class="who timer-left" data-end="${e.data.end}" data-id="${e.id}">${left > 0 ? fmtLeft(left) : 'Fertig!'}</span></span>
-        <button class="del" type="button" aria-label="Löschen" data-act="del" data-id="${e.id}">×</button></li>`;
+      return `<li class="row"><span class="txt">${esc(e.data.label || T('Timer'))}
+        <span class="who timer-left" data-end="${e.data.end}" data-id="${e.id}">${left > 0 ? fmtLeft(left) : T('Fertig!')}</span></span>
+        <button class="del" type="button" aria-label="${T('Löschen')}" data-act="del" data-id="${e.id}">×</button></li>`;
     }).join('') + '</ul>';
   }
   function renderEvents() {
     const el = document.getElementById('list-events');
     const items = entries.filter(e => e.kind === 'events')
       .sort((a, b) => ((a.data.date || '') + (a.data.time || '')).localeCompare((b.data.date || '') + (b.data.time || '')));
-    if (!items.length) { el.innerHTML = '<div class="empty">Keine Termine.</div>'; return; }
+    if (!items.length) { el.innerHTML = '<div class="empty">' + T('Keine Termine.') + '</div>'; return; }
     el.innerHTML = '<ul class="list">' + items.map(e => {
-      const d = e.data.date ? new Date(e.data.date + 'T00:00').toLocaleDateString('de-CH', { weekday: 'short', day: 'numeric', month: 'short' }) : '';
-      return `<li class="row"><span class="txt">${esc(e.data.title || '')}<span class="who">${d} ${esc(e.data.time || '')}</span>${(e.data.remind !== null && e.data.remind !== undefined && e.data.remind !== '') ? `<span class="who">🔔 ${remindText(Number(e.data.remind))}</span>` : ''}</span>
-        <button class="del" type="button" aria-label="Löschen" data-act="del" data-id="${e.id}">×</button></li>`;
+      const d = e.data.date ? new Date(e.data.date + 'T00:00').toLocaleDateString(I18N.loc(), { weekday: 'short', day: 'numeric', month: 'short' }) : '';
+      return `<li class="row"><span class="txt">${esc(e.data.title || '')}<span class="who">${d} ${esc(e.data.time || '')}</span>${(e.data.remind !== null && e.data.remind !== undefined && e.data.remind !== '') ? `<span class="who">🔔 ${remindText(Number(e.data.remind))}</span>` : ''}${byHtml(e)}</span>
+        <button class="del" type="button" aria-label="${T('Löschen')}" data-act="del" data-id="${e.id}">×</button></li>`;
     }).join('') + '</ul>';
   }
   function renderAll() { renderChecklist('shop'); renderChecklist('todos'); renderTimers(); renderEvents(); renderHome(); }
@@ -982,10 +1079,10 @@ input.switch:disabled { opacity: .5; }
   setInterval(() => {
     document.querySelectorAll('.timer-left').forEach(s => {
       const left = Number(s.dataset.end) - Date.now();
-      s.textContent = left > 0 ? fmtLeft(left) : 'Fertig!';
+      s.textContent = left > 0 ? fmtLeft(left) : T('Fertig!');
       if (left <= 0 && !notified.has(s.dataset.id)) {
         notified.add(s.dataset.id);
-        toast('⏰ Timer abgelaufen!');
+        toast(T('⏰ Timer abgelaufen!'));
         try { navigator.vibrate && navigator.vibrate([300, 150, 300]); } catch (_) {}
       }
     });
@@ -1088,6 +1185,7 @@ input.switch:disabled { opacity: .5; }
     'djuvec|duvec|reisfleisch': ['Reis:70:g','Hackfleisch oder Schweinefleisch:100:g','Peperoni:0.5','Zwiebel:0.5','Tomatenpüree:1:EL','Paprika (Pulver)::','Bouillon:150:ml'],
     'ajvar|ajvar selber machen': ['Rote Peperoni:300:g','Aubergine:100:g','Öl:1:EL','Knoblauchzehe:0.5','Essig:1:TL','Salz::'],
     'musaka|moussaka': ['Aubergine:150:g','Hackfleisch:100:g','Kartoffeln:100:g','Zwiebel:0.25','Pelati (Dosentomaten):100:g','Milch:100:ml','Butter:15:g','Mehl:15:g','Käse:30:g','Eier:0.5','Muskat, Salz, Pfeffer::'],
+    'pitabrot|pita brot|pita|pitta|gyros brot|gyrosbrot|gyros pitabrot|fladenbrot selber machen|pide brot': ['Weizenmehl:90:g','Trockenhefe:2:g','Wasser (lauwarm):55:ml','Olivenöl:0.5:EL','Joghurt natur:10:g','Salz::','Zucker::'],
     'gyros|souvlaki|gyros pita': ['Schweine- oder Pouletgeschnetzeltes:130:g','Pitabrot:1','Tomate:0.5','Zwiebel:0.25','Tzatziki:40:g','Gyros-Gewürz::','Pommes::'],
     'tzatziki': ['Naturjoghurt (griechisch):120:g','Gurke:0.25','Knoblauchzehe:0.5','Olivenöl:1:TL','Salz, Dill::'],
     'griechischer salat|bauernsalat': ['Tomaten:1','Gurke:0.25','Peperoni:0.25','Rote Zwiebel:0.25','Feta:50:g','Oliven:5','Olivenöl:1:EL','Oregano, Salz::'],
@@ -1137,6 +1235,7 @@ input.switch:disabled { opacity: .5; }
     'kebapi|kebab balkan|raznjici|ražnjići': ['Schweine- oder Rindfleisch (Würfel):150:g','Zwiebel:0.5','Peperoni:0.25','Paprika (Pulver), Salz, Pfeffer::','Öl::','Fladenbrot:1','Ajvar::']
   };
   const norm = (t) => t.toLowerCase().replace(/ä/g,'ae').replace(/ö/g,'oe').replace(/ü/g,'ue').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'dj').replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
+  RECIPES['pitabrot|pita brot|pita|pitta|gyros brot|gyrosbrot|gyros pitabrot|fladenbrot selber machen|pide brot'].title = 'Pitabrot';
   const RECIPE_MAP = [];
   Object.keys(RECIPES).forEach(k => k.split('|').forEach(a => RECIPE_MAP.push([norm(a), RECIPES[k]])));
   const FILLER = new Set(['mit','und','nach','art','selber','selbst','selbstgemacht','hausgemacht','machen','rezept','klassisch','klassische','klassischer','fuer','zum','zur','von','dem','der','die','das','ein','eine','einen','ich','moechte','will','kochen','heute']);
@@ -1181,15 +1280,15 @@ input.switch:disabled { opacity: .5; }
     const servings = Math.min(20, Math.max(1, parseInt($('in-servings').value, 10) || 4));
     const typed = $('in-ingr').value.split(/[,;\n]/).map(x => x.trim()).filter(Boolean);
     if (dish.length < 2 || !fid) return;
-    let items, request = '', dishName = dish;
+    let items, request = '', dishName = dish, isProduct = false;
     if (typed.length) items = typed.map(name => ({ name, amount: '', done: false }));
     else {
       const isSentence = dish.split(/\s+/).length >= 4 || /[?!]/.test(dish);
       const rec = isSentence ? null : findRecipe(dish);
-      if (rec) items = scaleRecipe(rec, servings);
+      if (rec) { items = scaleRecipe(rec, servings); if (rec.title) dishName = rec.title; }
       else {
         // Unbekanntes Gericht: kostenlose KI fragen (Gemini), sonst Zutaten von Hand
-        const btn = $('btn-dish'); btn.disabled = true; btn.textContent = 'Suche …';
+        const btn = $('btn-dish'); btn.disabled = true; btn.textContent = T('Suche …');
         let err = null, data = null, detail = '';
         try {
           const r = await sb.functions.invoke('dish', { body: { dish, servings } });
@@ -1198,38 +1297,40 @@ input.switch:disabled { opacity: .5; }
           else if (data && data.error) { err = data.error; detail = data.detail || ''; }
         } catch (e) { err = 'ai_failed'; detail = String(e); }
         if (err) console.warn('dish ai', err, detail);
-        btn.disabled = false; btn.textContent = 'Zutaten';
+        btn.disabled = false; btn.textContent = T('Zutaten');
         if (!err && data && Array.isArray(data.items) && data.items.length) {
           items = data.items.map(i => ({ name: i.name, amount: i.amount || '', done: false }));
+          isProduct = !!data.product;
+          if (data.dish && !isSentence) dishName = data.dish;
           if (isSentence) { request = dish; dishName = data.dish || dish; }
         } else {
           $('in-ingr').hidden = false; $('in-ingr').readOnly = false; $('in-ingr').focus();
-          $('dish-hint').textContent = err === 'limit' ? 'Tageslimit der KI erreicht. Trag die Zutaten oben mit Komma getrennt ein.'
-            : err === 'quota' ? 'Die kostenlose KI ist gerade ausgelastet. Trag die Zutaten mit Komma getrennt ein oder versuche es später.'
-            : 'Dazu habe ich nichts gefunden. Formuliere es anders oder trag die Zutaten oben mit Komma getrennt ein.';
+          $('dish-hint').textContent = err === 'limit' ? T('Tageslimit der KI erreicht. Trag die Zutaten oben mit Komma getrennt ein.')
+            : err === 'quota' ? T('Die kostenlose KI ist gerade ausgelastet. Trag die Zutaten mit Komma getrennt ein oder versuche es später.')
+            : T('Dazu habe ich nichts gefunden. Formuliere es anders oder trag die Zutaten oben mit Komma getrennt ein.');
           return;
         }
       }
     }
-    if (items.length === 1 && !typed.length) {
+    if (isProduct && items.length === 1 && !typed.length) {
       // Nur eine Sache gemeint (z. B. "Gyrosbrot"): als normalen Eintrag in die Liste
       const it = items[0];
       const row1 = await addEntry('shop', { text: ((it.amount ? it.amount + ' ' : '') + it.name).trim(), done: false, by: myName });
-      if (row1) { $('in-dish').value = ''; $('in-ingr').value = ''; $('in-ingr').hidden = true; toast('Zur Liste hinzugefügt: ' + it.name); }
+      if (row1) { $('in-dish').value = ''; $('in-ingr').value = ''; $('in-ingr').hidden = true; toast(it.name); }
       return;
     }
     const row = await addEntry('shop', { type: 'dish', text: dishName, servings, items, by: myName, ...(request ? { request } : {}) });
     if (row) {
       openDishes.add(row.id); saveOpen(); renderChecklist('shop');
       $('in-dish').value = ''; $('in-ingr').value = ''; $('in-ingr').hidden = true;
-      $('dish-hint').textContent = 'Gericht und Anzahl Personen eingeben: Die Zutaten werden vorgeschlagen und erscheinen unter dem Gericht, mit + aufklappbar.';
+      $('dish-hint').textContent = T('Gericht und Anzahl Personen eingeben: Die Zutaten werden vorgeschlagen und erscheinen unter dem Gericht, mit + aufklappbar.');
     }
   };
 
 
   document.getElementById('f-timer').onsubmit = (e) => {
     e.preventDefault();
-    const label = document.getElementById('in-tlabel').value.trim() || 'Timer';
+    const label = document.getElementById('in-tlabel').value.trim() || T('Timer');
     const min = Number(document.getElementById('in-tmin').value);
     if (!(min > 0)) return;
     addEntry('timers', { label, end: Date.now() + min * 60000 });
@@ -1239,7 +1340,7 @@ input.switch:disabled { opacity: .5; }
     const title = document.getElementById('in-etitle').value.trim();
     const date = document.getElementById('in-edate').value;
     const time = document.getElementById('in-etime').value;
-    if (!title || !date) { toast('Titel und Datum fehlen'); return; }
+    if (!title || !date) { toast(T('Titel und Datum fehlen')); return; }
     const rv = document.getElementById('in-eremind').value;
     addEntry('events', { title, date, time, remind: rv === '' ? null : Number(rv) });
     document.getElementById('in-etitle').value = '';
@@ -1248,10 +1349,10 @@ input.switch:disabled { opacity: .5; }
 
   // ---------- Erinnerungstext ----------
   function remindText(m) {
-    if (m === 0) return 'zur Startzeit';
-    if (m === 1440) return '1 Tag vorher';
-    if (m === 60) return '1 Std. vorher';
-    return m + ' Min. vorher';
+    if (m === 0) return T('zur Startzeit');
+    if (m === 1440) return T('1 Tag vorher');
+    if (m === 60) return T('1 Std. vorher');
+    return T('{n} Min. vorher', { n: m });
   }
 
   // ---------- Chat ----------
@@ -1270,11 +1371,11 @@ input.switch:disabled { opacity: .5; }
   function msgHtml(m) {
     const mine = m.user_id === myId;
     const dt = new Date(m.created_at);
-    const when = dt.toLocaleDateString('de-CH', { day: '2-digit', month: '2-digit' }) + ' ' + dt.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' });
+    const when = dt.toLocaleDateString(I18N.loc(), { day: '2-digit', month: '2-digit' }) + ' ' + dt.toLocaleTimeString(I18N.loc(), { hour: '2-digit', minute: '2-digit' });
     let inner = '';
     if (m.media_path) {
       if (String(m.media_type || '').startsWith('audio') || m.duration_ms != null) {
-        inner = `<div class="player"><button type="button" class="pbtn play" data-act="play" data-path="${esc(m.media_path)}" data-id="${m.id}" aria-label="Abspielen">▶</button><div class="bar"><i></i></div><span class="dur">${fmtDur(m.duration_ms)}</span></div>`;
+        inner = `<div class="player"><button type="button" class="pbtn play" data-act="play" data-path="${esc(m.media_path)}" data-id="${m.id}" aria-label="${T('Abspielen')}">▶</button><div class="bar"><i></i></div><span class="dur">${fmtDur(m.duration_ms)}</span></div>`;
       } else {
         inner = `<img class="chat-img" data-path="${esc(m.media_path)}" alt="Bild" loading="lazy">`;
       }
@@ -1285,14 +1386,14 @@ input.switch:disabled { opacity: .5; }
 
   function hydrateMedia(root) {
     root.querySelectorAll('img.chat-img:not([src])').forEach(img => {
-      mediaUrl(img.dataset.path).then(u => { if (u) img.src = u; else img.alt = 'Bild nicht verfügbar'; });
+      mediaUrl(img.dataset.path).then(u => { if (u) img.src = u; else img.alt = T('Bild nicht verfügbar'); });
     });
   }
 
   function renderChat() {
     const el = $('list-chat');
     if (!el) return;
-    if (!chatMsgs.length) { el.innerHTML = '<div class="empty">Noch keine Nachrichten. Schreib die erste!</div>'; return; }
+    if (!chatMsgs.length) { el.innerHTML = '<div class="empty">' + T('Noch keine Nachrichten. Schreib die erste!') + '</div>'; return; }
     el.innerHTML = chatMsgs.map(msgHtml).join('');
     hydrateMedia(el);
     if (stickBottom) el.scrollTop = el.scrollHeight;
@@ -1387,7 +1488,7 @@ input.switch:disabled { opacity: .5; }
 
   async function sendMessage(fields) {
     const r = await sb.from('messages').insert({ family_id: fid, display_name: myName, ...fields }).select().single();
-    if (r.error) { console.error(r.error); toast('Senden nicht möglich'); return null; }
+    if (r.error) { console.error(r.error); toast(T('Senden nicht möglich')); return null; }
     stickBottom = true;
     addMsg(r.data);
     sb.functions.invoke('notify', { body: { message_id: r.data.id } }).catch(() => {});
@@ -1443,7 +1544,7 @@ input.switch:disabled { opacity: .5; }
   async function uploadMedia(blob, ext, type) {
     const path = `${fid}/${(crypto.randomUUID ? crypto.randomUUID() : Date.now() + '-' + Math.random().toString(16).slice(2))}.${ext}`;
     const r = await sb.storage.from('chat-media').upload(path, blob, { contentType: type, upsert: false });
-    if (r.error) { console.error(r.error); toast('Hochladen fehlgeschlagen'); return null; }
+    if (r.error) { console.error(r.error); toast(T('Hochladen fehlgeschlagen')); return null; }
     return path;
   }
   $('btn-attach').onclick = () => { closeEmoji(); $('in-file').click(); };
@@ -1454,9 +1555,9 @@ input.switch:disabled { opacity: .5; }
     const f = el.files[0];
     el.value = '';
     if (!f || !fid) return;
-    if (!f.type.startsWith('image/')) { toast('Nur Bilder und GIFs'); return; }
-    if (f.size > 12 * 1024 * 1024) { toast('Datei zu gross (max. 12 MB)'); return; }
-    toast('Sende Bild …');
+    if (!f.type.startsWith('image/')) { toast(T('Nur Bilder und GIFs')); return; }
+    if (f.size > 12 * 1024 * 1024) { toast(T('Datei zu gross (max. 12 MB)')); return; }
+    toast(T('Sende Bild …'));
     const blob = await shrinkImage(f);
     const type = blob.type || 'image/jpeg';
     const ext = type === 'image/gif' ? 'gif' : type === 'image/png' ? 'png' : 'jpg';
@@ -1477,11 +1578,11 @@ input.switch:disabled { opacity: .5; }
     return ['audio/webm;codecs=opus', 'audio/mp4', 'audio/webm', 'audio/ogg;codecs=opus'].find(t => MediaRecorder.isTypeSupported(t)) || '';
   }
   async function startRec() {
-    if (!navigator.mediaDevices || !window.MediaRecorder) { toast('Aufnehmen wird hier nicht unterstützt'); return; }
+    if (!navigator.mediaDevices || !window.MediaRecorder) { toast(T('Aufnehmen wird hier nicht unterstützt')); return; }
     closeEmoji();
     let stream;
     try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
-    catch (_) { toast('Mikrofon nicht erlaubt'); return; }
+    catch (_) { toast(T('Mikrofon nicht erlaubt')); return; }
     const mime = pickMime();
     const mr = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
     rec = { mr, stream, chunks: [], t0: Date.now(), send: false, mime: mr.mimeType || mime || 'audio/webm' };
@@ -1493,11 +1594,11 @@ input.switch:disabled { opacity: .5; }
       updateCompose();
       if (!r.send) return;
       const dur = Date.now() - r.t0;
-      if (dur < 600) { toast('Zu kurz'); return; }
+      if (dur < 600) { toast(T('Zu kurz')); return; }
       const type = r.mime.split(';')[0];
       const blob = new Blob(r.chunks, { type });
       const ext = type.includes('mp4') ? 'm4a' : type.includes('ogg') ? 'ogg' : 'webm';
-      toast('Sende Sprachnachricht …');
+      toast(T('Sende Sprachnachricht …'));
       const path = await uploadMedia(blob, ext, type);
       if (path) await sendMessage({ body: '', media_path: path, media_type: type, duration_ms: dur });
     };
@@ -1528,15 +1629,15 @@ input.switch:disabled { opacity: .5; }
     if (playing && playing.btn === b) { stopPlaying(); return; }
     stopPlaying();
     const url = await mediaUrl(b.dataset.path);
-    if (!url) { toast('Nicht abspielbar'); return; }
+    if (!url) { toast(T('Nicht abspielbar')); return; }
     const audio = new Audio(url);
     const bar = b.parentElement.querySelector('.bar i');
     playing = { audio, btn: b };
     b.textContent = '⏸';
     audio.ontimeupdate = () => { if (audio.duration && isFinite(audio.duration) && bar) bar.style.width = (audio.currentTime / audio.duration * 100) + '%'; };
     audio.onended = () => { if (playing && playing.audio === audio) stopPlaying(); };
-    audio.onerror = () => { stopPlaying(); toast('Nicht abspielbar'); };
-    audio.play().catch(() => { stopPlaying(); toast('Nicht abspielbar'); });
+    audio.onerror = () => { stopPlaying(); toast(T('Nicht abspielbar')); };
+    audio.play().catch(() => { stopPlaying(); toast(T('Nicht abspielbar')); });
   });
 
   // ---------- Benachrichtigungen (Web Push) ----------
@@ -1583,41 +1684,41 @@ input.switch:disabled { opacity: .5; }
       const standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
       master.checked = false; master.disabled = true;
       st.textContent = (isIOS && !standalone)
-        ? 'Auf dem iPhone: Seite zuerst über Teilen → „Zum Home-Bildschirm“ installieren und die App von dort öffnen.'
-        : 'Dieses Gerät oder dieser Browser unterstützt keine Benachrichtigungen.';
+        ? T('Auf dem iPhone: Seite zuerst über Teilen → „Zum Home-Bildschirm“ installieren und die App von dort öffnen.')
+        : T('Dieses Gerät oder dieser Browser unterstützt keine Benachrichtigungen.');
       return;
     }
     master.disabled = false;
     if (Notification.permission === 'denied') {
       master.checked = false;
-      st.textContent = 'Benachrichtigungen sind blockiert. Erlaube sie in den Website-Einstellungen des Browsers.';
+      st.textContent = T('Benachrichtigungen sind blockiert. Erlaube sie in den Website-Einstellungen des Browsers.');
       return;
     }
     let sub = null;
     try { sub = await currentSub(); } catch (_) {}
     const on = !!sub && Notification.permission === 'granted';
     master.checked = on; types.hidden = !on; test.hidden = !on;
-    st.textContent = on ? 'Aktiv: Du wirst auch bei geschlossener App benachrichtigt.' : 'Aus: Auf diesem Gerät kommen keine Mitteilungen.';
+    st.textContent = on ? T('Aktiv: Du wirst auch bei geschlossener App benachrichtigt.') : T('Aus: Auf diesem Gerät kommen keine Mitteilungen.');
   }
   $('sw-push').onchange = async () => {
     const master = $('sw-push');
     try {
       if (master.checked) {
         const perm = await Notification.requestPermission();
-        if (perm !== 'granted') { toast('Benachrichtigungen nicht erlaubt'); return; }
+        if (perm !== 'granted') { toast(T('Benachrichtigungen nicht erlaubt')); return; }
         const reg = await swReady();
         if (!reg) throw new Error('Service Worker nicht bereit');
         let sub = await reg.pushManager.getSubscription();
         if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToU8(VAPID_PUBLIC) });
         const r = await saveSub(sub);
         if (r.error) throw r.error;
-        toast('Benachrichtigungen ein');
+        toast(T('Benachrichtigungen ein'));
       } else {
         const sub = await currentSub();
         if (sub) { await sb.from('push_subscriptions').delete().eq('endpoint', sub.endpoint); await sub.unsubscribe(); }
-        toast('Benachrichtigungen aus');
+        toast(T('Benachrichtigungen aus'));
       }
-    } catch (err) { console.error(err); toast('Das hat nicht geklappt'); }
+    } catch (err) { console.error(err); toast(T('Das hat nicht geklappt')); }
     refreshPushUI();
   };
   ['sw-chat', 'sw-timer', 'sw-event'].forEach(id => {
@@ -1625,13 +1726,13 @@ input.switch:disabled { opacity: .5; }
       const sub = await currentSub();
       if (!sub) return;
       const r = await sb.from('push_subscriptions').update(typeFlags()).eq('endpoint', sub.endpoint);
-      if (r.error) toast('Speichern fehlgeschlagen');
+      if (r.error) toast(T('Speichern fehlgeschlagen'));
     };
   });
   $('btn-push-test').onclick = async () => {
     const r = await sb.functions.invoke('notify', { body: { test: true } });
-    if (r.error) toast('Test fehlgeschlagen');
-    else toast(r.data && r.data.sent > 0 ? 'Testmitteilung gesendet' : 'Keine Zustellung, bitte aus- und wieder einschalten');
+    if (r.error) toast(T('Test fehlgeschlagen'));
+    else toast(r.data && r.data.sent > 0 ? T('Testmitteilung gesendet') : T('Keine Zustellung, bitte aus- und wieder einschalten'));
   };
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.addEventListener('message', (ev) => {
@@ -1640,9 +1741,7 @@ input.switch:disabled { opacity: .5; }
   }
 
   // Datum im Kopf + automatische Aktualisierung
-  const now = new Date();
-  document.getElementById('todayDay').textContent = now.toLocaleDateString('de-CH', { weekday: 'long' });
-  document.getElementById('todayDate').textContent = now.toLocaleDateString('de-CH', { day: 'numeric', month: 'long' });
+  renderToday(); fillLangSelects(); applyStatic();
   setInterval(() => { loadEntries(); if (currentTab === 'chat') loadChat(); }, 15000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) loadEntries(); });
 </script>
