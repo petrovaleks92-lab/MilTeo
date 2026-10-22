@@ -354,7 +354,25 @@ input.switch:disabled { opacity: .5; }
           <button class="btn block" type="submit">Eintragen</button>
         </form>
       </div>
+      <div class="card">
+        <p class="field-label">📎 Termine aus Datei</p>
+        <p class="hint">Foto, PDF oder Kalenderdatei (.ics): Die Termine werden gelesen und zur Auswahl angezeigt. Die Erinnerung wird wie oben gewählt gesetzt.</p>
+        <button class="btn ghost" id="btn-import" type="button">Datei wählen</button>
+        <input type="file" id="in-import" accept="image/*,.pdf,.ics,.txt,.csv,text/calendar,application/pdf" hidden>
+        <div id="import-box"></div>
+      </div>
       <div id="list-events"></div>
+      <div class="card" style="margin-top:18px">
+        <p class="field-label">🎒 Stundenplan</p>
+        <p class="hint">Stundenplan eines Kindes hochladen (Foto oder PDF). Mit Namen, falls du mehrere Kinder hast.</p>
+        <form id="f-tt" style="display:grid; gap:8px;">
+          <input type="text" id="in-child" enterkeyhint="go" placeholder="Name des Kindes" maxlength="40">
+          <button class="btn ghost" type="submit">Stundenplan hochladen</button>
+        </form>
+        <input type="file" id="in-tt" accept="image/*,.pdf,application/pdf" hidden>
+        <div id="tt-box"></div>
+      </div>
+      <div id="list-tt"></div>
     </section>
 
     <section class="panel" id="p-chat" hidden>
@@ -1064,7 +1082,7 @@ input.switch:disabled { opacity: .5; }
   }
   function renderEvents() {
     const el = document.getElementById('list-events');
-    const items = entries.filter(e => e.kind === 'events')
+    const items = entries.filter(e => e.kind === 'events' && e.data.type !== 'timetable')
       .sort((a, b) => ((a.data.date || '') + (a.data.time || '')).localeCompare((b.data.date || '') + (b.data.time || '')));
     if (!items.length) { el.innerHTML = '<div class="empty">' + T('Keine Termine.') + '</div>'; return; }
     el.innerHTML = '<ul class="list">' + items.map(e => {
@@ -1073,7 +1091,7 @@ input.switch:disabled { opacity: .5; }
         <button class="del" type="button" aria-label="${T('Löschen')}" data-act="del" data-id="${e.id}">×</button></li>`;
     }).join('') + '</ul>';
   }
-  function renderAll() { renderChecklist('shop'); renderChecklist('todos'); renderTimers(); renderEvents(); renderHome(); }
+  function renderAll() { renderChecklist('shop'); renderChecklist('todos'); renderTimers(); renderEvents(); renderTimetables(); renderHome(); }
 
   // Tick für Timer
   setInterval(() => {
@@ -1347,6 +1365,159 @@ input.switch:disabled { opacity: .5; }
   };
 
 
+
+  // ---------- Termine aus Datei & Stundenplan ----------
+  const ymd = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  const fileToB64 = (blob) => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1]); r.onerror = rej; r.readAsDataURL(blob); });
+
+  function parseIcs(text) {
+    const lines = text.replace(/\r/g, '').replace(/\n[ \t]/g, '').split('\n');
+    const out = []; let cur = null;
+    const unesc = (v) => v.replace(/\\n/gi, ' ').replace(/\\([,;\\])/g, '$1').trim();
+    lines.forEach(l => {
+      if (l === 'BEGIN:VEVENT') cur = {};
+      else if (l === 'END:VEVENT') { if (cur && cur.title && cur.date) out.push(cur); cur = null; }
+      else if (cur) {
+        const i = l.indexOf(':'); if (i < 0) return;
+        const name = l.slice(0, i).split(';')[0].toUpperCase(), val = l.slice(i + 1);
+        if (name === 'SUMMARY') cur.title = unesc(val).slice(0, 80);
+        if (name === 'DTSTART') {
+          const m = val.match(/^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2}))?(Z)?/); if (!m) return;
+          if (m[4] && m[6]) { const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5])); cur.date = ymd(d); cur.time = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
+          else { cur.date = m[1] + '-' + m[2] + '-' + m[3]; cur.time = m[4] ? m[4] + ':' + m[5] : ''; }
+        }
+      }
+    });
+    return out.slice(0, 100);
+  }
+
+  // Datei an die KI schicken (Foto/PDF) oder direkt lesen (.ics)
+  async function extractFrom(file, what) {
+    const name = (file.name || '').toLowerCase();
+    const body = { mode: 'extract', what, today: ymd(new Date()) };
+    if (what === 'events' && (name.endsWith('.ics') || file.type === 'text/calendar')) return { events: parseIcs(await file.text()) };
+    if ((file.type || '').startsWith('image/')) {
+      const b = await shrinkImage(file, 2000);
+      if (b.size > 4 * 1024 * 1024) return { error: 'big' };
+      body.mime = b.type || 'image/jpeg'; body.data = await fileToB64(b);
+    } else if (file.type === 'application/pdf' || name.endsWith('.pdf')) {
+      if (file.size > 4 * 1024 * 1024) return { error: 'big' };
+      body.mime = 'application/pdf'; body.data = await fileToB64(file);
+    } else {
+      if (file.size > 1024 * 1024) return { error: 'big' };
+      body.text = (await file.text()).slice(0, 30000);
+    }
+    let err = null, data = null;
+    try {
+      const r = await sb.functions.invoke('dish', { body });
+      data = r.data;
+      if (r.error) { try { err = (await r.error.context.json()).error || 'ai_failed'; } catch (_) { err = 'ai_failed'; } }
+      else if (data && data.error) err = data.error;
+    } catch (_) { err = 'ai_failed'; }
+    if (err) return { error: err };
+    return data || { error: 'ai_failed' };
+  }
+  const extractMsg = (err) => err === 'big' ? T('Datei zu gross (max. 4 MB)') : err === 'limit' ? T('Tageslimit der KI erreicht') : err === 'quota' ? T('KI gerade ausgelastet, später nochmal') : T('Die Datei konnte nicht gelesen werden. Versuche ein deutlicheres Foto oder eine andere Datei.');
+
+  let importFound = [];
+  function renderImport() {
+    const box = $('import-box');
+    if (!importFound.length) { box.innerHTML = ''; return; }
+    const loc = I18N.loc();
+    box.innerHTML = `<p class="hint">${esc(T('{n} Termine gefunden. Wähle aus, was übernommen werden soll.', { n: importFound.length }))}</p><ul class="list">` + importFound.map((e, i) => {
+      const d = new Date(e.date + 'T00:00').toLocaleDateString(loc, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+      return `<li class="row ${e.on ? '' : 'done'}"><button class="check" type="button" role="checkbox" aria-checked="${e.on}" data-act="imp" data-i="${i}">${e.on ? '✓' : ''}</button><span class="txt">${esc(e.title)}<span class="who">${esc(d)} ${esc(e.time || '')}</span></span></li>`;
+    }).join('') + `</ul><div style="display:flex; gap:8px; margin-top:10px"><button class="btn" type="button" id="imp-ok">${esc(T('Übernehmen'))} (${importFound.filter(e => e.on).length})</button><button class="btn ghost" type="button" id="imp-cancel">${esc(T('Abbrechen'))}</button></div>`;
+  }
+  $('btn-import').onclick = () => $('in-import').click();
+  $('in-import').onchange = async (ev) => {
+    const f = ev.target.files && ev.target.files[0]; ev.target.value = '';
+    if (!f || !fid) return;
+    $('import-box').innerHTML = `<p class="hint">${esc(T('Datei wird gelesen …'))}</p>`;
+    const r = await extractFrom(f, 'events');
+    if (r.error) { $('import-box').innerHTML = ''; toast(extractMsg(r.error), 5000); return; }
+    const ev2 = (r.events || []).filter(e => e && e.title && /^\d{4}-\d{2}-\d{2}$/.test(e.date || '')).map(e => ({ title: String(e.title).slice(0, 80), date: e.date, time: /^\d{2}:\d{2}$/.test(e.time || '') ? e.time : '', on: true }));
+    if (!ev2.length) { $('import-box').innerHTML = ''; toast(T('Keine Termine in der Datei gefunden.'), 4000); return; }
+    importFound = ev2; renderImport();
+  };
+  $('import-box').addEventListener('click', async (ev) => {
+    const b = ev.target.closest('button'); if (!b) return;
+    if (b.dataset.act === 'imp') { const e = importFound[+b.dataset.i]; if (e) { e.on = !e.on; renderImport(); } return; }
+    if (b.id === 'imp-cancel') { importFound = []; renderImport(); return; }
+    if (b.id === 'imp-ok') {
+      const have = new Set(entries.filter(x => x.kind === 'events').map(x => [x.data.title, x.data.date, x.data.time || ''].join('|')));
+      const rv = $('in-eremind').value, remind = rv === '' ? null : Number(rv);
+      const rows = importFound.filter(e => e.on && !have.has([e.title, e.date, e.time].join('|')))
+        .map(e => ({ family_id: fid, kind: 'events', data: { title: e.title, date: e.date, time: e.time, remind, by: myName } }));
+      b.disabled = true;
+      if (rows.length) { const r = await sb.from('entries').insert(rows); if (r.error) { toast(T('Fehler beim Speichern')); b.disabled = false; return; } }
+      importFound = []; renderImport();
+      toast(rows.length ? T('{n} Termine übernommen', { n: rows.length }) : T('Diese Termine sind schon vorhanden'));
+      loadEntries();
+    }
+  });
+
+  // Stundenplan
+  let ttDraft = null;
+  const dayName = (d, style) => new Date(2024, 0, d).toLocaleDateString(I18N.loc(), { weekday: style || 'short' });
+  const lessonHtml = (l) => `<li class="who" style="margin:0"><strong>${esc(l.from || '')}${l.to ? '–' + esc(l.to) : ''}</strong> ${esc(l.subject || '')}${l.room ? ' · ' + esc(T('Raum')) + ' ' + esc(l.room) : ''}</li>`;
+  function ttDays(lessons) { return [1, 2, 3, 4, 5, 6, 7].filter(d => lessons.some(l => l.d === d)); }
+  function renderTtDraft() {
+    const box = $('tt-box');
+    if (!ttDraft) { box.innerHTML = ''; return; }
+    box.innerHTML = `<p class="hint">${esc(T('{n} Lektionen gefunden. Bitte kurz prüfen und speichern.', { n: ttDraft.lessons.length }))}</p>` +
+      `<p class="field-label">🎒 ${esc(ttDraft.child)}</p>` +
+      ttDays(ttDraft.lessons).map(d => `<p class="field-label" style="margin-top:8px">${esc(dayName(d, 'long'))}</p><ul style="margin:0;padding-left:18px">${ttDraft.lessons.filter(l => l.d === d).map(lessonHtml).join('')}</ul>`).join('') +
+      `<div style="display:flex; gap:8px; margin-top:10px"><button class="btn" type="button" id="tt-ok">${esc(T('Speichern'))}</button><button class="btn ghost" type="button" id="tt-cancel">${esc(T('Abbrechen'))}</button></div>`;
+  }
+  const ttWeek = new Set();
+  function renderTimetables() {
+    const el = $('list-tt'); if (!el) return;
+    const tts = entries.filter(e => e.kind === 'events' && e.data.type === 'timetable');
+    if (!tts.length) { el.innerHTML = ''; return; }
+    const dow = new Date().getDay() || 7;
+    el.innerHTML = '<ul class="list">' + tts.map(e => {
+      const L = Array.isArray(e.data.lessons) ? e.data.lessons : [];
+      const week = ttWeek.has(e.id);
+      const showDay = (dow <= 5 ? dow : 1);
+      const days = week ? ttDays(L) : [showDay];
+      const body = days.map(d => {
+        const ls = L.filter(l => l.d === d).sort((a, b) => (a.from || '').localeCompare(b.from || ''));
+        return `<p class="field-label" style="margin:8px 0 2px">${esc(dayName(d, 'long'))}</p>` + (ls.length ? `<ul style="margin:0;padding-left:18px">${ls.map(lessonHtml).join('')}</ul>` : `<p class="who" style="margin:0">${esc(T('Keine Lektionen'))}</p>`);
+      }).join('');
+      return `<li class="dish open"><div class="row dish-head"><span class="txt"><strong>🎒 ${esc(e.data.child || '')}</strong>${byHtml(e)}</span><button class="btn ghost small" type="button" data-act="ttweek" data-id="${e.id}">${esc(week ? T('Nur ein Tag') : T('Ganze Woche'))}</button><button class="del" type="button" aria-label="${T('Stundenplan löschen')}" data-act="del" data-id="${e.id}">×</button></div><div style="padding:0 12px 10px">${body}</div></li>`;
+    }).join('') + '</ul>';
+  }
+  document.addEventListener('click', (ev) => { const b = ev.target.closest('[data-act="ttweek"]'); if (!b) return; if (ttWeek.has(b.dataset.id)) ttWeek.delete(b.dataset.id); else ttWeek.add(b.dataset.id); renderTimetables(); });
+  $('f-tt').onsubmit = (e) => {
+    e.preventDefault();
+    if (!$('in-child').value.trim()) { toast(T('Bitte zuerst den Namen des Kindes eingeben')); return; }
+    $('in-tt').click();
+  };
+  $('in-tt').onchange = async (ev) => {
+    const f = ev.target.files && ev.target.files[0]; ev.target.value = '';
+    const child = $('in-child').value.trim();
+    if (!f || !fid || !child) return;
+    $('tt-box').innerHTML = `<p class="hint">${esc(T('Datei wird gelesen …'))}</p>`;
+    const r = await extractFrom(f, 'timetable');
+    if (r.error) { $('tt-box').innerHTML = ''; toast(extractMsg(r.error), 5000); return; }
+    const lessons = (r.lessons || []).filter(l => l && l.subject && l.d >= 1 && l.d <= 7).map(l => ({ d: Number(l.d), from: /^\d{1,2}:\d{2}$/.test(l.from || '') ? l.from : '', to: /^\d{1,2}:\d{2}$/.test(l.to || '') ? l.to : '', subject: String(l.subject).slice(0, 60), room: String(l.room || '').slice(0, 20) }));
+    if (!lessons.length) { $('tt-box').innerHTML = ''; toast(T('Keinen Stundenplan in der Datei gefunden.'), 4000); return; }
+    ttDraft = { child, lessons }; renderTtDraft();
+  };
+  $('tt-box').addEventListener('click', async (ev) => {
+    const b = ev.target.closest('button'); if (!b) return;
+    if (b.id === 'tt-cancel') { ttDraft = null; renderTtDraft(); return; }
+    if (b.id === 'tt-ok' && ttDraft) {
+      b.disabled = true;
+      const data = { type: 'timetable', child: ttDraft.child, lessons: ttDraft.lessons, by: myName };
+      const old = entries.find(x => x.kind === 'events' && x.data.type === 'timetable' && String(x.data.child || '').toLowerCase() === ttDraft.child.toLowerCase());
+      const r = old ? await sb.from('entries').update({ data }).eq('id', old.id) : await sb.from('entries').insert({ family_id: fid, kind: 'events', data });
+      if (r.error) { toast(T('Fehler beim Speichern')); b.disabled = false; return; }
+      ttDraft = null; renderTtDraft(); $('in-child').value = ''; toast(T('Stundenplan gespeichert')); loadEntries();
+    }
+  });
+
   // ---------- Erinnerungstext ----------
   function remindText(m) {
     if (m === 0) return T('zur Startzeit');
@@ -1524,13 +1695,13 @@ input.switch:disabled { opacity: .5; }
   });
 
   // Bilder / GIFs
-  function shrinkImage(file) {
+  function shrinkImage(file, maxPx) {
     return new Promise((resolve) => {
       if (file.type === 'image/gif') return resolve(file);        // GIF bleibt animiert
       const url = URL.createObjectURL(file);
       const img = new Image();
       img.onload = () => {
-        const max = 1280, k = Math.min(1, max / Math.max(img.width, img.height));
+        const max = maxPx || 1280, k = Math.min(1, max / Math.max(img.width, img.height));
         const c = document.createElement('canvas');
         c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
         c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
