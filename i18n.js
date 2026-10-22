@@ -242,6 +242,7 @@
     ['Für alle gleichen Einträge übernehmen', 'Примени на сите исти ставки', 'Appliquer à toutes les entrées identiques', 'Applica a tutte le voci uguali', 'Primeni na sve iste unose', 'Zbato për të gjitha të njëjtat', 'Aynı olan tüm kayıtlara uygula', 'Apply to all identical entries'],
     ['Übernommen', 'Применето', 'Appliqué', 'Applicato', 'Primenjeno', 'U zbatua', 'Uygulandı', 'Applied'],
     ['Tippe auf einen Eintrag: Hauptmenü und Erinnerung einzeln einstellen.', 'Допри ставка: поставки за почетна и потсетник поединечно.', 'Touche une entrée : réglage individuel de l\'accueil et du rappel.', 'Tocca una voce: imposta singolarmente home e promemoria.', 'Dodirni unos: posebno podesi početnu i podsetnik.', 'Prek një hyrje: cilëso veç ballinën dhe kujtesën.', 'Bir kayda dokun: ana ekran ve hatırlatmayı tek tek ayarla.', 'Tap an entry: set home screen and reminder individually.'],
+    ['Erinnerung für alle', 'Потсетник за сите', 'Rappel pour tous', 'Promemoria per tutti', 'Podsetnik za sve', 'Kujtesë për të gjithë', 'Hepsi için hatırlatma', 'Reminder for all'],
     ['__end__', '', '', '', '', '', '', '']
   ];
   R.pop();

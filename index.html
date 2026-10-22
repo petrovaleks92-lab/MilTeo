@@ -69,6 +69,7 @@ input[type=text], input[type=number], input[type=date], input[type=time], input[
 .ttg .ttc { background: repeating-linear-gradient(to bottom, var(--line) 0, var(--line) 1px, transparent 1px, transparent 45px); border-radius: 6px; }
 .ttb { position: absolute; border-radius: 6px; padding: 2px 3px; overflow: hidden; color: #1b1b1b; line-height: 1.15; box-sizing: border-box; }
 .ttb b { display: block; font-size: 11px; } .ttb i { font-style: normal; font-size: 10px; opacity: .75; }
+.mini { min-height: 36px; font-size: 14px; width: auto; flex: 1; min-width: 150px; }
 .ttedit { margin-top: 10px; padding: 10px; border: 1.5px solid var(--line); border-radius: 12px; display: grid; gap: 6px; background: var(--bg); }
 .ttchips { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0; }
 .chip { border: 1.5px solid var(--line); background: var(--surface); border-radius: 999px; padding: 4px 12px; font-size: 13px; }
@@ -723,7 +724,7 @@ input.switch:disabled { opacity: .5; }
     const run = E.filter(e => e.kind === 'timers' && e.data.end > Date.now());
     $('ti-timers').textContent = run.length ? T(run.length === 1 ? '{n} läuft' : '{n} laufen', { n: run.length }) : T('Kein Timer aktiv');
     const today = new Date(); today.setHours(0, 0, 0, 0);
-    const evs = E.filter(e => e.kind === 'events' && e.data.date && new Date(e.data.date + 'T' + (e.data.time || '23:59')) >= new Date())
+    const evs = E.filter(e => e.kind === 'events' && e.data.date && e.data.home !== false && new Date(e.data.date + 'T' + (e.data.time || '23:59')) >= new Date())
       .sort((a, b) => ((a.data.date) + (a.data.time || '')).localeCompare((b.data.date) + (b.data.time || '')));
     const fmtEv = (e) => {
       const d = new Date(e.data.date + 'T00:00'), diff = Math.round((d - today) / 86400000);
@@ -1140,10 +1141,26 @@ input.switch:disabled { opacity: .5; }
     if (!items.length) { el.innerHTML = '<div class="empty">' + T('Keine Termine.') + '</div>'; return; }
     el.innerHTML = '<ul class="list">' + items.map(e => {
       const d = e.data.date ? new Date(e.data.date + 'T00:00').toLocaleDateString(I18N.loc(), { weekday: 'short', day: 'numeric', month: 'short' }) : '';
-      return `<li class="row"><span class="txt">${esc(e.data.title || '')}<span class="who">${d} ${esc(e.data.time || '')}</span>${(e.data.remind !== null && e.data.remind !== undefined && e.data.remind !== '') ? `<span class="who">🔔 ${remindText(Number(e.data.remind))}</span>` : ''}${byHtml(e)}</span>
-        <button class="del" type="button" aria-label="${T('Löschen')}" data-act="del" data-id="${e.id}">×</button></li>`;
+      const rmv = (e.data.remind !== null && e.data.remind !== undefined && e.data.remind !== '') ? String(e.data.remind) : '';
+      const ed = evEdit === e.id ? `<div style="flex-basis:100%; display:flex; gap:8px; align-items:center; flex-wrap:wrap"><select class="mini" id="ev-rm" data-v="${esc(rmv)}" aria-label="${esc(T('Erinnerung'))}">${$('in-eremind').innerHTML}</select><button type="button" class="chip ${e.data.home === false ? '' : 'on'}" data-act="evhome" data-id="${e.id}">📌 ${esc(T('Im Hauptmenü anzeigen'))}</button></div>` : '';
+      return `<li class="row" style="flex-wrap:wrap"><span class="txt" data-act="evedit" data-id="${e.id}" style="cursor:pointer">${esc(e.data.title || '')}${e.data.home === false ? ' <span class="who">🚫📌</span>' : ''}<span class="who">${d} ${esc(e.data.time || '')}</span>${(e.data.remind !== null && e.data.remind !== undefined && e.data.remind !== '') ? `<span class="who">🔔 ${remindText(Number(e.data.remind))}</span>` : ''}${byHtml(e)}</span>
+        <button class="del" type="button" aria-label="${T('Löschen')}" data-act="del" data-id="${e.id}">×</button>${ed}</li>`;
     }).join('') + '</ul>';
+    const sel = $('ev-rm'); if (sel) sel.value = sel.dataset.v;
   }
+  let evEdit = null;
+  document.addEventListener('click', (ev) => {
+    const b = ev.target.closest('[data-act="evedit"],[data-act="evhome"]'); if (!b) return;
+    const e = entries.find(x => x.id === b.dataset.id); if (!e) return;
+    if (b.dataset.act === 'evedit') { evEdit = evEdit === e.id ? null : e.id; renderEvents(); return; }
+    updateEntry(e.id, { ...e.data, home: e.data.home === false ? true : false });
+  });
+  document.addEventListener('change', (ev) => {
+    if (ev.target.id !== 'ev-rm' || !evEdit) return;
+    const e = entries.find(x => x.id === evEdit); if (!e) return;
+    const v = ev.target.value;
+    updateEntry(e.id, { ...e.data, remind: v === '' ? null : Number(v), reminded: false });
+  });
   function renderAll() { renderChecklist('shop'); renderChecklist('todos'); renderTimers(); renderEvents(); renderTimetables(); renderHome(); }
 
   // Tick für Timer
@@ -1479,9 +1496,12 @@ input.switch:disabled { opacity: .5; }
     const loc = I18N.loc();
     box.innerHTML = `<p class="hint">${esc(T('{n} Termine gefunden. Wähle aus, was übernommen werden soll.', { n: importFound.length }))}</p><ul class="list">` + importFound.map((e, i) => {
       const d = new Date(e.date + 'T00:00').toLocaleDateString(loc, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
-      return `<li class="row ${e.on ? '' : 'done'}"><button class="check" type="button" role="checkbox" aria-checked="${e.on}" data-act="imp" data-i="${i}">${e.on ? '✓' : ''}</button><span class="txt">${esc(e.title)}<span class="who">${esc(d)} ${esc(e.time || '')}</span></span></li>`;
-    }).join('') + `</ul><label class="field-label" for="imp-remind" style="margin-top:10px">${esc(T('Erinnerung'))}</label><select id="imp-remind">${$('in-eremind').innerHTML}</select><div style="display:flex; gap:8px; margin-top:10px"><button class="btn" type="button" id="imp-ok">${esc(T('Übernehmen'))} (${importFound.filter(e => e.on).length})</button><button class="btn ghost" type="button" id="imp-cancel">${esc(T('Abbrechen'))}</button></div>`;
-    const sel = $('imp-remind'); sel.value = importRemind; sel.onchange = () => { importRemind = sel.value; };
+      return `<li class="row ${e.on ? '' : 'done'}" style="flex-wrap:wrap"><button class="check" type="button" role="checkbox" aria-checked="${e.on}" data-act="imp" data-i="${i}">${e.on ? '✓' : ''}</button><span class="txt">${esc(e.title)}<span class="who">${esc(d)} ${esc(e.time || '')}</span></span>
+        <div style="flex-basis:100%; display:flex; gap:8px; align-items:center; flex-wrap:wrap"><select class="mini" data-act="imprm" data-i="${i}" data-v="${esc(e.rm)}" aria-label="${esc(T('Erinnerung'))}">${$('in-eremind').innerHTML}</select><button type="button" class="chip ${e.home ? 'on' : ''}" data-act="imphome" data-i="${i}">📌 ${esc(T('Im Hauptmenü anzeigen'))}</button></div></li>`;
+    }).join('') + `</ul><label class="field-label" for="imp-remind" style="margin-top:10px">${esc(T('Erinnerung für alle'))}</label><select id="imp-remind">${$('in-eremind').innerHTML}</select><div style="display:flex; gap:8px; margin-top:10px"><button class="btn" type="button" id="imp-ok">${esc(T('Übernehmen'))} (${importFound.filter(e => e.on).length})</button><button class="btn ghost" type="button" id="imp-cancel">${esc(T('Abbrechen'))}</button></div>`;
+    const sel = $('imp-remind'); sel.value = importRemind;
+    sel.onchange = () => { importRemind = sel.value; importFound.forEach(e => { e.rm = sel.value; }); renderImport(); };
+    box.querySelectorAll('select[data-act=imprm]').forEach(x => { x.value = x.dataset.v; });
   }
   $('btn-import').onclick = () => $('in-import').click();
   $('in-import').onchange = async (ev) => {
@@ -1490,19 +1510,20 @@ input.switch:disabled { opacity: .5; }
     $('import-box').innerHTML = `<p class="hint">${esc(T('Datei wird gelesen …'))}</p>`;
     const r = await extractFrom(f, 'events');
     if (r.error) { $('import-box').innerHTML = ''; toast(extractMsg(r.error), 5000); return; }
-    const ev2 = (r.events || []).filter(e => e && e.title && /^\d{4}-\d{2}-\d{2}$/.test(e.date || '')).map(e => ({ title: String(e.title).slice(0, 80), date: e.date, time: /^\d{2}:\d{2}$/.test(e.time || '') ? e.time : '', on: true }));
+    const ev2 = (r.events || []).filter(e => e && e.title && /^\d{4}-\d{2}-\d{2}$/.test(e.date || '')).map(e => ({ title: String(e.title).slice(0, 80), date: e.date, time: /^\d{2}:\d{2}$/.test(e.time || '') ? e.time : '', on: true, home: true, rm: '' }));
     if (!ev2.length) { $('import-box').innerHTML = ''; toast(T('Keine Termine in der Datei gefunden.'), 4000); return; }
-    importFound = ev2; importRemind = $('in-eremind').value; renderImport();
+    importRemind = $('in-eremind').value; ev2.forEach(e => { e.rm = importRemind; }); importFound = ev2; renderImport();
   };
+  $('import-box').addEventListener('change', (ev) => { const x = ev.target; if (x.dataset && x.dataset.act === 'imprm' && importFound[+x.dataset.i]) importFound[+x.dataset.i].rm = x.value; });
   $('import-box').addEventListener('click', async (ev) => {
     const b = ev.target.closest('button'); if (!b) return;
+    if (b.dataset.act === 'imphome') { const e = importFound[+b.dataset.i]; if (e) { e.home = !e.home; renderImport(); } return; }
     if (b.dataset.act === 'imp') { const e = importFound[+b.dataset.i]; if (e) { e.on = !e.on; renderImport(); } return; }
     if (b.id === 'imp-cancel') { importFound = []; renderImport(); return; }
     if (b.id === 'imp-ok') {
       const have = new Set(entries.filter(x => x.kind === 'events').map(x => [x.data.title, x.data.date, x.data.time || ''].join('|')));
-      const rv = ($('imp-remind') || $('in-eremind')).value, remind = rv === '' ? null : Number(rv);
       const rows = importFound.filter(e => e.on && !have.has([e.title, e.date, e.time].join('|')))
-        .map(e => ({ family_id: fid, kind: 'events', data: { title: e.title, date: e.date, time: e.time, remind, by: myName } }));
+        .map(e => ({ family_id: fid, kind: 'events', data: { title: e.title, date: e.date, time: e.time, remind: e.rm === '' ? null : Number(e.rm), ...(e.home ? {} : { home: false }), by: myName } }));
       b.disabled = true;
       if (rows.length) { const r = await sb.from('entries').insert(rows); if (r.error) { toast(T('Fehler beim Speichern')); b.disabled = false; return; } }
       importFound = []; renderImport();
