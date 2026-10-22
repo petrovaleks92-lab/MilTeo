@@ -228,6 +228,9 @@
     ['Keine Lektionen', 'Нема часови', 'Aucun cours', 'Nessuna lezione', 'Nema časova', 'Pa orë mësimi', 'Ders yok', 'No lessons'],
     ['Stundenplan löschen', 'Избриши распоред', 'Supprimer l\'emploi du temps', 'Elimina orario', 'Obriši raspored', 'Fshi orarin', 'Ders programını sil', 'Delete timetable'],
     ['Raum', 'Училница', 'Salle', 'Aula', 'Učionica', 'Salla', 'Sınıf', 'Room'],
+    ['Alle', 'Сите', 'Tous', 'Tutti', 'Svi', 'Të gjithë', 'Hepsi', 'All'],
+    ['Nur heute', 'Само денес', 'Seulement aujourd\'hui', 'Solo oggi', 'Samo danas', 'Vetëm sot', 'Yalnızca bugün', 'Today only'],
+    ['Ohne Uhrzeit', 'Без час', 'Sans heure', 'Senza orario', 'Bez vremena', 'Pa orë', 'Saatsiz', 'No time'],
     ['__end__', '', '', '', '', '', '', '']
   ];
   R.pop();

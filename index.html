@@ -56,6 +56,16 @@ input[type=text], input[type=number], input[type=date], input[type=time], input[
   width: 100%; min-height: 46px; padding: 0 14px; background: var(--surface); border: 1.5px solid var(--line); border-radius: 12px;
 }
 .lang-sel { margin-top: 12px; }
+.ttg { display: grid; gap: 2px; font-size: 11px; margin-top: 8px; }
+.ttg .ttd { text-align: center; font-weight: 700; color: var(--muted); padding-bottom: 2px; }
+.ttg .tta, .ttg .ttc { position: relative; height: var(--h); }
+.ttg .tta span { position: absolute; right: 2px; transform: translateY(-50%); color: var(--muted); font-size: 10px; }
+.ttg .ttc { background: repeating-linear-gradient(to bottom, var(--line) 0, var(--line) 1px, transparent 1px, transparent 45px); border-radius: 6px; }
+.ttb { position: absolute; border-radius: 6px; padding: 2px 3px; overflow: hidden; color: #1b1b1b; line-height: 1.15; box-sizing: border-box; }
+.ttb b { display: block; font-size: 11px; } .ttb i { font-style: normal; font-size: 10px; opacity: .75; }
+.ttchips { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0; }
+.chip { border: 1.5px solid var(--line); background: var(--surface); border-radius: 999px; padding: 4px 12px; font-size: 13px; }
+.chip.on { background: var(--mil-soft); border-color: var(--mil); font-weight: 600; }
 .who-by { display: block; font-size: .8rem; color: var(--muted); }
 .btn { min-height: 46px; padding: 0 18px; border: 0; border-radius: 12px; font-weight: 600; background: var(--mil); color: var(--on-mil); }
 .btn.ghost { background: transparent; color: var(--muted); border: 1.5px solid var(--line); }
@@ -1457,38 +1467,85 @@ input.switch:disabled { opacity: .5; }
     }
   });
 
-  // Stundenplan
+  // Stundenplan (grafische Wochenansicht, optional mit Gruppen wie Sternen/Mond)
   let ttDraft = null;
   const dayName = (d, style) => new Date(2024, 0, d).toLocaleDateString(I18N.loc(), { weekday: style || 'short' });
-  const lessonHtml = (l) => `<li class="who" style="margin:0"><strong>${esc(l.from || '')}${l.to ? '–' + esc(l.to) : ''}</strong> ${esc(l.subject || '')}${l.room ? ' · ' + esc(T('Raum')) + ' ' + esc(l.room) : ''}</li>`;
+  const toMin = (s) => { const m = /^(\d{1,2}):(\d{2})/.exec(s || ''); return m ? (+m[1]) * 60 + (+m[2]) : null; };
+  const hueOf = (s) => { let h = 0; for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) % 360; return h; };
+  const groupIcon = (g) => /stern/i.test(g) ? '⭐' : /mond/i.test(g) ? '🌙' : /sonne/i.test(g) ? '☀️' : /regenbogen/i.test(g) ? '🌈' : '';
+  const blockColor = (l) => { const g = l.group || ''; const h = /stern/i.test(g) ? 48 : /mond/i.test(g) ? 215 : hueOf(g || l.subject); return `hsl(${h} 85% 82%)`; };
+  const lessonHtml = (l) => `<li class="who" style="margin:0"><strong>${esc(l.from || '')}${l.to ? '–' + esc(l.to) : ''}</strong> ${esc(groupIcon(l.group || ''))} ${esc(l.subject || '')}${l.group ? ' (' + esc(l.group) + ')' : ''}${l.room ? ' · ' + esc(T('Raum')) + ' ' + esc(l.room) : ''}</li>`;
   function ttDays(lessons) { return [1, 2, 3, 4, 5, 6, 7].filter(d => lessons.some(l => l.d === d)); }
+  const ttGroups = (L) => [...new Set(L.map(l => l.group).filter(Boolean))];
+  function dayListHtml(L, days) {
+    return days.map(d => {
+      const ls = L.filter(l => l.d === d).sort((a, b) => (a.from || '').localeCompare(b.from || ''));
+      return `<p class="field-label" style="margin:8px 0 2px">${esc(dayName(d, 'long'))}</p>` + (ls.length ? `<ul style="margin:0;padding-left:18px">${ls.map(lessonHtml).join('')}</ul>` : `<p class="who" style="margin:0">${esc(T('Keine Lektionen'))}</p>`);
+    }).join('');
+  }
+  // Wochenraster: Spalte pro Tag, Block pro Lektion (Zeit = Position), Überschneidungen nebeneinander
+  function ttGrid(L) {
+    const timed = L.filter(l => toMin(l.from) !== null);
+    const rest = L.filter(l => toMin(l.from) === null);
+    if (!timed.length) return dayListHtml(L, ttDays(L));
+    const end = (l) => { const e = toMin(l.to); const s = toMin(l.from); return e !== null && e > s ? e : s + 45; };
+    const t0 = Math.floor(Math.min(...timed.map(l => toMin(l.from))) / 60) * 60;
+    const t1 = Math.ceil(Math.max(...timed.map(end)) / 60) * 60;
+    const K = 0.75, days = ttDays(timed), H = (t1 - t0) * K;
+    let h = `<div class="ttg" style="--h:${H}px;grid-template-columns:30px repeat(${days.length},1fr)"><div></div>` + days.map(d => `<div class="ttd">${esc(dayName(d))}</div>`).join('');
+    h += `<div class="tta">` + Array.from({ length: (t1 - t0) / 60 + 1 }, (_, i) => `<span style="top:${i * 60 * K}px">${String(t0 / 60 + i).padStart(2, '0')}</span>`).join('') + `</div>`;
+    days.forEach(d => {
+      const ls = timed.filter(l => l.d === d).sort((a, b) => toMin(a.from) - toMin(b.from));
+      // Spuren zuweisen
+      const lane = [], cl = [];
+      let cluster = [], cEnd = -1;
+      ls.forEach(l => {
+        if (toMin(l.from) >= cEnd) { cluster = []; cEnd = -1; }
+        cluster.push(l); cEnd = Math.max(cEnd, end(l));
+        const used = new Set(cluster.filter(x => x !== l && end(x) > toMin(l.from) && x._ln !== undefined).map(x => x._ln));
+        let n = 0; while (used.has(n)) n++; l._ln = n; l._cl = cluster;
+      });
+      h += `<div class="ttc">` + ls.map(l => {
+        const lanes = Math.max(...l._cl.map(x => x._ln)) + 1, top = (toMin(l.from) - t0) * K, ht = Math.max(16, (end(l) - toMin(l.from)) * K - 1);
+        const tip = `${l.from}${l.to ? '–' + l.to : ''} ${l.subject}${l.group ? ' (' + l.group + ')' : ''}${l.room ? ' · ' + l.room : ''}`;
+        return `<div class="ttb" title="${esc(tip)}" style="top:${top}px;height:${ht}px;left:${l._ln * 100 / lanes}%;width:calc(${100 / lanes}% - 1px);background:${blockColor(l)}"><b>${esc(groupIcon(l.group || ''))}${esc(l.subject)}</b><i>${esc(l.from)}${l.to ? '–' + esc(l.to) : ''}</i></div>`;
+      }).join('') + `</div>`;
+    });
+    h += `</div>`;
+    ls_cleanup(timed);
+    if (rest.length) h += `<p class="who" style="margin:8px 0 0">${esc(T('Ohne Uhrzeit'))}</p>` + dayListHtml(rest, ttDays(rest));
+    return h;
+  }
+  function ls_cleanup(arr) { arr.forEach(l => { delete l._ln; delete l._cl; }); }
   function renderTtDraft() {
     const box = $('tt-box');
     if (!ttDraft) { box.innerHTML = ''; return; }
     box.innerHTML = `<p class="hint">${esc(T('{n} Lektionen gefunden. Bitte kurz prüfen und speichern.', { n: ttDraft.lessons.length }))}</p>` +
-      `<p class="field-label">🎒 ${esc(ttDraft.child)}</p>` +
-      ttDays(ttDraft.lessons).map(d => `<p class="field-label" style="margin-top:8px">${esc(dayName(d, 'long'))}</p><ul style="margin:0;padding-left:18px">${ttDraft.lessons.filter(l => l.d === d).map(lessonHtml).join('')}</ul>`).join('') +
+      `<p class="field-label">🎒 ${esc(ttDraft.child)}</p>` + ttGrid(ttDraft.lessons) +
       `<div style="display:flex; gap:8px; margin-top:10px"><button class="btn" type="button" id="tt-ok">${esc(T('Speichern'))}</button><button class="btn ghost" type="button" id="tt-cancel">${esc(T('Abbrechen'))}</button></div>`;
   }
-  const ttWeek = new Set();
+  const ttToday = new Set(), ttGroup = {};
   function renderTimetables() {
     const el = $('list-tt'); if (!el) return;
     const tts = entries.filter(e => e.kind === 'events' && e.data.type === 'timetable');
     if (!tts.length) { el.innerHTML = ''; return; }
     const dow = new Date().getDay() || 7;
     el.innerHTML = '<ul class="list">' + tts.map(e => {
-      const L = Array.isArray(e.data.lessons) ? e.data.lessons : [];
-      const week = ttWeek.has(e.id);
-      const showDay = (dow <= 5 ? dow : 1);
-      const days = week ? ttDays(L) : [showDay];
-      const body = days.map(d => {
-        const ls = L.filter(l => l.d === d).sort((a, b) => (a.from || '').localeCompare(b.from || ''));
-        return `<p class="field-label" style="margin:8px 0 2px">${esc(dayName(d, 'long'))}</p>` + (ls.length ? `<ul style="margin:0;padding-left:18px">${ls.map(lessonHtml).join('')}</ul>` : `<p class="who" style="margin:0">${esc(T('Keine Lektionen'))}</p>`);
-      }).join('');
-      return `<li class="dish open"><div class="row dish-head"><span class="txt"><strong>🎒 ${esc(e.data.child || '')}</strong>${byHtml(e)}</span><button class="btn ghost small" type="button" data-act="ttweek" data-id="${e.id}">${esc(week ? T('Nur ein Tag') : T('Ganze Woche'))}</button><button class="del" type="button" aria-label="${T('Stundenplan löschen')}" data-act="del" data-id="${e.id}">×</button></div><div style="padding:0 12px 10px">${body}</div></li>`;
+      const all = Array.isArray(e.data.lessons) ? e.data.lessons : [];
+      const groups = ttGroups(all), g = ttGroup[e.id] || '';
+      const L = g ? all.filter(l => !l.group || l.group === g) : all;
+      const today = ttToday.has(e.id);
+      const chips = groups.length ? `<div class="ttchips">` + ['', ...groups].map(x => `<button type="button" class="chip ${x === g ? 'on' : ''}" data-act="ttgroup" data-id="${e.id}" data-g="${esc(x)}">${x ? esc(groupIcon(x) + ' ' + x) : esc(T('Alle'))}</button>`).join('') + `</div>` : '';
+      const body = today ? dayListHtml(L, [dow <= 5 ? dow : 1]) : ttGrid(L);
+      return `<li class="dish open"><div class="row dish-head"><span class="txt"><strong>🎒 ${esc(e.data.child || '')}</strong>${byHtml(e)}</span><button class="btn ghost small" type="button" data-act="ttweek" data-id="${e.id}">${esc(today ? T('Ganze Woche') : T('Nur heute'))}</button><button class="del" type="button" aria-label="${T('Stundenplan löschen')}" data-act="del" data-id="${e.id}">×</button></div><div style="padding:0 12px 10px">${chips}${body}</div></li>`;
     }).join('') + '</ul>';
   }
-  document.addEventListener('click', (ev) => { const b = ev.target.closest('[data-act="ttweek"]'); if (!b) return; if (ttWeek.has(b.dataset.id)) ttWeek.delete(b.dataset.id); else ttWeek.add(b.dataset.id); renderTimetables(); });
+  document.addEventListener('click', (ev) => {
+    const b = ev.target.closest('[data-act="ttweek"],[data-act="ttgroup"]'); if (!b) return;
+    if (b.dataset.act === 'ttweek') { if (ttToday.has(b.dataset.id)) ttToday.delete(b.dataset.id); else ttToday.add(b.dataset.id); }
+    else ttGroup[b.dataset.id] = b.dataset.g || '';
+    renderTimetables();
+  });
   $('f-tt').onsubmit = (e) => {
     e.preventDefault();
     if (!$('in-child').value.trim()) { toast(T('Bitte zuerst den Namen des Kindes eingeben')); return; }
@@ -1501,7 +1558,7 @@ input.switch:disabled { opacity: .5; }
     $('tt-box').innerHTML = `<p class="hint">${esc(T('Datei wird gelesen …'))}</p>`;
     const r = await extractFrom(f, 'timetable');
     if (r.error) { $('tt-box').innerHTML = ''; toast(extractMsg(r.error), 5000); return; }
-    const lessons = (r.lessons || []).filter(l => l && l.subject && l.d >= 1 && l.d <= 7).map(l => ({ d: Number(l.d), from: /^\d{1,2}:\d{2}$/.test(l.from || '') ? l.from : '', to: /^\d{1,2}:\d{2}$/.test(l.to || '') ? l.to : '', subject: String(l.subject).slice(0, 60), room: String(l.room || '').slice(0, 20) }));
+    const lessons = (r.lessons || []).filter(l => l && l.subject && l.d >= 1 && l.d <= 7).map(l => ({ d: Number(l.d), from: /^\d{1,2}:\d{2}$/.test(l.from || '') ? l.from : '', to: /^\d{1,2}:\d{2}$/.test(l.to || '') ? l.to : '', subject: String(l.subject).slice(0, 60), room: String(l.room || '').slice(0, 20), group: String(l.group || '').slice(0, 30) }));
     if (!lessons.length) { $('tt-box').innerHTML = ''; toast(T('Keinen Stundenplan in der Datei gefunden.'), 4000); return; }
     ttDraft = { child, lessons }; renderTtDraft();
   };
