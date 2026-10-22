@@ -56,6 +56,12 @@ input[type=text], input[type=number], input[type=date], input[type=time], input[
   width: 100%; min-height: 46px; padding: 0 14px; background: var(--surface); border: 1.5px solid var(--line); border-radius: 12px;
 }
 .lang-sel { margin-top: 12px; }
+.fold-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; background: none; border: 0; padding: 2px 0; font-weight: 700; font-size: 15px; color: inherit; text-align: left; }
+.fold-h .caret::after { content: '▾'; color: var(--muted); }
+.fold.closed > .fold-h .caret::after { content: '▸'; }
+.fold.closed > .fold-b { display: none !important; }
+.fold-h .cnt { color: var(--muted); font-weight: 600; font-size: 13px; margin-left: auto; margin-right: 6px; }
+.fold-h > :first-child:not(.caret) { }
 .ttg { display: grid; gap: 2px; font-size: 11px; margin-top: 8px; }
 .ttg .ttd { text-align: center; font-weight: 700; color: var(--muted); padding-bottom: 2px; }
 .ttg .tta, .ttg .ttc { position: relative; height: var(--h); }
@@ -344,8 +350,9 @@ input.switch:disabled { opacity: .5; }
 
     <section class="panel" id="p-events" hidden>
       <h2>Termine</h2>
-      <div class="card">
-        <form id="f-event" style="display:grid; gap:8px;">
+      <div class="card fold closed" id="fold-new">
+        <button class="fold-h" type="button" data-fold="fold-new">➕ Neuer Termin<span class="caret" aria-hidden="true"></span></button>
+        <div class="fold-b"><form id="f-event" style="display:grid; gap:8px;">
           <input type="text" id="in-etitle" enterkeyhint="done" placeholder="Titel">
           <div class="grid2">
             <input type="date" id="in-edate">
@@ -362,27 +369,38 @@ input.switch:disabled { opacity: .5; }
           </select>
           <p class="hint">Ohne Uhrzeit kommt die Erinnerung um 08:00 Uhr.</p>
           <button class="btn block" type="submit">Eintragen</button>
-        </form>
+        </form></div>
       </div>
-      <div class="card">
-        <p class="field-label">📎 Termine aus Datei</p>
+      <div class="card fold closed" id="fold-imp">
+        <button class="fold-h" type="button" data-fold="fold-imp">📎 Termine aus Datei<span class="caret" aria-hidden="true"></span></button>
+        <div class="fold-b" style="display:grid; gap:12px;">
         <p class="hint">Foto, PDF oder Kalenderdatei (.ics): Die Termine werden gelesen und zur Auswahl angezeigt. Die Erinnerung wird wie oben gewählt gesetzt.</p>
         <button class="btn ghost" id="btn-import" type="button">Datei wählen</button>
         <input type="file" id="in-import" accept="image/*,.pdf,.ics,.txt,.csv,text/calendar,application/pdf" hidden>
-        <div id="import-box"></div>
+        <div id="import-box"></div></div>
       </div>
-      <div id="list-events"></div>
-      <div class="card" style="margin-top:18px">
-        <p class="field-label">🎒 Stundenplan</p>
-        <p class="hint">Stundenplan eines Kindes hochladen (Foto oder PDF). Mit Namen, falls du mehrere Kinder hast.</p>
-        <form id="f-tt" style="display:grid; gap:8px;">
-          <input type="text" id="in-child" enterkeyhint="go" placeholder="Name des Kindes" maxlength="40">
-          <button class="btn ghost" type="submit">Stundenplan hochladen</button>
-        </form>
-        <input type="file" id="in-tt" accept="image/*,.pdf,application/pdf" hidden>
-        <div id="tt-box"></div>
+      <div class="card fold" id="fold-list">
+        <button class="fold-h" type="button" data-fold="fold-list">Termine <span class="cnt" id="cnt-events"></span><span class="caret" aria-hidden="true"></span></button>
+        <div class="fold-b"><div id="list-events"></div></div>
       </div>
-      <div id="list-tt"></div>
+      <div class="card fold" id="fold-tt">
+        <button class="fold-h" type="button" data-fold="fold-tt">🎒 Stundenplan<span class="caret" aria-hidden="true"></span></button>
+        <div class="fold-b" style="display:grid; gap:12px;">
+          <div id="list-tt"></div>
+          <div class="fold closed" id="fold-ttadd">
+            <button class="fold-h" type="button" data-fold="fold-ttadd">Stundenplan hinzufügen<span class="caret" aria-hidden="true"></span></button>
+            <div class="fold-b" style="display:grid; gap:8px; margin-top:10px;">
+              <p class="hint">Stundenplan eines Kindes hochladen (Foto oder PDF). Mit Namen, falls du mehrere Kinder hast.</p>
+              <form id="f-tt" style="display:grid; gap:8px;">
+                <input type="text" id="in-child" enterkeyhint="go" placeholder="Name des Kindes" maxlength="40">
+                <button class="btn ghost" type="submit">Stundenplan hochladen</button>
+              </form>
+              <input type="file" id="in-tt" accept="image/*,.pdf,application/pdf" hidden>
+              <div id="tt-box"></div>
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
 
     <section class="panel" id="p-chat" hidden>
@@ -1094,6 +1112,7 @@ input.switch:disabled { opacity: .5; }
     const el = document.getElementById('list-events');
     const items = entries.filter(e => e.kind === 'events' && e.data.type !== 'timetable')
       .sort((a, b) => ((a.data.date || '') + (a.data.time || '')).localeCompare((b.data.date || '') + (b.data.time || '')));
+    { const c = $('cnt-events'); if (c) c.textContent = items.length ? '(' + items.length + ')' : ''; }
     if (!items.length) { el.innerHTML = '<div class="empty">' + T('Keine Termine.') + '</div>'; return; }
     el.innerHTML = '<ul class="list">' + items.map(e => {
       const d = e.data.date ? new Date(e.data.date + 'T00:00').toLocaleDateString(I18N.loc(), { weekday: 'short', day: 'numeric', month: 'short' }) : '';
@@ -1580,6 +1599,19 @@ input.switch:disabled { opacity: .5; }
       ttDraft = null; renderTtDraft(); $('in-child').value = ''; toast(T('Stundenplan gespeichert')); loadEntries();
     }
   });
+
+
+  // Einklappbare Bereiche (Zustand wird auf dem Gerät gemerkt)
+  (function () {
+    let st = {}; try { st = JSON.parse(localStorage.getItem('milteo_fold') || '{}'); } catch (_) {}
+    document.querySelectorAll('.fold').forEach(f => { if (st[f.id] === 1) f.classList.remove('closed'); else if (st[f.id] === 0) f.classList.add('closed'); });
+    document.addEventListener('click', (ev) => {
+      const b = ev.target.closest('.fold-h'); if (!b) return;
+      const f = b.parentElement; f.classList.toggle('closed');
+      st[f.id] = f.classList.contains('closed') ? 0 : 1;
+      try { localStorage.setItem('milteo_fold', JSON.stringify(st)); } catch (_) {}
+    });
+  })();
 
   // ---------- Erinnerungstext ----------
   function remindText(m) {
