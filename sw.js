@@ -1,4 +1,4 @@
-const CACHE = 'milteo-v5';
+const CACHE = 'milteo-v6';
 const SHELL = ['./', 'index.html', 'i18n.js', 'manifest.json', 'icon-192.png', 'icon-512.png', 'badge-96.png'];
 
 self.addEventListener('install', (e) => {
@@ -34,9 +34,15 @@ self.addEventListener('push', (e) => {
     badge: 'badge-96.png',     // einfarbiges Symbol für die Statusleiste (Android färbt es selbst)
     tag: d.tag || undefined,
     renotify: !!d.tag,
+    requireInteraction: d.tag && String(d.tag).startsWith('timer-') ? true : false,
     vibrate: [250, 120, 250],
     data: { url: d.url || './' },
   }));
+});
+
+// Das Abo wurde vom Browser erneuert: App informieren, damit sie es speichert
+self.addEventListener('pushsubscriptionchange', (e) => {
+  e.waitUntil(clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => list.forEach(c => c.postMessage({ type: 'resub' }))));
 });
 
 self.addEventListener('notificationclick', (e) => {

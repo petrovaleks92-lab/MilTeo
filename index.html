@@ -1842,7 +1842,13 @@ input.switch:disabled { opacity: .5; }
     if (r.error) { console.error(r.error); toast(T('Senden nicht möglich')); return null; }
     stickBottom = true;
     addMsg(r.data);
-    sb.functions.invoke('notify', { body: { message_id: r.data.id } }).catch(() => {});
+    const mid = r.data.id;
+    (async () => {   // Mitteilung an die Familie: bei Fehler bis zu 3 Mal versuchen
+      for (let n = 0; n < 3; n++) {
+        try { const x = await sb.functions.invoke('notify', { body: { message_id: mid } }); if (!x.error) return; } catch (_) {}
+        await new Promise(res => setTimeout(res, 1500 * (n + 1)));
+      }
+    })();
     return r.data;
   }
   $('f-chat').onsubmit = async (e) => {
@@ -2018,8 +2024,17 @@ input.switch:disabled { opacity: .5; }
   async function syncPush() {
     try {
       if (!pushSupported || Notification.permission !== 'granted') return;
-      const sub = await currentSub();
-      if (!sub) return;
+      let sub = await currentSub();
+      if (!sub) {   // Der Browser hat das Abo verloren (z. B. Akku-Sparmodus, Neuinstallation): still wieder anmelden
+        let was = false; try { was = localStorage.getItem('milteo_push_on') === '1'; } catch (_) {}
+        if (!was) return;
+        const reg = await swReady(); if (!reg) return;
+        sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToU8(VAPID_PUBLIC) });
+        await saveSub(sub);
+        refreshPushUI();
+        return;
+      }
+      try { localStorage.setItem('milteo_push_on', '1'); } catch (_) {}
       const r = await sb.from('push_subscriptions').select('n_chat,n_timer,n_event').eq('endpoint', sub.endpoint).maybeSingle();
       if (r.data) {
         $('sw-chat').checked = r.data.n_chat; $('sw-timer').checked = r.data.n_timer; $('sw-event').checked = r.data.n_event;
@@ -2063,9 +2078,11 @@ input.switch:disabled { opacity: .5; }
         if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToU8(VAPID_PUBLIC) });
         const r = await saveSub(sub);
         if (r.error) throw r.error;
+        try { localStorage.setItem('milteo_push_on', '1'); } catch (_) {}
         toast(T('Benachrichtigungen ein'));
       } else {
         const sub = await currentSub();
+        try { localStorage.setItem('milteo_push_on', '0'); } catch (_) {}
         if (sub) { await sb.from('push_subscriptions').delete().eq('endpoint', sub.endpoint); await sub.unsubscribe(); }
         toast(T('Benachrichtigungen aus'));
       }
@@ -2088,13 +2105,14 @@ input.switch:disabled { opacity: .5; }
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.addEventListener('message', (ev) => {
       if (ev.data && ev.data.type === 'open' && String(ev.data.url || '').endsWith('#chat')) switchTab('chat');
+      if (ev.data && ev.data.type === 'resub') syncPush();
     });
   }
 
   // Datum im Kopf + automatische Aktualisierung
   renderToday(); fillLangSelects(); applyStatic();
   setInterval(() => { loadEntries(); if (currentTab === 'chat') loadChat(); }, 15000);
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) loadEntries(); });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) { loadEntries(); syncPush(); } });
 </script>
 </body>
 </html>
