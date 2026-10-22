@@ -374,7 +374,7 @@ input.switch:disabled { opacity: .5; }
       <div class="card fold closed" id="fold-imp">
         <button class="fold-h" type="button" data-fold="fold-imp">📎 Termine aus Datei<span class="caret" aria-hidden="true"></span></button>
         <div class="fold-b" style="display:grid; gap:12px;">
-        <p class="hint">Foto, PDF oder Kalenderdatei (.ics): Die Termine werden gelesen und zur Auswahl angezeigt. Die Erinnerung wird wie oben gewählt gesetzt.</p>
+        <p class="hint">Foto, PDF oder Kalenderdatei (.ics): Die Termine werden gelesen und zur Auswahl angezeigt.</p>
         <button class="btn ghost" id="btn-import" type="button">Datei wählen</button>
         <input type="file" id="in-import" accept="image/*,.pdf,.ics,.txt,.csv,text/calendar,application/pdf" hidden>
         <div id="import-box"></div></div>
@@ -1448,7 +1448,7 @@ input.switch:disabled { opacity: .5; }
   }
   const extractMsg = (err) => err === 'big' ? T('Datei zu gross (max. 4 MB)') : err === 'limit' ? T('Tageslimit der KI erreicht') : err === 'quota' ? T('KI gerade ausgelastet, später nochmal') : T('Die Datei konnte nicht gelesen werden. Versuche ein deutlicheres Foto oder eine andere Datei.');
 
-  let importFound = [];
+  let importFound = [], importRemind = '15';
   function renderImport() {
     const box = $('import-box');
     if (!importFound.length) { box.innerHTML = ''; return; }
@@ -1456,7 +1456,8 @@ input.switch:disabled { opacity: .5; }
     box.innerHTML = `<p class="hint">${esc(T('{n} Termine gefunden. Wähle aus, was übernommen werden soll.', { n: importFound.length }))}</p><ul class="list">` + importFound.map((e, i) => {
       const d = new Date(e.date + 'T00:00').toLocaleDateString(loc, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
       return `<li class="row ${e.on ? '' : 'done'}"><button class="check" type="button" role="checkbox" aria-checked="${e.on}" data-act="imp" data-i="${i}">${e.on ? '✓' : ''}</button><span class="txt">${esc(e.title)}<span class="who">${esc(d)} ${esc(e.time || '')}</span></span></li>`;
-    }).join('') + `</ul><div style="display:flex; gap:8px; margin-top:10px"><button class="btn" type="button" id="imp-ok">${esc(T('Übernehmen'))} (${importFound.filter(e => e.on).length})</button><button class="btn ghost" type="button" id="imp-cancel">${esc(T('Abbrechen'))}</button></div>`;
+    }).join('') + `</ul><label class="field-label" for="imp-remind" style="margin-top:10px">${esc(T('Erinnerung'))}</label><select id="imp-remind">${$('in-eremind').innerHTML}</select><div style="display:flex; gap:8px; margin-top:10px"><button class="btn" type="button" id="imp-ok">${esc(T('Übernehmen'))} (${importFound.filter(e => e.on).length})</button><button class="btn ghost" type="button" id="imp-cancel">${esc(T('Abbrechen'))}</button></div>`;
+    const sel = $('imp-remind'); sel.value = importRemind; sel.onchange = () => { importRemind = sel.value; };
   }
   $('btn-import').onclick = () => $('in-import').click();
   $('in-import').onchange = async (ev) => {
@@ -1467,7 +1468,7 @@ input.switch:disabled { opacity: .5; }
     if (r.error) { $('import-box').innerHTML = ''; toast(extractMsg(r.error), 5000); return; }
     const ev2 = (r.events || []).filter(e => e && e.title && /^\d{4}-\d{2}-\d{2}$/.test(e.date || '')).map(e => ({ title: String(e.title).slice(0, 80), date: e.date, time: /^\d{2}:\d{2}$/.test(e.time || '') ? e.time : '', on: true }));
     if (!ev2.length) { $('import-box').innerHTML = ''; toast(T('Keine Termine in der Datei gefunden.'), 4000); return; }
-    importFound = ev2; renderImport();
+    importFound = ev2; importRemind = $('in-eremind').value; renderImport();
   };
   $('import-box').addEventListener('click', async (ev) => {
     const b = ev.target.closest('button'); if (!b) return;
@@ -1475,7 +1476,7 @@ input.switch:disabled { opacity: .5; }
     if (b.id === 'imp-cancel') { importFound = []; renderImport(); return; }
     if (b.id === 'imp-ok') {
       const have = new Set(entries.filter(x => x.kind === 'events').map(x => [x.data.title, x.data.date, x.data.time || ''].join('|')));
-      const rv = $('in-eremind').value, remind = rv === '' ? null : Number(rv);
+      const rv = ($('imp-remind') || $('in-eremind')).value, remind = rv === '' ? null : Number(rv);
       const rows = importFound.filter(e => e.on && !have.has([e.title, e.date, e.time].join('|')))
         .map(e => ({ family_id: fid, kind: 'events', data: { title: e.title, date: e.date, time: e.time, remind, by: myName } }));
       b.disabled = true;

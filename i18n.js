@@ -236,6 +236,7 @@
     ['Bitte zuerst eine Gruppe wählen', 'Прво избери група', 'Choisis d\'abord un groupe', 'Scegli prima un gruppo', 'Prvo izaberi grupu', 'Zgjidh së pari një grup', 'Önce bir grup seç', 'Please choose a group first'],
     ['➕ Neuer Termin', '➕ Нов термин', '➕ Nouveau rendez-vous', '➕ Nuovo appuntamento', '➕ Novi termin', '➕ Takim i ri', '➕ Yeni randevu', '➕ New appointment'],
     ['Stundenplan hinzufügen', 'Додај распоред', 'Ajouter un emploi du temps', 'Aggiungi orario', 'Dodaj raspored', 'Shto orar', 'Ders programı ekle', 'Add timetable'],
+    ['Foto, PDF oder Kalenderdatei (.ics): Die Termine werden gelesen und zur Auswahl angezeigt.', 'Фотографија, PDF или календарска датотека (.ics): термините се читаат и се прикажуваат за избор.', 'Photo, PDF ou fichier calendrier (.ics) : les rendez-vous sont lus et proposés au choix.', 'Foto, PDF o file calendario (.ics): gli appuntamenti vengono letti e proposti per la scelta.', 'Fotografija, PDF ili kalendarski fajl (.ics): termini se čitaju i nude na izbor.', 'Foto, PDF ose skedar kalendari (.ics): takimet lexohen dhe shfaqen për zgjedhje.', 'Fotoğraf, PDF veya takvim dosyası (.ics): randevular okunur ve seçim için gösterilir.', 'Photo, PDF or calendar file (.ics): the appointments are read and shown for selection.'],
     ['__end__', '', '', '', '', '', '', '']
   ];
   R.pop();
