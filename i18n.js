@@ -231,6 +231,9 @@
     ['Alle', 'Сите', 'Tous', 'Tutti', 'Svi', 'Të gjithë', 'Hepsi', 'All'],
     ['Nur heute', 'Само денес', 'Seulement aujourd\'hui', 'Solo oggi', 'Samo danas', 'Vetëm sot', 'Yalnızca bugün', 'Today only'],
     ['Ohne Uhrzeit', 'Без час', 'Sans heure', 'Senza orario', 'Bez vremena', 'Pa orë', 'Saatsiz', 'No time'],
+    ['Zu welcher Gruppe gehört {name}?', 'Во која група е {name}?', 'Dans quel groupe est {name} ?', 'A quale gruppo appartiene {name}?', 'U kojoj je grupi {name}?', 'Në cilin grup është {name}?', '{name} hangi grupta?', 'Which group is {name} in?'],
+    ['Alle Gruppen behalten', 'Задржи ги сите групи', 'Garder tous les groupes', 'Tieni tutti i gruppi', 'Zadrži sve grupe', 'Mbaj të gjitha grupet', 'Tüm grupları koru', 'Keep all groups'],
+    ['Bitte zuerst eine Gruppe wählen', 'Прво избери група', 'Choisis d\'abord un groupe', 'Scegli prima un gruppo', 'Prvo izaberi grupu', 'Zgjidh së pari një grup', 'Önce bir grup seç', 'Please choose a group first'],
     ['__end__', '', '', '', '', '', '', '']
   ];
   R.pop();

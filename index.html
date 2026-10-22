@@ -1520,8 +1520,11 @@ input.switch:disabled { opacity: .5; }
   function renderTtDraft() {
     const box = $('tt-box');
     if (!ttDraft) { box.innerHTML = ''; return; }
-    box.innerHTML = `<p class="hint">${esc(T('{n} Lektionen gefunden. Bitte kurz prüfen und speichern.', { n: ttDraft.lessons.length }))}</p>` +
-      `<p class="field-label">🎒 ${esc(ttDraft.child)}</p>` + ttGrid(ttDraft.lessons) +
+    const gs = ttGroups(ttDraft.lessons), ask = gs.length > 1, pick = ttDraft.pick;
+    const shown = ask && pick ? ttDraft.lessons.filter(l => !l.group || l.group === pick) : ttDraft.lessons;
+    const q = ask ? `<p class="field-label" style="margin-top:8px">${esc(T('Zu welcher Gruppe gehört {name}?', { name: ttDraft.child }))}</p><div class="ttchips">` + gs.map(g => `<button type="button" class="chip ${pick === g ? 'on' : ''}" data-pick="${esc(g)}">${esc((groupIcon(g) + ' ' + g).trim())}</button>`).join('') + `<button type="button" class="chip ${pick === '*' ? 'on' : ''}" data-pick="*">${esc(T('Alle Gruppen behalten'))}</button></div>` : '';
+    box.innerHTML = `<p class="hint">${esc(T('{n} Lektionen gefunden. Bitte kurz prüfen und speichern.', { n: shown.length }))}</p>` +
+      `<p class="field-label">🎒 ${esc(ttDraft.child)}</p>` + q + ttGrid(pick === '*' ? ttDraft.lessons : shown) +
       `<div style="display:flex; gap:8px; margin-top:10px"><button class="btn" type="button" id="tt-ok">${esc(T('Speichern'))}</button><button class="btn ghost" type="button" id="tt-cancel">${esc(T('Abbrechen'))}</button></div>`;
   }
   const ttToday = new Set(), ttGroup = {};
@@ -1537,7 +1540,7 @@ input.switch:disabled { opacity: .5; }
       const today = ttToday.has(e.id);
       const chips = groups.length ? `<div class="ttchips">` + ['', ...groups].map(x => `<button type="button" class="chip ${x === g ? 'on' : ''}" data-act="ttgroup" data-id="${e.id}" data-g="${esc(x)}">${x ? esc(groupIcon(x) + ' ' + x) : esc(T('Alle'))}</button>`).join('') + `</div>` : '';
       const body = today ? dayListHtml(L, [dow <= 5 ? dow : 1]) : ttGrid(L);
-      return `<li class="dish open"><div class="row dish-head"><span class="txt"><strong>🎒 ${esc(e.data.child || '')}</strong>${byHtml(e)}</span><button class="btn ghost small" type="button" data-act="ttweek" data-id="${e.id}">${esc(today ? T('Ganze Woche') : T('Nur heute'))}</button><button class="del" type="button" aria-label="${T('Stundenplan löschen')}" data-act="del" data-id="${e.id}">×</button></div><div style="padding:0 12px 10px">${chips}${body}</div></li>`;
+      return `<li class="dish open"><div class="row dish-head"><span class="txt"><strong>🎒 ${esc(e.data.child || '')}${e.data.group ? ' · ' + esc((groupIcon(e.data.group) + ' ' + e.data.group).trim()) : ''}</strong>${byHtml(e)}</span><button class="btn ghost small" type="button" data-act="ttweek" data-id="${e.id}">${esc(today ? T('Ganze Woche') : T('Nur heute'))}</button><button class="del" type="button" aria-label="${T('Stundenplan löschen')}" data-act="del" data-id="${e.id}">×</button></div><div style="padding:0 12px 10px">${chips}${body}</div></li>`;
     }).join('') + '</ul>';
   }
   document.addEventListener('click', (ev) => {
@@ -1565,9 +1568,12 @@ input.switch:disabled { opacity: .5; }
   $('tt-box').addEventListener('click', async (ev) => {
     const b = ev.target.closest('button'); if (!b) return;
     if (b.id === 'tt-cancel') { ttDraft = null; renderTtDraft(); return; }
+    if (b.dataset.pick !== undefined && ttDraft) { ttDraft.pick = b.dataset.pick; renderTtDraft(); return; }
     if (b.id === 'tt-ok' && ttDraft) {
+      if (ttGroups(ttDraft.lessons).length > 1 && !ttDraft.pick) { toast(T('Bitte zuerst eine Gruppe wählen')); return; }
       b.disabled = true;
-      const data = { type: 'timetable', child: ttDraft.child, lessons: ttDraft.lessons, by: myName };
+      const keep = ttDraft.pick && ttDraft.pick !== '*' ? ttDraft.lessons.filter(l => !l.group || l.group === ttDraft.pick) : ttDraft.lessons;
+      const data = { type: 'timetable', child: ttDraft.child, lessons: keep, by: myName, ...(ttDraft.pick && ttDraft.pick !== '*' ? { group: ttDraft.pick } : {}) };
       const old = entries.find(x => x.kind === 'events' && x.data.type === 'timetable' && String(x.data.child || '').toLowerCase() === ttDraft.child.toLowerCase());
       const r = old ? await sb.from('entries').update({ data }).eq('id', old.id) : await sb.from('entries').insert({ family_id: fid, kind: 'events', data });
       if (r.error) { toast(T('Fehler beim Speichern')); b.disabled = false; return; }
