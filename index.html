@@ -69,6 +69,7 @@ input[type=text], input[type=number], input[type=date], input[type=time], input[
 .ttg .ttc { background: repeating-linear-gradient(to bottom, var(--line) 0, var(--line) 1px, transparent 1px, transparent 45px); border-radius: 6px; }
 .ttb { position: absolute; border-radius: 6px; padding: 2px 3px; overflow: hidden; color: #1b1b1b; line-height: 1.15; box-sizing: border-box; }
 .ttb b { display: block; font-size: 11px; } .ttb i { font-style: normal; font-size: 10px; opacity: .75; }
+.ttedit { margin-top: 10px; padding: 10px; border: 1.5px solid var(--line); border-radius: 12px; display: grid; gap: 6px; background: var(--bg); }
 .ttchips { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0; }
 .chip { border: 1.5px solid var(--line); background: var(--surface); border-radius: 999px; padding: 4px 12px; font-size: 13px; }
 .chip.on { background: var(--mil-soft); border-color: var(--mil); font-weight: 600; }
@@ -299,6 +300,7 @@ input.switch:disabled { opacity: .5; }
 
     <section class="panel" id="p-home">
       <div class="hello"><h1 id="home-hello">Hallo</h1><p id="home-sub"></p></div>
+      <div id="home-tt"></div>
       <div class="next-card" id="home-next" hidden><span class="nic" id="home-next-ic">📅</span><div><small id="home-next-k">Als Nächstes</small><strong id="home-next-t"></strong></div></div>
       <div class="tiles">
         <button class="tile" data-t="shop" type="button" onclick="switchTab('shop')"><span class="ti" aria-hidden="true">🛒</span><span><span class="tt">Einkauf</span><span class="tinfo" id="ti-shop"></span></span></button>
@@ -692,6 +694,22 @@ input.switch:disabled { opacity: .5; }
   window.addEventListener('popstate', () => { if (currentTab !== 'home') switchTab('home', true); });
 
   // Startseite: Begrüssung, "Als Nächstes" und Infos auf den Kacheln
+  // Stundenplan-Einträge, die im Hauptmenü angezeigt werden sollen (nächste 7 Tage)
+  function ttUpcoming() {
+    const out = [], now = new Date();
+    (entries || []).filter(e => e.kind === 'events' && e.data.type === 'timetable').forEach(e => (e.data.lessons || []).forEach(l => {
+      if (!l.home) return;
+      for (let k = 0; k < 7; k++) {
+        const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + k);
+        if ((d.getDay() || 7) !== l.d) continue;
+        const s = toMin(l.from), en = toMin(l.to);
+        const endAt = new Date(d); endAt.setHours(0, s === null ? 24 * 60 - 1 : (en !== null && en > s ? en : s + 45));
+        if (endAt < now) continue;
+        out.push({ e, l, d, k, s: s === null ? -1 : s }); break;
+      }
+    }));
+    return out.sort((a, b) => a.k - b.k || a.s - b.s).slice(0, 4);
+  }
   function renderHome() {
     const h = new Date().getHours();
     $('home-hello').textContent = (h < 11 ? T('Guten Morgen') : h < 18 ? T('Guten Tag') : T('Guten Abend')) + (myName ? ', ' + myName : '');
@@ -717,6 +735,11 @@ input.switch:disabled { opacity: .5; }
     $('ti-chat').textContent = last ? ((last.user_id === myId ? T('Du') : (last.display_name || '')) + ': ' + (last.media_path ? (String(last.media_type || '').startsWith('audio') ? T('🎤 Sprachnachricht') : T('📷 Bild')) : (last.body || ''))) : T('Noch keine Nachrichten');
     const bd = $('tb-chat'); bd.hidden = !chatUnread; bd.textContent = chatUnread > 9 ? '9+' : chatUnread;
     $('ti-family').textContent = memberCount ? T(memberCount === 1 ? '{n} Mitglied' : '{n} Mitglieder', { n: memberCount }) : T('Familie & Konto');
+    $('home-tt').innerHTML = ttUpcoming().map(o => {
+      const day = o.k === 0 ? T('Heute') : o.k === 1 ? T('Morgen') : o.d.toLocaleDateString(I18N.loc(), { weekday: 'short' });
+      const name = (o.l.subject || '') + (o.l.group ? ' (' + o.l.group + ')' : '');
+      return `<div class="next-card"><span class="nic">🎒</span><div><small>${esc(day)}${o.l.from ? ' ' + esc(o.l.from) : ''} · ${esc(o.e.data.child || '')}</small><strong>${esc(name)}</strong></div></div>`;
+    }).join('');
     const nx = $('home-next');
     if (run.length) { nx.hidden = false; $('home-next-ic').textContent = '⏱️'; $('home-next-k').textContent = T('Läuft gerade'); $('home-next-t').textContent = run.map(r => r.data.label || T('Timer')).join(', '); }
     else if (evs.length) { nx.hidden = false; $('home-next-ic').textContent = '📅'; $('home-next-k').textContent = T('Als Nächstes'); $('home-next-t').textContent = fmtEv(evs[0]); }
@@ -1489,13 +1512,16 @@ input.switch:disabled { opacity: .5; }
   });
 
   // Stundenplan (grafische Wochenansicht, optional mit Gruppen wie Sternen/Mond)
-  let ttDraft = null;
+  let ttDraft = null, ttCtx = null, ttEdit = null;
+  const hasRm = (l) => l.rm !== undefined && l.rm !== null && l.rm !== '';
+  const lsIc = (l) => (l.home ? '📌' : '') + (hasRm(l) ? '🔔' : '');
+  const lsAttr = (l) => ttCtx ? ` data-act="lsn" data-eid="${ttCtx.id}" data-i="${ttCtx.all.indexOf(l)}" style="cursor:pointer;margin:0"` : ' style="margin:0"';
   const dayName = (d, style) => new Date(2024, 0, d).toLocaleDateString(I18N.loc(), { weekday: style || 'short' });
   const toMin = (s) => { const m = /^(\d{1,2}):(\d{2})/.exec(s || ''); return m ? (+m[1]) * 60 + (+m[2]) : null; };
   const hueOf = (s) => { let h = 0; for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) % 360; return h; };
   const groupIcon = (g) => /stern/i.test(g) ? '⭐' : /mond/i.test(g) ? '🌙' : /sonne/i.test(g) ? '☀️' : /regenbogen/i.test(g) ? '🌈' : '';
   const blockColor = (l) => { const g = l.group || ''; const h = /stern/i.test(g) ? 48 : /mond/i.test(g) ? 215 : hueOf(g || l.subject); return `hsl(${h} 85% 82%)`; };
-  const lessonHtml = (l) => `<li class="who" style="margin:0"><strong>${esc(l.from || '')}${l.to ? '–' + esc(l.to) : ''}</strong> ${esc(groupIcon(l.group || ''))} ${esc(l.subject || '')}${l.group ? ' (' + esc(l.group) + ')' : ''}${l.room ? ' · ' + esc(T('Raum')) + ' ' + esc(l.room) : ''}</li>`;
+  const lessonHtml = (l) => `<li class="who"${lsAttr(l)}><strong>${esc(l.from || '')}${l.to ? '–' + esc(l.to) : ''}</strong> ${esc(groupIcon(l.group || ''))} ${esc(l.subject || '')}${l.group ? ' (' + esc(l.group) + ')' : ''}${l.room ? ' · ' + esc(T('Raum')) + ' ' + esc(l.room) : ''} ${lsIc(l)}</li>`;
   function ttDays(lessons) { return [1, 2, 3, 4, 5, 6, 7].filter(d => lessons.some(l => l.d === d)); }
   const ttGroups = (L) => [...new Set(L.map(l => l.group).filter(Boolean))];
   function dayListHtml(L, days) {
@@ -1529,7 +1555,7 @@ input.switch:disabled { opacity: .5; }
       h += `<div class="ttc">` + ls.map(l => {
         const lanes = Math.max(...l._cl.map(x => x._ln)) + 1, top = (toMin(l.from) - t0) * K, ht = Math.max(16, (end(l) - toMin(l.from)) * K - 1);
         const tip = `${l.from}${l.to ? '–' + l.to : ''} ${l.subject}${l.group ? ' (' + l.group + ')' : ''}${l.room ? ' · ' + l.room : ''}`;
-        return `<div class="ttb" title="${esc(tip)}" style="top:${top}px;height:${ht}px;left:${l._ln * 100 / lanes}%;width:calc(${100 / lanes}% - 1px);background:${blockColor(l)}"><b>${esc(groupIcon(l.group || ''))}${esc(l.subject)}</b><i>${esc(l.from)}${l.to ? '–' + esc(l.to) : ''}</i></div>`;
+        return `<div class="ttb" title="${esc(tip)}"${ttCtx ? ` data-act="lsn" data-eid="${ttCtx.id}" data-i="${ttCtx.all.indexOf(l)}"` : ''} style="${ttCtx ? 'cursor:pointer;' : ''}top:${top}px;height:${ht}px;left:${l._ln * 100 / lanes}%;width:calc(${100 / lanes}% - 1px);background:${blockColor(l)}"><b>${esc(groupIcon(l.group || ''))}${esc(l.subject)} ${lsIc(l)}</b><i>${esc(l.from)}${l.to ? '–' + esc(l.to) : ''}</i></div>`;
       }).join('') + `</div>`;
     });
     h += `</div>`;
@@ -1560,11 +1586,47 @@ input.switch:disabled { opacity: .5; }
       const L = g ? all.filter(l => !l.group || l.group === g) : all;
       const today = ttToday.has(e.id);
       const chips = groups.length ? `<div class="ttchips">` + ['', ...groups].map(x => `<button type="button" class="chip ${x === g ? 'on' : ''}" data-act="ttgroup" data-id="${e.id}" data-g="${esc(x)}">${x ? esc(groupIcon(x) + ' ' + x) : esc(T('Alle'))}</button>`).join('') + `</div>` : '';
+      ttCtx = { id: e.id, all };
       const body = today ? dayListHtml(L, [dow <= 5 ? dow : 1]) : ttGrid(L);
-      return `<li class="dish open"><div class="row dish-head"><span class="txt"><strong>🎒 ${esc(e.data.child || '')}${e.data.group ? ' · ' + esc((groupIcon(e.data.group) + ' ' + e.data.group).trim()) : ''}</strong>${byHtml(e)}</span><button class="btn ghost small" type="button" data-act="ttweek" data-id="${e.id}">${esc(today ? T('Ganze Woche') : T('Nur heute'))}</button><button class="del" type="button" aria-label="${T('Stundenplan löschen')}" data-act="del" data-id="${e.id}">×</button></div><div style="padding:0 12px 10px">${chips}${body}</div></li>`;
+      ttCtx = null;
+      const ed = ttEdit && ttEdit.id === e.id && all[ttEdit.i] ? ttEditorHtml(e, all[ttEdit.i]) : `<p class="hint" style="margin-top:8px">${esc(T('Tippe auf einen Eintrag: Hauptmenü und Erinnerung einzeln einstellen.'))}</p>`;
+      return `<li class="dish open"><div class="row dish-head"><span class="txt"><strong>🎒 ${esc(e.data.child || '')}${e.data.group ? ' · ' + esc((groupIcon(e.data.group) + ' ' + e.data.group).trim()) : ''}</strong>${byHtml(e)}</span><button class="btn ghost small" type="button" data-act="ttweek" data-id="${e.id}">${esc(today ? T('Ganze Woche') : T('Nur heute'))}</button><button class="del" type="button" aria-label="${T('Stundenplan löschen')}" data-act="del" data-id="${e.id}">×</button></div><div style="padding:0 12px 10px">${chips}${body}${ed}</div></li>`;
     }).join('') + '</ul>';
+    const sel = $('tte-rm'); if (sel) sel.value = sel.dataset.v;
   }
+  function ttEditorHtml(e, l) {
+    const opts = $('in-eremind').innerHTML;
+    return `<div class="ttedit"><p class="field-label" style="margin:0">${esc(dayName(l.d, 'long'))} ${esc(l.from || '')}${l.to ? '–' + esc(l.to) : ''} · ${esc(l.subject)}${l.group ? ' (' + esc(l.group) + ')' : ''}</p>
+      <label class="switch-row"><span>${esc(T('Im Hauptmenü anzeigen'))}</span><input type="checkbox" class="switch" id="tte-home" role="switch" ${l.home ? 'checked' : ''}></label>
+      <label class="field-label" for="tte-rm" style="margin:6px 0 0">${esc(T('Erinnerung'))}</label>
+      <select id="tte-rm" data-v="${hasRm(l) ? esc(String(l.rm)) : ''}">${opts}</select>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px"><button class="btn ghost small" type="button" id="tte-all">${esc(T('Für alle gleichen Einträge übernehmen'))}</button><button class="btn small" type="button" id="tte-close">${esc(T('Fertig'))}</button></div></div>`;
+  }
+  function ttApplyEditor(all) {
+    const l = all[ttEdit.i]; if (!l) return null;
+    l.home = $('tte-home').checked;
+    const v = $('tte-rm').value;
+    if (v === '') delete l.rm; else l.rm = Number(v);
+    return l;
+  }
+  async function ttSave(e) { await updateEntry(e.id, e.data); renderTimetables(); renderHome(); }
+  document.addEventListener('change', (ev) => {
+    if (!ev.target.matches('#tte-home, #tte-rm') || !ttEdit) return;
+    const e = entries.find(x => x.id === ttEdit.id); if (!e) return;
+    ttApplyEditor(e.data.lessons); ttSave(e);
+  });
   document.addEventListener('click', (ev) => {
+    const lb = ev.target.closest('[data-act="lsn"]');
+    if (lb) { ttEdit = { id: lb.dataset.eid, i: +lb.dataset.i }; renderTimetables(); return; }
+    const t = ev.target.closest('#tte-close, #tte-all');
+    if (t && ttEdit) {
+      const e = entries.find(x => x.id === ttEdit.id); if (!e) return;
+      if (t.id === 'tte-close') { ttEdit = null; renderTimetables(); return; }
+      const cur = ttApplyEditor(e.data.lessons); if (!cur) return;
+      e.data.lessons.forEach(x => { if (x !== cur && x.subject === cur.subject && (x.group || '') === (cur.group || '')) { x.home = cur.home; if (hasRm(cur)) x.rm = cur.rm; else delete x.rm; } });
+      ttSave(e); toast(T('Übernommen'));
+      return;
+    }
     const b = ev.target.closest('[data-act="ttweek"],[data-act="ttgroup"]'); if (!b) return;
     if (b.dataset.act === 'ttweek') { if (ttToday.has(b.dataset.id)) ttToday.delete(b.dataset.id); else ttToday.add(b.dataset.id); }
     else ttGroup[b.dataset.id] = b.dataset.g || '';

@@ -237,6 +237,11 @@
     ['➕ Neuer Termin', '➕ Нов термин', '➕ Nouveau rendez-vous', '➕ Nuovo appuntamento', '➕ Novi termin', '➕ Takim i ri', '➕ Yeni randevu', '➕ New appointment'],
     ['Stundenplan hinzufügen', 'Додај распоред', 'Ajouter un emploi du temps', 'Aggiungi orario', 'Dodaj raspored', 'Shto orar', 'Ders programı ekle', 'Add timetable'],
     ['Foto, PDF oder Kalenderdatei (.ics): Die Termine werden gelesen und zur Auswahl angezeigt.', 'Фотографија, PDF или календарска датотека (.ics): термините се читаат и се прикажуваат за избор.', 'Photo, PDF ou fichier calendrier (.ics) : les rendez-vous sont lus et proposés au choix.', 'Foto, PDF o file calendario (.ics): gli appuntamenti vengono letti e proposti per la scelta.', 'Fotografija, PDF ili kalendarski fajl (.ics): termini se čitaju i nude na izbor.', 'Foto, PDF ose skedar kalendari (.ics): takimet lexohen dhe shfaqen për zgjedhje.', 'Fotoğraf, PDF veya takvim dosyası (.ics): randevular okunur ve seçim için gösterilir.', 'Photo, PDF or calendar file (.ics): the appointments are read and shown for selection.'],
+    ['Im Hauptmenü anzeigen', 'Прикажи на почетна', 'Afficher sur l\'accueil', 'Mostra nella home', 'Prikaži na početnoj', 'Shfaq në ballinë', 'Ana ekranda göster', 'Show on home screen'],
+    ['Fertig', 'Готово', 'Terminé', 'Fatto', 'Gotovo', 'U krye', 'Tamam', 'Done'],
+    ['Für alle gleichen Einträge übernehmen', 'Примени на сите исти ставки', 'Appliquer à toutes les entrées identiques', 'Applica a tutte le voci uguali', 'Primeni na sve iste unose', 'Zbato për të gjitha të njëjtat', 'Aynı olan tüm kayıtlara uygula', 'Apply to all identical entries'],
+    ['Übernommen', 'Применето', 'Appliqué', 'Applicato', 'Primenjeno', 'U zbatua', 'Uygulandı', 'Applied'],
+    ['Tippe auf einen Eintrag: Hauptmenü und Erinnerung einzeln einstellen.', 'Допри ставка: поставки за почетна и потсетник поединечно.', 'Touche une entrée : réglage individuel de l\'accueil et du rappel.', 'Tocca una voce: imposta singolarmente home e promemoria.', 'Dodirni unos: posebno podesi početnu i podsetnik.', 'Prek një hyrje: cilëso veç ballinën dhe kujtesën.', 'Bir kayda dokun: ana ekran ve hatırlatmayı tek tek ayarla.', 'Tap an entry: set home screen and reminder individually.'],
     ['__end__', '', '', '', '', '', '', '']
   ];
   R.pop();
