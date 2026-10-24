@@ -243,6 +243,9 @@
     ['Übernommen', 'Применето', 'Appliqué', 'Applicato', 'Primenjeno', 'U zbatua', 'Uygulandı', 'Applied'],
     ['Tippe auf einen Eintrag: Hauptmenü und Erinnerung einzeln einstellen.', 'Допри ставка: поставки за почетна и потсетник поединечно.', 'Touche une entrée : réglage individuel de l\'accueil et du rappel.', 'Tocca una voce: imposta singolarmente home e promemoria.', 'Dodirni unos: posebno podesi početnu i podsetnik.', 'Prek një hyrje: cilëso veç ballinën dhe kujtesën.', 'Bir kayda dokun: ana ekran ve hatırlatmayı tek tek ayarla.', 'Tap an entry: set home screen and reminder individually.'],
     ['Erinnerung für alle', 'Потсетник за сите', 'Rappel pour tous', 'Promemoria per tutti', 'Podsetnik za sve', 'Kujtesë për të gjithë', 'Hepsi için hatırlatma', 'Reminder for all'],
+    ['Keine Verbindung. Änderungen werden gerade nicht gespeichert.', 'Нема врска. Промените моментално не се зачувуваат.', 'Pas de connexion. Les modifications ne sont pas enregistrées pour le moment.', 'Nessuna connessione. Le modifiche al momento non vengono salvate.', 'Nema veze. Izmene se trenutno ne čuvaju.', 'Nuk ka lidhje. Ndryshimet nuk po ruhen tani.', 'Bağlantı yok. Değişiklikler şu anda kaydedilmiyor.', 'No connection. Changes are not being saved right now.'],
+    ['Nicht gespeichert. Dein Text bleibt stehen, versuche es gleich nochmal.', 'Не е зачувано. Твојот текст останува, обиди се повторно.', 'Non enregistré. Ton texte reste là, réessaie dans un instant.', 'Non salvato. Il tuo testo resta lì, riprova tra poco.', 'Nije sačuvano. Tvoj tekst ostaje, pokušaj ponovo za trenutak.', 'Nuk u ruajt. Teksti yt mbetet, provo përsëri pas pak.', 'Kaydedilmedi. Yazın duruyor, birazdan tekrar dene.', 'Not saved. Your text is still there, try again in a moment.'],
+    ['Nicht gespeichert', 'Не е зачувано', 'Non enregistré', 'Non salvato', 'Nije sačuvano', 'Nuk u ruajt', 'Kaydedilmedi', 'Not saved'],
     ['__end__', '', '', '', '', '', '', '']
   ];
   R.pop();

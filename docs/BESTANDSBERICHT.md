@@ -1,0 +1,91 @@
+# MilTeo – Bestandsbericht und Umsetzungsplan
+
+Stand: 24.10.2026. Grundlage: Verbesserungs-Roadmap (ChatGPT), vollständiger Quellcode (`index.html`, `i18n.js`, `sw.js`, `manifest.json`), Datenbank-Regeln und Edge Functions in Supabase (nur gelesen, nichts verändert).
+
+## 1. Architektur (Ist-Zustand)
+
+- **Frontend:** statische PWA auf GitHub Pages. Eine Datei `index.html` (ca. 2100 Zeilen, Skript inline), `i18n.js` (8 Sprachen), `sw.js` (Service Worker: Netzwerk zuerst, Offline-Rückfall auf zwischengespeicherte Seite, Push), `manifest.json`.
+- **Backend:** Supabase (Auth, Postgres mit Row Level Security, Realtime, Storage `chat-media` privat, Edge Functions `dish`, `notify`, `tick`; Cron jede Minute).
+- **Tabellen:** `families` (nur `code`), `members`, `entries` (Einkauf, Aufgaben, Timer, Termine, Stundenpläne als JSON in `data`), `messages`, `push_subscriptions`, `ai_calls`, `join_attempts`, `app_secrets`; `shopping_items` ist ein Altbestand ohne Verwendung.
+- **Zugriffsschutz:** Policies prüfen überall `family_id = my_family()`. Chat-Bilder liegen unter `<familie>/…` und sind per Storage-Policy auf die eigene Familie beschränkt. Der anon-Schlüssel im Frontend ist der öffentliche Schlüssel, im Repository liegen keine geheimen Schlüssel (geprüft per Suche, auch in der Git-Historie nach `service_role`).
+
+## 2. Status je Roadmap-Punkt
+
+Legende: ✅ umgesetzt (im Code gesehen) · 🟡 teilweise · ❌ fehlt · ⛔ braucht Änderung an der Datenbank (nur mit deiner Freigabe)
+
+Alles ist anhand von Code und Datenbank-Regeln beurteilt. Auf echten Geräten getestet ist davon nur, was du selbst ausprobiert hast.
+
+### Priorität 1 – Stabilität und Sicherheit
+| Punkt | Status | Befund |
+|---|---|---|
+| Registrierung, Anmeldung, Abmeldung | ✅ | Fehler verständlich (falsches Passwort, bereits registriert, zu viele Versuche). |
+| Passwort vergessen / ändern | 🟡 | Vergessen ✅. Passwort ändern bei eingeloggter Sitzung ❌ (nur über den Mail-Link). |
+| Profil bearbeiten | 🟡 | Name ✅. E-Mail ändern ❌. |
+| Familie erstellen, mit Code beitreten | ✅ | Beitritt hat Versuchsbremse (8 Fehlversuche pro Stunde). |
+| Code erneuern, Familie verlassen | ✅ | Jedes Mitglied darf beides. |
+| Mitglieder entfernen, Rollen (Eltern/Kind) | ⛔ | Es gibt keine Rollen: alle Mitglieder sind gleichberechtigt. Braucht neue Spalte/Tabelle. |
+| Einladungscode zeitlich begrenzen | ⛔ | Code ist unbegrenzt gültig (nur manuell erneuerbar). Braucht neue Spalte. |
+| Fremde Familiendaten schützen | ✅ | Policies auf `entries`, `messages`, `families`, `members`, Storage geprüft. Ein Mitglied könnte bei `entries` das Feld `created_by` überschreiben (Update-Policy prüft nur die Familie), geringes Risiko. ⛔ |
+| Dauerhafte Speicherung | ✅ | Alles in Supabase, nichts nur lokal (ausser Anzeige-Einstellungen). |
+| Synchronisierung | 🟡 | Chat per Realtime ✅. Einkauf/Aufgaben/Termine/Timer: Abfrage alle 15 Sekunden statt Echtzeit, obwohl `entries` in der Echtzeit-Veröffentlichung ist. |
+| Konflikte bei gleichzeitigem Ändern | 🟡 | Letzter Schreiber gewinnt: Beim Gericht wird die ganze Zutatenliste überschrieben, wenn zwei Personen gleichzeitig abhaken. |
+| Lade-, Offline-, Speicherfehler sichtbar | ❌ → **jetzt in Arbeit** | Vorher: Eingabetext wird gelöscht, bevor das Speichern geklappt hat. Bei fehlender Verbindung alle 15 Sekunden die Meldung «Fehler beim Laden». Kein Offline-Hinweis. |
+| Eingaben validieren | 🟡 | Längen und Datum im Formular geprüft; serverseitig nur `kind`-Check und `left(name, 40)`. Serverseitige Grenzen für `entries.data` fehlen. ⛔ |
+| Kinder-Datenschutz | ❌ | Hängt an Rollen. ⛔ |
+| Keine Zugangsdaten in Logs | ✅ | Im Code nichts gefunden; Edge Functions loggen keine Tokens. |
+
+### Priorität 2 – Dashboard und Oberfläche
+| Punkt | Status | Befund |
+|---|---|---|
+| Dashboard | 🟡 | Begrüssung, nächster Termin, Stundenplan, 6 Kacheln mit Kurzinfo ✅. Fehlen: Familienname (⛔, `families` hat keinen Namen), Mitgliederübersicht, offene Aufgaben als Liste, mehrere neueste Chatnachrichten, Schnell-Hinzufügen. |
+| Leere Ansichten | 🟡 | Texte vorhanden, aber knapp («Noch nichts da.») und ohne Aktion. |
+| Navigation | ✅ | Untere Leiste, aktiver Punkt hervorgehoben. Auf der Startseite ausgeblendet (bewusst). |
+| Einheitliches Design, responsiv | 🟡 | Einheitlich auf dem Smartphone; Tablet/Desktop nur ein schmaler Mittelstreifen (max. 640 px). |
+| Dark Mode | 🟡 | Automatisch nach Systemeinstellung ✅, kein Schalter. |
+| Barrierefreiheit | 🟡 | Schaltflächen meist beschriftet. Das ⚙️-Symbol oben rechts hat keine Beschriftung, Navigation ohne `role=tab`/`aria-current`, keine eigenen Fokusrahmen. |
+
+### Priorität 3–5 – Einkauf, Aufgaben, Termine
+| Bereich | Status | Befund |
+|---|---|---|
+| Einkauf | 🟡 | Hinzufügen, abhaken, löschen (mit Rückgängig), Gericht → Zutaten (eingebaute Rezepte + kostenlose KI), 8 Sprachen ✅. Fehlen: Bearbeiten, Menge/Einheit pro Artikel, Kategorien, Suche, «häufig gekauft», Notizen, Duplikat-Schutz, mehrere Listen. Wochenmenü ❌. |
+| Aufgaben | 🟡 | Erstellen, abhaken, löschen, Ersteller anzeigen ✅. Fehlen: Bearbeiten, Zuweisen, Fälligkeit, Priorität, Wiederholung, Filter. Belohnungssystem ❌. |
+| Termine | 🟡 | Erstellen, löschen, Erinnerung (auch nachträglich), Import aus Datei, Stundenplan mit Gruppen, einklappbar ✅. Fehlen: Ort/Beschreibung, Personen-Zuordnung, wiederkehrend, Tages-/Wochenansicht, Titel/Datum nachträglich ändern, Kalenderexport. |
+
+### Priorität 6–10
+| Bereich | Status | Befund |
+|---|---|---|
+| Chat | ✅/🟡 | Echtzeit, Bilder, Sprachnachrichten, Zeitstempel, Leerhinweis ✅. Fehlgeschlagene Nachrichten werden nur per Hinweis gemeldet (Text bleibt im Feld ✅); keine Ungelesen-Zählung pro Nachricht (Punkt und Zähler auf der Startseite ✅). |
+| Timer | 🟡 | Starten, Restzeit, Ende-Hinweis, Push bei geschlossener App ✅. Pausieren/Zurücksetzen ❌. |
+| Benachrichtigungen | ✅ | Schalter für Chat/Timer/Termine, Berechtigung wird erklärt, Test-Taste, automatische Erneuerung, hohe Zustellpriorität. |
+| Einstellungen | 🟡 | Name, Sprache, Mitglieder, Code ✅. Kontolöschung: Funktion `delete_my_account` besteht auf dem Server, **aber keine Schaltfläche** ❌. Datenschutzinformation und Kontakt ❌. |
+| Schweiz | ✅ | Datumsformat und 24-Stunden-Zeit über die Gerätesprache `de-CH`, Standardsprache Deutsch, keine kostenpflichtigen Dienste. Zeitzone: Termine ohne Zeitzone werden lokal verstanden, die Server-Erinnerungen rechnen in Europe/Zurich. |
+| Technische Qualität | 🟡 | PWA installierbar ✅, Service Worker ✅. Kein automatisierter Testlauf im Repository, `index.html` ist gross. Altlasten: `sw (1).js`, überzählige `</div>` bei Zeile 269/270, Anzeige technischer Fehlertexte bei «Familie verlassen». |
+
+### Supabase-Prüfung (Sicherheit)
+- `pg_net` liegt im Schema `public` (Warnung, nur Aufräumarbeit).
+- «Leaked password protection» ist ausgeschaltet. Das ist eine Einstellung im Supabase-Dashboard (Authentication → Passwörter), nicht per Code änderbar.
+- Tabellen ohne Policy (`ai_calls`, `app_secrets`, `join_attempts`, `shopping_items`): für Clients damit gesperrt, also gewollt sicher.
+- Familiencodes werden mit `random()` statt einer kryptografischen Quelle erzeugt (8 Zeichen aus 31, durch die Versuchsbremse praktisch nicht erratbar; trotzdem verbesserungswürdig).
+
+## 3. Priorisierter Umsetzungsplan
+
+Jeder Schritt: klein, getestet, danach wieder lauffähig. Schritte mit ⛔ warten auf deine Freigabe.
+
+1. **Verbindung und Speichern ohne Datenverlust** (jetzt umgesetzt): Eingaben bleiben stehen, wenn das Speichern scheitert; sichtbarer Hinweis bei fehlender Verbindung; keine Fehlermeldung alle 15 Sekunden; Anzeige springt zurück, wenn etwas nicht gespeichert werden konnte.
+2. **Konto und Datenschutz:** Schaltfläche «Konto löschen» (nutzt die vorhandene Serverfunktion, mit Bestätigung), Datenschutzinformation, Passwort in der App ändern.
+3. **Echtzeit-Sync für alle Listen** statt 15-Sekunden-Abfrage; Zutaten einzeln speichern, damit gleichzeitiges Abhaken sich nicht überschreibt.
+4. **Leere Ansichten mit Aktion** und **Dashboard** (Mitglieder, offene Aufgaben, Schnell-Hinzufügen).
+5. **Barrierefreiheit** (Beschriftungen, Fokusrahmen, Tab-Rollen), Dark-Mode-Schalter, breitere Darstellung auf Tablet/Desktop.
+6. **Aufgaben:** zuweisen, Fälligkeit, Priorität, Wiederholung, Filter (alles im bestehenden JSON, ohne Datenbankänderung).
+7. **Einkauf:** Menge, Kategorie, Suche, «häufig gekauft», Duplikat-Schutz.
+8. **Termine:** Ort, Beschreibung, wiederkehrend, Wochenansicht, Bearbeiten.
+9. **Timer:** Pausieren/Zurücksetzen.
+10. ⛔ **Rollen und Einladungen:** Eltern/Kind, Mitglieder entfernen, Code mit Ablaufdatum, `created_by`-Schutz, Familienname. Braucht neue Spalten bzw. Tabelle und Policies; ich schicke dir vorher den genauen SQL-Text.
+11. **Belohnungssystem** (nach Rollen).
+12. **Automatisierte Tests** im Repository (Playwright) und Aufräumen der Altlasten.
+
+## 4. Änderungsprotokoll
+
+| Schritt | Dateien | Test |
+|---|---|---|
+| 1 Verbindung und Speichern | `index.html` (Hinweisleiste `#net`, `addEntry`/`updateEntry`/`delEntry`/`loadEntries`/`loadChat`, Formulare Einkauf/Aufgaben/Termine), `i18n.js` (3 neue Texte in 8 Sprachen) | Automatisch im Browser mit simuliertem Netzausfall (22 Prüfungen, alle bestanden): Text bleibt bei Fehler stehen, Hinweisleiste erscheint und verschwindet wieder, Abhaken und Löschen springen zurück, keine Fehlermeldung bei der Hintergrund-Abfrage, Doppel-Absenden speichert nur einmal, Banner in Französisch. Bisherige Tests (Import, Stundenplan) laufen weiter. **Nicht getestet:** echtes Handy mit echtem Mobilfunk; die neuen Übersetzungen (mk, sr, sq, tr) stammen von mir und sind nicht von Muttersprachlern geprüft. |

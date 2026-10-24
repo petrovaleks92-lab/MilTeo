@@ -113,6 +113,7 @@ nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface);
 .bubble .when { font-size: 11px; color: var(--muted); margin-top: 2px; text-align: right; }
 .dot { position: absolute; top: 6px; right: 20%; width: 11px; height: 11px; border-radius: 50%; background: var(--danger); border: 2px solid var(--surface); }
 .hint { margin: 0; font-size: 13px; color: var(--muted); }
+.net { flex: none; position: sticky; top: 0; z-index: 6; margin: 0 0 10px; padding: 10px 14px; border-radius: 12px; background: var(--teo-soft); border: 1.5px solid var(--teo); color: var(--ink); font-size: 14px; font-weight: 600; }
 .msg.ok { color: var(--mil); }
 .check-row { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--muted); }
 .check-row input { width: 20px; height: 20px; accent-color: var(--mil); flex: none; }
@@ -298,6 +299,7 @@ input.switch:disabled { opacity: .5; }
         <button class="icon-btn" id="btn-family" type="button" onclick="switchTab('family')">⚙️</button>
       </div>
     </header>
+    <div class="net" id="net" role="status" aria-live="polite" hidden></div>
 
     <section class="panel" id="p-home">
       <div class="hello"><h1 id="home-hello">Hallo</h1><p id="home-sub"></p></div>
@@ -593,6 +595,7 @@ input.switch:disabled { opacity: .5; }
     I18N.set(l);
     ['sel-lang', 'sel-lang-auth'].forEach(id => { const el = $(id); if (el) el.value = l; });
     applyStatic(); renderToday();
+    try { showNet(); } catch (_) {}
     try { setMode(authMode); } catch (_) {}
     if (myName && $('fam-hello')) $('fam-hello').textContent = T('Hallo') + ' ' + myName;
     try { renderAll(); renderChat(); refreshPushUI(); loadMembers(); } catch (_) {}
@@ -1023,23 +1026,56 @@ input.switch:disabled { opacity: .5; }
   // ---------- Daten (Tabelle "entries") ----------
   const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
+  // Verbindungsstatus: Hinweisleiste statt wiederholter Fehlermeldungen
+  let netOk = true, loadErrToast = 0;
+  const isNetErr = (err) => !navigator.onLine || /failed to fetch|networkerror|network request failed|load failed|timeout|abort/i.test(String((err && (err.message || err.details)) || ''));
+  function showNet() {
+    const el = $('net'); if (!el) return;
+    el.hidden = netOk;
+    if (!netOk) el.textContent = '📡 ' + T('Keine Verbindung. Änderungen werden gerade nicht gespeichert.');
+  }
+  function setNet(ok) { if (ok === netOk) return; netOk = ok; showNet(); }
+  window.addEventListener('offline', () => setNet(false));
+  window.addEventListener('online', () => { loadEntries(); if (currentTab === 'chat') loadChat(); });
+  // Zuletzt vom Server bestätigter Stand pro Eintrag: Anzeige springt dorthin zurück, wenn Speichern scheitert
+  const serverData = new Map();
+  function saveFailed(err, adding) {
+    if (isNetErr(err)) setNet(false);
+    toast(adding ? T('Nicht gespeichert. Dein Text bleibt stehen, versuche es gleich nochmal.') : isNetErr(err) ? T('Nicht gespeichert') : T('Fehler beim Speichern'), adding ? 4500 : 3000);
+  }
+
   async function loadEntries() {
     if (!fid || pendingUndo) return;
-    const r = await sb.from('entries').select('*').eq('family_id', fid).order('created_at');
-    if (r.error) { toast(T('Fehler beim Laden')); return; }
+    let r; try { r = await sb.from('entries').select('*').eq('family_id', fid).order('created_at'); } catch (e) { r = { error: e }; }
+    if (r.error) {
+      if (isNetErr(r.error)) setNet(false);
+      else if (Date.now() - loadErrToast > 60000) { loadErrToast = Date.now(); toast(T('Fehler beim Laden')); }
+      return;
+    }
+    setNet(true);
     entries = r.data;
+    serverData.clear(); r.data.forEach(e => serverData.set(e.id, JSON.stringify(e.data)));
     renderAll();
     loadMembers();
   }
   async function addEntry(kind, data) {
-    const r = await sb.from('entries').insert({ family_id: fid, kind, data }).select().single();
-    if (r.error) { toast(T('Fehler beim Speichern')); return null; }
+    let r; try { r = await sb.from('entries').insert({ family_id: fid, kind, data }).select().single(); } catch (e) { r = { error: e }; }
+    if (r.error) { saveFailed(r.error, true); return null; }
+    setNet(true);
     loadEntries();
     return r.data;
   }
   async function updateEntry(id, data) {
-    const r = await sb.from('entries').update({ data }).eq('id', id);
-    if (r.error) toast(T('Fehler beim Speichern')); else loadEntries();
+    let r; try { r = await sb.from('entries').update({ data }).eq('id', id); } catch (e) { r = { error: e }; }
+    if (r.error) {
+      saveFailed(r.error);
+      const e = entries.find(x => x.id === id), s = serverData.get(id);
+      if (e && s) { e.data = JSON.parse(s); renderAll(); }
+      return;
+    }
+    setNet(true);
+    serverData.set(id, JSON.stringify(data));
+    loadEntries();
   }
   async function delEntry(id) {
     const idx = entries.findIndex(x => x.id === id);
@@ -1047,7 +1083,16 @@ input.switch:disabled { opacity: .5; }
     const gone = entries[idx];
     withUndo(T('Gelöscht.'),
       () => { entries = entries.filter(x => x.id !== id); renderAll(); },
-      async () => { const r = await sb.from('entries').delete().eq('id', id); if (r.error) toast(T('Fehler beim Löschen')); loadEntries(); },
+      async () => {
+        let r; try { r = await sb.from('entries').delete().eq('id', id); } catch (e) { r = { error: e }; }
+        if (r.error) {
+          if (isNetErr(r.error)) setNet(false);
+          toast(T('Fehler beim Löschen'));
+          if (!entries.some(x => x.id === id)) { entries.splice(Math.min(idx, entries.length), 0, gone); renderAll(); }
+          return;
+        }
+        loadEntries();
+      },
       () => { entries.splice(Math.min(idx, entries.length), 0, gone); renderAll(); });
   }
 
@@ -1219,13 +1264,15 @@ input.switch:disabled { opacity: .5; }
 
   // Formulare
   function bindAdd(formId, inputId, kind) {
-    document.getElementById(formId).onsubmit = (e) => {
+    let busy = false;
+    document.getElementById(formId).onsubmit = async (e) => {
       e.preventDefault();
       const inp = document.getElementById(inputId);
       const text = inp.value.trim();
-      if (!text) return;
-      addEntry(kind, { text, done: false, by: myName });
-      inp.value = '';
+      if (!text || busy) return;
+      busy = true;
+      try { if (await addEntry(kind, { text, done: false, by: myName })) inp.value = ''; }   // Text bleibt stehen, wenn das Speichern nicht klappt
+      finally { busy = false; }
     };
   }
   bindAdd('f-shop', 'in-shop', 'shop');
@@ -1423,15 +1470,18 @@ input.switch:disabled { opacity: .5; }
     if (!(min > 0)) return;
     addEntry('timers', { label, end: Date.now() + min * 60000 });
   };
-  document.getElementById('f-event').onsubmit = (e) => {
+  let evBusy = false;
+  document.getElementById('f-event').onsubmit = async (e) => {
     e.preventDefault();
     const title = document.getElementById('in-etitle').value.trim();
     const date = document.getElementById('in-edate').value;
     const time = document.getElementById('in-etime').value;
     if (!title || !date) { toast(T('Titel und Datum fehlen')); return; }
+    if (evBusy) return;
     const rv = document.getElementById('in-eremind').value;
-    addEntry('events', { title, date, time, remind: rv === '' ? null : Number(rv) });
-    document.getElementById('in-etitle').value = '';
+    evBusy = true;
+    try { if (await addEntry('events', { title, date, time, remind: rv === '' ? null : Number(rv) })) document.getElementById('in-etitle').value = ''; }
+    finally { evBusy = false; }
   };
 
 
@@ -1767,8 +1817,9 @@ input.switch:disabled { opacity: .5; }
   });
   async function loadChat() {
     if (!fid) return;
-    const r = await sb.from('messages').select('*').eq('family_id', fid).order('created_at', { ascending: false }).limit(100);
-    if (r.error) return;
+    let r; try { r = await sb.from('messages').select('*').eq('family_id', fid).order('created_at', { ascending: false }).limit(100); } catch (e) { r = { error: e }; }
+    if (r.error) { if (isNetErr(r.error)) setNet(false); return; }
+    setNet(true);
     const fresh = r.data.reverse();
     if (fresh.length === chatMsgs.length && fresh.every((m, i) => m.id === chatMsgs[i].id)) return;
     chatMsgs = fresh; chatIds.clear(); fresh.forEach(m => chatIds.add(m.id));
@@ -1838,8 +1889,8 @@ input.switch:disabled { opacity: .5; }
   $('in-chat').addEventListener('blur', () => setTimeout(updateCompose, 150));
 
   async function sendMessage(fields) {
-    const r = await sb.from('messages').insert({ family_id: fid, display_name: myName, ...fields }).select().single();
-    if (r.error) { console.error(r.error); toast(T('Senden nicht möglich')); return null; }
+    let r; try { r = await sb.from('messages').insert({ family_id: fid, display_name: myName, ...fields }).select().single(); } catch (e) { r = { error: e }; }
+    if (r.error) { if (isNetErr(r.error)) setNet(false); toast(T('Senden nicht möglich')); return null; }
     stickBottom = true;
     addMsg(r.data);
     const mid = r.data.id;
