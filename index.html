@@ -255,11 +255,11 @@ input.switch:disabled { opacity: .5; }
     <form id="f-reset" class="card">
       <div>
         <label class="field-label" for="in-newpw">Neues Passwort</label>
-        <input type="password" id="in-newpw" autocomplete="new-password" enterkeyhint="next" minlength="6" required>
+        <input type="password" id="in-newpw" autocomplete="new-password" enterkeyhint="next" minlength="8" required>
       </div>
       <div>
         <label class="field-label" for="in-newpw2">Wiederholen</label>
-        <input type="password" id="in-newpw2" autocomplete="new-password" enterkeyhint="go" minlength="6" required>
+        <input type="password" id="in-newpw2" autocomplete="new-password" enterkeyhint="go" minlength="8" required>
       </div>
       <button class="btn block" type="submit">Passwort speichern</button>
       <p class="msg" id="reset-msg"></p>
@@ -469,6 +469,27 @@ input.switch:disabled { opacity: .5; }
         <p class="lead" style="margin:0">Verlasse deine Familie, um eine neue zu gründen oder mit einem Code einer anderen beizutreten. Die Einträge bleiben in der alten Familie erhalten.</p>
         <button class="btn danger" id="btn-leave" type="button">Familie verlassen</button>
       </div>
+      <div class="card fold closed" id="fold-acc">
+        <button class="fold-h" type="button" data-fold="fold-acc">🔐 Konto &amp; Passwort<span class="caret" aria-hidden="true"></span></button>
+        <div class="fold-b" style="display:grid; gap:10px;">
+          <div id="pw-box"></div>
+          <button class="btn ghost small" id="btn-pw" type="button">Passwort ändern</button>
+          <p class="field-label" style="margin:8px 0 0">Konto löschen</p>
+          <p class="hint">Dein Konto, deine Chat-Nachrichten und deine Anmeldung für Mitteilungen werden gelöscht. Einträge für die Familie (Einkauf, Aufgaben, Termine) bleiben bestehen, dein Name kann dort noch als Ersteller stehen. Das kann nicht rückgängig gemacht werden.</p>
+          <div id="del-box"></div>
+          <button class="btn danger small" id="btn-del" type="button">Konto löschen</button>
+        </div>
+      </div>
+      <div class="card fold closed" id="fold-priv">
+        <button class="fold-h" type="button" data-fold="fold-priv">🔒 Datenschutz<span class="caret" aria-hidden="true"></span></button>
+        <div class="fold-b" style="display:grid; gap:8px;">
+          <p class="hint">Milteo speichert deine E-Mail-Adresse, deinen Namen und alles, was du einträgst: Einkauf, Aufgaben, Termine, Timer, Stundenpläne und den Chat mit Bildern und Sprachnachrichten.</p>
+          <p class="hint">Die Daten liegen in einer Datenbank bei Supabase in der EU (Frankreich). Sehen können sie nur die Mitglieder deiner Familie und der Betreiber der App.</p>
+          <p class="hint">Für Gerichte und das Lesen von Fotos und PDFs wird der Text oder die Datei an die KI von Google (Gemini) gesendet. Sonst gibt Milteo keine Daten an Dritte weiter. Es gibt keine Werbung und kein Tracking.</p>
+          <p class="hint">Beim Laden der App sehen GitHub (Hosting) und Google Fonts (Schriftarten) deine IP-Adresse. Einstellungen wie die Sprache bleiben auf deinem Gerät.</p>
+          <p class="hint">Du kannst dein Konto jederzeit unter «Konto &amp; Passwort» löschen.</p>
+        </div>
+      </div>
       <button class="btn ghost small" id="btn-logout" type="button">Abmelden</button>
     </section>
   </div>
@@ -595,7 +616,7 @@ input.switch:disabled { opacity: .5; }
     I18N.set(l);
     ['sel-lang', 'sel-lang-auth'].forEach(id => { const el = $(id); if (el) el.value = l; });
     applyStatic(); renderToday();
-    try { showNet(); } catch (_) {}
+    try { showNet(); $('pw-box').innerHTML = ''; $('del-box').innerHTML = ''; } catch (_) {}
     try { setMode(authMode); } catch (_) {}
     if (myName && $('fam-hello')) $('fam-hello').textContent = T('Hallo') + ' ' + myName;
     try { renderAll(); renderChat(); refreshPushUI(); loadMembers(); } catch (_) {}
@@ -648,7 +669,7 @@ input.switch:disabled { opacity: .5; }
     auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, lock: async (name, timeout, fn) => await fn() },
   });
   function clearStaleAuth() { try { Object.keys(localStorage).filter(k => /^sb-.*-auth-token/.test(k)).forEach(k => localStorage.removeItem(k)); } catch (_) {} }
-  let fid = null, myId = null, myName = '', currentTab = 'home';
+  let fid = null, myId = null, myName = '', myEmail = '', currentTab = 'home';
   let entries = [];
   const openDishes = new Set();
   try { JSON.parse(localStorage.getItem('milteo_open_dishes') || '[]').forEach(i => openDishes.add(i)); } catch (_) {}
@@ -801,7 +822,7 @@ input.switch:disabled { opacity: .5; }
   function route(session) {
     if (!session) { showScreen('auth'); return; }
     if (recoveryMode) { showScreen('reset'); return; }
-    myId = session.user.id;
+    myId = session.user.id; myEmail = session.user.email || '';
     myName = session.user.user_metadata?.name || session.user.email.split('@')[0];
     const nameInput = document.getElementById('in-myname');
     if (nameInput) nameInput.value = myName;
@@ -906,6 +927,7 @@ input.switch:disabled { opacity: .5; }
         return;
       }
       if (authMode === 'register') {
+        const pr = pwProblem(pw); if (pr) { msgEl.textContent = pr; return; }
         const r = await sb.auth.signUp({ email, password: pw, options: { data: { name }, emailRedirectTo: appUrl() } });
         if (r.error) { msgEl.textContent = friendlyAuthError(r.error); return; }
         await rememberPassword(email, pw, $('in-remember').checked);
@@ -924,7 +946,7 @@ input.switch:disabled { opacity: .5; }
     e.preventDefault();
     const p1 = $('in-newpw').value, p2 = $('in-newpw2').value, msg = $('reset-msg');
     msg.textContent = '';
-    if (p1.length < 6) { msg.textContent = T('Mindestens 6 Zeichen.'); return; }
+    const pr = pwProblem(p1); if (pr) { msg.textContent = pr; return; }
     if (p1 !== p2) { msg.textContent = T('Die Passwörter stimmen nicht überein.'); return; }
     const r = await sb.auth.updateUser({ password: p1 });
     if (r.error) { msg.textContent = friendlyAuthError(r.error); return; }
@@ -987,6 +1009,78 @@ input.switch:disabled { opacity: .5; }
     await sb.rpc('set_my_display_name', { p_name: name });
     loadMembers();
     toast(T('Name gespeichert'));
+  };
+
+  // ---------- Passwortregeln, Passwort ändern, Konto löschen ----------
+  const WEAK_PW = new Set(['12345678', '123456789', '1234567890', '12341234', '87654321', 'password', 'password1', 'password123', 'passwort', 'passwort1', 'passwort123', 'qwertz123', 'qwerty123', 'qwertzuiop', 'qwertyuiop', 'asdfghjk', 'abcd1234', 'abc12345', 'iloveyou', 'letmein1', 'welcome1', 'milteo123', 'milteo1234', 'schweiz123']);
+  function pwProblem(pw) {
+    if (pw.length < 8) return T('Das Passwort braucht mindestens 8 Zeichen.');
+    if (WEAK_PW.has(pw.toLowerCase()) || /^(.)\1+$/.test(pw) || /^\d+$/.test(pw)) return T('Dieses Passwort ist zu einfach. Wähle ein anderes.');
+    return '';
+  }
+  // Aktuelles Passwort prüfen, ohne die laufende Sitzung anzufassen (eigener, nicht gespeicherter Client)
+  async function checkCurrentPw(pw) {
+    try {
+      const tmp = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false, lock: async (n, t, fn) => await fn() } });
+      const r = await Promise.race([tmp.auth.signInWithPassword({ email: myEmail, password: pw }), new Promise(res => setTimeout(() => res({ error: { message: 'timeout' } }), 15000))]);
+      if (!r.error) return 'ok';
+      return /invalid login credentials/i.test(r.error.message || '') ? 'bad' : 'net';
+    } catch (_) { return 'net'; }
+  }
+  const pwErr = (c) => c === 'bad' ? T('Das aktuelle Passwort stimmt nicht.') : T('Keine Antwort vom Server. Prüfe die Verbindung und versuche es nochmal.');
+  // Die Passwortfelder gibt es nur, solange sie gebraucht werden (sonst blendet die Tastatur Passwort-Vorschläge ein)
+  $('btn-pw').onclick = () => {
+    const box = $('pw-box');
+    if (box.firstChild) { box.innerHTML = ''; return; }
+    box.innerHTML = `<form id="f-pw" style="display:grid; gap:8px;">
+      <label class="field-label" for="pw-cur" style="margin:0">${esc(T('Aktuelles Passwort'))}</label><input type="password" id="pw-cur" autocomplete="current-password" required>
+      <label class="field-label" for="pw-new" style="margin:0">${esc(T('Neues Passwort'))}</label><input type="password" id="pw-new" autocomplete="new-password" minlength="8" required>
+      <label class="field-label" for="pw-new2" style="margin:0">${esc(T('Wiederholen'))}</label><input type="password" id="pw-new2" autocomplete="new-password" minlength="8" required>
+      <button class="btn" type="submit">${esc(T('Passwort speichern'))}</button><p class="msg" id="pw-msg" role="alert"></p></form>`;
+    $('f-pw').onsubmit = async (e) => {
+      e.preventDefault();
+      const cur = $('pw-cur').value, n1 = $('pw-new').value, n2 = $('pw-new2').value, msg = $('pw-msg'), btn = e.target.querySelector('button');
+      msg.textContent = '';
+      const pr = pwProblem(n1); if (pr) { msg.textContent = pr; return; }
+      if (n1 !== n2) { msg.textContent = T('Die Passwörter stimmen nicht überein.'); return; }
+      if (n1 === cur) { msg.textContent = T('Das neue Passwort muss sich vom alten unterscheiden.'); return; }
+      btn.disabled = true;
+      try {
+        const c = await checkCurrentPw(cur);
+        if (c !== 'ok') { msg.textContent = pwErr(c); return; }
+        const r = await sb.auth.updateUser({ password: n1 });
+        if (r.error) { msg.textContent = friendlyAuthError(r.error); return; }
+        let keep = true; try { keep = localStorage.getItem('milteo_save_pw') !== '0'; } catch (_) {}
+        await rememberPassword(myEmail, n1, keep);
+        box.innerHTML = ''; toast(T('Passwort geändert'));
+      } finally { btn.disabled = false; }
+    };
+  };
+  $('btn-del').onclick = () => {
+    const box = $('del-box');
+    if (box.firstChild) { box.innerHTML = ''; return; }
+    box.innerHTML = `<form id="f-del" style="display:grid; gap:8px;">
+      <label class="field-label" for="del-pw" style="margin:0">${esc(T('Gib dein Passwort ein, um das Konto endgültig zu löschen.'))}</label><input type="password" id="del-pw" autocomplete="current-password" required>
+      <button class="btn danger" type="submit">${esc(T('Konto endgültig löschen'))}</button><p class="msg" id="del-msg" role="alert"></p></form>`;
+    $('f-del').onsubmit = async (e) => {
+      e.preventDefault();
+      const msg = $('del-msg'), btn = e.target.querySelector('button');
+      msg.textContent = ''; btn.disabled = true;
+      try {
+        const c = await checkCurrentPw($('del-pw').value);
+        if (c !== 'ok') { msg.textContent = pwErr(c); return; }
+        const r = await sb.rpc('delete_my_account');
+        if (r.error) { msg.textContent = T('Das Konto konnte nicht gelöscht werden. Bitte versuche es später nochmal.'); return; }
+        try { const sub = await currentSub(); if (sub) await sub.unsubscribe(); } catch (_) {}
+        unsubscribeChat();
+        fid = null; entries = []; myId = null;
+        try { await sb.auth.signOut({ scope: 'local' }); } catch (_) {}
+        try { Object.keys(localStorage).filter(k => /^(sb-|milteo_)/.test(k) && k !== 'milteo_lang').forEach(k => localStorage.removeItem(k)); } catch (_) {}
+        box.innerHTML = '';
+        showScreen('auth'); setMode('login');
+        toast(T('Dein Konto wurde gelöscht.'), 6000);
+      } finally { btn.disabled = false; }
+    };
   };
 
   document.getElementById('btn-leave').onclick = async () => {

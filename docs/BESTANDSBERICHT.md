@@ -19,7 +19,7 @@ Alles ist anhand von Code und Datenbank-Regeln beurteilt. Auf echten Geräten ge
 | Punkt | Status | Befund |
 |---|---|---|
 | Registrierung, Anmeldung, Abmeldung | ✅ | Fehler verständlich (falsches Passwort, bereits registriert, zu viele Versuche). |
-| Passwort vergessen / ändern | 🟡 | Vergessen ✅. Passwort ändern bei eingeloggter Sitzung ❌ (nur über den Mail-Link). |
+| Passwort vergessen / ändern | ✅ | Vergessen ✅. Ändern in «Konto & Passwort» (mit Prüfung des aktuellen Passworts) ✅ seit Schritt 2. |
 | Profil bearbeiten | 🟡 | Name ✅. E-Mail ändern ❌. |
 | Familie erstellen, mit Code beitreten | ✅ | Beitritt hat Versuchsbremse (8 Fehlversuche pro Stunde). |
 | Code erneuern, Familie verlassen | ✅ | Jedes Mitglied darf beides. |
@@ -57,13 +57,13 @@ Alles ist anhand von Code und Datenbank-Regeln beurteilt. Auf echten Geräten ge
 | Chat | ✅/🟡 | Echtzeit, Bilder, Sprachnachrichten, Zeitstempel, Leerhinweis ✅. Fehlgeschlagene Nachrichten werden nur per Hinweis gemeldet (Text bleibt im Feld ✅); keine Ungelesen-Zählung pro Nachricht (Punkt und Zähler auf der Startseite ✅). |
 | Timer | 🟡 | Starten, Restzeit, Ende-Hinweis, Push bei geschlossener App ✅. Pausieren/Zurücksetzen ❌. |
 | Benachrichtigungen | ✅ | Schalter für Chat/Timer/Termine, Berechtigung wird erklärt, Test-Taste, automatische Erneuerung, hohe Zustellpriorität. |
-| Einstellungen | 🟡 | Name, Sprache, Mitglieder, Code ✅. Kontolöschung: Funktion `delete_my_account` besteht auf dem Server, **aber keine Schaltfläche** ❌. Datenschutzinformation und Kontakt ❌. |
+| Einstellungen | 🟡 | Name, Sprache, Mitglieder, Code ✅. Kontolöschung ✅ (Schritt 2, mit Passwortabfrage). Datenschutzinformation ✅ (Schritt 2); Kontaktadresse ❌ (noch keine hinterlegt). |
 | Schweiz | ✅ | Datumsformat und 24-Stunden-Zeit über die Gerätesprache `de-CH`, Standardsprache Deutsch, keine kostenpflichtigen Dienste. Zeitzone: Termine ohne Zeitzone werden lokal verstanden, die Server-Erinnerungen rechnen in Europe/Zurich. |
 | Technische Qualität | 🟡 | PWA installierbar ✅, Service Worker ✅. Kein automatisierter Testlauf im Repository, `index.html` ist gross. Altlasten: `sw (1).js`, überzählige `</div>` bei Zeile 269/270, Anzeige technischer Fehlertexte bei «Familie verlassen». |
 
 ### Supabase-Prüfung (Sicherheit)
 - `pg_net` liegt im Schema `public` (Warnung, nur Aufräumarbeit).
-- «Leaked password protection» ist ausgeschaltet. Das ist eine Einstellung im Supabase-Dashboard (Authentication → Passwörter), nicht per Code änderbar.
+- «Leaked password protection» ist ausgeschaltet. Sie gibt es bei Supabase nur im kostenpflichtigen Pro-Plan (Meldung im Dashboard am 24.10.), wird also nicht aktiviert. Ersatz in der App: mindestens 8 Zeichen und Ablehnung sehr bekannter Passwörter (Schritt 2).
 - Tabellen ohne Policy (`ai_calls`, `app_secrets`, `join_attempts`, `shopping_items`): für Clients damit gesperrt, also gewollt sicher.
 - Familiencodes werden mit `random()` statt einer kryptografischen Quelle erzeugt (8 Zeichen aus 31, durch die Versuchsbremse praktisch nicht erratbar; trotzdem verbesserungswürdig).
 
@@ -89,3 +89,9 @@ Jeder Schritt: klein, getestet, danach wieder lauffähig. Schritte mit ⛔ warte
 | Schritt | Dateien | Test |
 |---|---|---|
 | 1 Verbindung und Speichern | `index.html` (Hinweisleiste `#net`, `addEntry`/`updateEntry`/`delEntry`/`loadEntries`/`loadChat`, Formulare Einkauf/Aufgaben/Termine), `i18n.js` (3 neue Texte in 8 Sprachen) | Automatisch im Browser mit simuliertem Netzausfall (22 Prüfungen, alle bestanden): Text bleibt bei Fehler stehen, Hinweisleiste erscheint und verschwindet wieder, Abhaken und Löschen springen zurück, keine Fehlermeldung bei der Hintergrund-Abfrage, Doppel-Absenden speichert nur einmal, Banner in Französisch. Bisherige Tests (Import, Stundenplan) laufen weiter. **Nicht getestet:** echtes Handy mit echtem Mobilfunk; die neuen Übersetzungen (mk, sr, sq, tr) stammen von mir und sind nicht von Muttersprachlern geprüft. |
+| 2 Konto und Datenschutz | `index.html` (Bereich «Konto & Passwort», «Datenschutz», `pwProblem`, `checkCurrentPw`), `i18n.js` (14 neue Texte in 8 Sprachen) | Automatisch im Browser mit simuliertem Server (alle bestanden): falsches aktuelles Passwort wird abgelehnt, schwache/ungleiche neue Passwörter werden abgelehnt, richtiges Ändern ruft die Passwortänderung auf; Konto löschen verlangt das Passwort, zeigt bei Serverfehler eine freundliche Meldung, räumt bei Erfolg lokale Daten auf und zeigt die Anmeldung; Registrierung blockiert schwache Passwörter; Datenschutztext auf Französisch. **Nicht getestet:** das echte Löschen auf dem Server (bewusst, um keine echten Daten zu löschen). |
+
+## 5. Bekannte Einschränkungen beim Konto löschen
+- **Dein eigenes Konto (petrov.aleks92@gmail.com) lässt sich im Moment nicht löschen:** 6 Einträge der alten Tabelle `shopping_items` verweisen auf dich und blockieren das Löschen. Die App zeigt dann die freundliche Fehlermeldung. Andere Konten sind nicht betroffen. Lösung braucht eine Datenbankänderung (⛔, mit Freigabe).
+- Hochgeladene Chat-Bilder und Sprachnachrichten bleiben nach dem Löschen im Speicher liegen (die Nachrichten selbst werden gelöscht). Das Aufräumen braucht eine neue Speicher-Regel (⛔).
+- In Einträgen der Familie kann der Name des Erstellers als Text stehen bleiben (steht so im Hinweis in der App).
