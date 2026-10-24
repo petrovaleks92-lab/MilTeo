@@ -818,7 +818,7 @@ input.switch:disabled { opacity: .5; }
     clearTimeout(toastTimer);
     const p = { commit, timer: setTimeout(() => { t.hidden = true; commitPending(); }, 6000) };
     pendingUndo = p;
-    btn.onclick = () => { if (pendingUndo !== p) return; clearTimeout(p.timer); pendingUndo = null; t.hidden = true; undo(); toast(T('Wiederhergestellt')); };
+    btn.onclick = () => { if (pendingUndo !== p) return; clearTimeout(p.timer); pendingUndo = null; t.hidden = true; undo(); toast(T('Wiederhergestellt')); scheduleReload(); };
   }
   window.addEventListener('pagehide', () => commitPending());
 
@@ -844,6 +844,7 @@ input.switch:disabled { opacity: .5; }
       switchTab(location.hash === '#chat' ? 'chat' : 'home');
       loadEntries();
       subscribeChat();
+      subscribeEntries();
       loadChat();
       syncPush();
       refreshPushUI();
@@ -1112,6 +1113,7 @@ input.switch:disabled { opacity: .5; }
   // ---------- Mitglieder ----------
   async function loadMembers() {
     if (!fid) return;
+    lastMembers = Date.now();
     const r = await sb.from('members').select('user_id, display_name, created_at').eq('family_id', fid).order('created_at');
     const el = document.getElementById('list-members');
     if (!r.error) { memberCount = r.data.length; memberNames = {}; r.data.forEach(m => { memberNames[m.user_id] = m.display_name || ''; }); renderAll(); }
@@ -1141,35 +1143,65 @@ input.switch:disabled { opacity: .5; }
     toast(adding ? T('Nicht gespeichert. Dein Text bleibt stehen, versuche es gleich nochmal.') : isNetErr(err) ? T('Nicht gespeichert') : T('Fehler beim Speichern'), adding ? 4500 : 3000);
   }
 
+  // Gleichzeitiges Arbeiten: eigene Schreibvorgänge laufen lassen, bevor neu geladen wird (sonst springt die Anzeige zurück)
+  let writing = 0, reloadTimer = null, lastMembers = 0, entriesChannel = null, rtOk = false, pollN = 0;
+  function scheduleReload() { clearTimeout(reloadTimer); reloadTimer = setTimeout(loadEntries, 300); }
+  function restoreFromServer(id) { const e = entries.find(x => x.id === id), s = serverData.get(id); if (e && s) { e.data = JSON.parse(s); renderAll(); } }
+  const sameItem = (x, ref) => !!x && x.name === ref.name && (x.amount || '') === (ref.amount || '');
+  const itemIdx = (d, ref, hint) => { const a = d.items || []; return sameItem(a[hint], ref) ? hint : a.findIndex(x => sameItem(x, ref)); };
+  // Ändern, ohne Änderungen anderer zu überschreiben: erst den aktuellen Stand vom Server holen, die Änderung darauf anwenden, dann speichern
+  async function patchEntry(id, fn) {
+    writing++;
+    try {
+      let r; try { r = await sb.from('entries').select('data').eq('id', id).maybeSingle(); } catch (e) { r = { error: e }; }
+      if (r.error) { restoreFromServer(id); saveFailed(r.error); return false; }
+      if (!r.data) return false;                                   // inzwischen von jemand anderem gelöscht
+      const next = fn(JSON.parse(JSON.stringify(r.data.data)));
+      let w; try { w = await sb.from('entries').update({ data: next }).eq('id', id); } catch (e) { w = { error: e }; }
+      if (w.error) { restoreFromServer(id); saveFailed(w.error); return false; }
+      setNet(true); serverData.set(id, JSON.stringify(next));
+      return true;
+    } finally { writing--; scheduleReload(); }
+  }
+  // Echtzeit: Änderungen anderer erscheinen sofort (die Abfrage alle 60 Sekunden bleibt als Sicherheitsnetz)
+  function subscribeEntries() {
+    if (entriesChannel || !fid) return;
+    entriesChannel = sb.channel('entries-' + fid)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'entries' }, () => scheduleReload())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'members' }, () => loadMembers())
+      .subscribe((st) => { rtOk = st === 'SUBSCRIBED'; if (rtOk) scheduleReload(); });
+  }
+
   async function loadEntries() {
     if (!fid || pendingUndo) return;
+    if (writing > 0) { scheduleReload(); return; }
     let r; try { r = await sb.from('entries').select('*').eq('family_id', fid).order('created_at'); } catch (e) { r = { error: e }; }
     if (r.error) {
       if (isNetErr(r.error)) setNet(false);
       else if (Date.now() - loadErrToast > 60000) { loadErrToast = Date.now(); toast(T('Fehler beim Laden')); }
       return;
     }
+    if (writing > 0) { scheduleReload(); return; }                 // während der Abfrage hat jemand hier gespeichert: gleich nochmal
     setNet(true);
     entries = r.data;
     serverData.clear(); r.data.forEach(e => serverData.set(e.id, JSON.stringify(e.data)));
     renderAll();
-    loadMembers();
+    if (!memberCount || Date.now() - lastMembers > 60000) loadMembers();
   }
   async function addEntry(kind, data) {
+    writing++;
     let r; try { r = await sb.from('entries').insert({ family_id: fid, kind, data }).select().single(); } catch (e) { r = { error: e }; }
+    writing--;
     if (r.error) { saveFailed(r.error, true); return null; }
     setNet(true);
     loadEntries();
     return r.data;
   }
   async function updateEntry(id, data) {
+    writing++;
     let r; try { r = await sb.from('entries').update({ data }).eq('id', id); } catch (e) { r = { error: e }; }
-    if (r.error) {
-      saveFailed(r.error);
-      const e = entries.find(x => x.id === id), s = serverData.get(id);
-      if (e && s) { e.data = JSON.parse(s); renderAll(); }
-      return;
-    }
+    writing--;
+    if (r.error) { saveFailed(r.error); restoreFromServer(id); return; }
     setNet(true);
     serverData.set(id, JSON.stringify(data));
     loadEntries();
@@ -1181,7 +1213,9 @@ input.switch:disabled { opacity: .5; }
     withUndo(T('Gelöscht.'),
       () => { entries = entries.filter(x => x.id !== id); renderAll(); },
       async () => {
+        writing++;
         let r; try { r = await sb.from('entries').delete().eq('id', id); } catch (e) { r = { error: e }; }
+        writing--;
         if (r.error) {
           if (isNetErr(r.error)) setNet(false);
           toast(T('Fehler beim Löschen'));
@@ -1219,7 +1253,7 @@ input.switch:disabled { opacity: .5; }
     e.data = { ...e.data, steps };
     recipeOpen.add(id);
     renderChecklist('shop');
-    updateEntry(id, e.data);
+    patchEntry(id, d => ({ ...d, steps }));
   }
   function saveOpen() { try { localStorage.setItem('milteo_open_dishes', JSON.stringify([...openDishes])); } catch (_) {} }
 
@@ -1295,13 +1329,17 @@ input.switch:disabled { opacity: .5; }
     const b = ev.target.closest('[data-act="evedit"],[data-act="evhome"]'); if (!b) return;
     const e = entries.find(x => x.id === b.dataset.id); if (!e) return;
     if (b.dataset.act === 'evedit') { evEdit = evEdit === e.id ? null : e.id; renderEvents(); return; }
-    updateEntry(e.id, { ...e.data, home: e.data.home === false ? true : false });
+    const showIt = e.data.home === false;
+    e.data = { ...e.data, home: showIt }; renderAll();
+    patchEntry(e.id, d => ({ ...d, home: showIt }));
   });
   document.addEventListener('change', (ev) => {
     if (ev.target.id !== 'ev-rm' || !evEdit) return;
     const e = entries.find(x => x.id === evEdit); if (!e) return;
     const v = ev.target.value;
-    updateEntry(e.id, { ...e.data, remind: v === '' ? null : Number(v), reminded: false });
+    const rv = v === '' ? null : Number(v);
+    e.data = { ...e.data, remind: rv, reminded: false }; renderAll();
+    patchEntry(e.id, d => ({ ...d, remind: rv, reminded: false }));
   });
   function renderAll() { renderChecklist('shop'); renderChecklist('todos'); renderTimers(); renderEvents(); renderTimetables(); renderHome(); }
 
@@ -1327,7 +1365,7 @@ input.switch:disabled { opacity: .5; }
     if (act === 'del') delEntry(id);
     if (act === 'toggle') {
       const e = entries.find(x => x.id === id);
-      if (e) updateEntry(id, { ...e.data, done: !e.data.done });
+      if (e) { const nv = !e.data.done; e.data = { ...e.data, done: nv }; renderAll(); patchEntry(id, d => ({ ...d, done: nv })); }
     }
     if (act === 'dish') {
       if (openDishes.has(id)) openDishes.delete(id); else openDishes.add(id);
@@ -1342,18 +1380,20 @@ input.switch:disabled { opacity: .5; }
       const items = (e.data.items || []).map(i => ({ ...i }));
       const n = Number(b.dataset.i);
       if (!items[n]) return;
+      const ref = { name: items[n].name, amount: items[n].amount || '' };
       if (act === 'item') {
-        items[n].done = !items[n].done;
+        const nv = !items[n].done;
+        items[n].done = nv;
         e.data = { ...e.data, items };       // sofort anzeigen, dann speichern
         renderChecklist('shop'); renderHome();
-        updateEntry(id, e.data);
+        patchEntry(id, d => { const i = itemIdx(d, ref, n); if (i < 0) return d; const a = (d.items || []).map(x => ({ ...x })); a[i].done = nv; return { ...d, items: a }; });
       } else {
         const before = e.data, name = items[n].name;
         items.splice(n, 1);
         const after = { ...e.data, items };
         withUndo('„' + name + '“ gelöscht.',
           () => { e.data = after; renderChecklist('shop'); renderHome(); },
-          () => { updateEntry(id, after); },
+          () => { patchEntry(id, d => { const i = itemIdx(d, ref, n); if (i < 0) return d; const a = (d.items || []).map(x => ({ ...x })); a.splice(i, 1); return { ...d, items: a }; }); },
           () => { e.data = before; renderChecklist('shop'); renderHome(); });
       }
     }
@@ -1777,7 +1817,7 @@ input.switch:disabled { opacity: .5; }
     if (v === '') delete l.rm; else l.rm = Number(v);
     return l;
   }
-  async function ttSave(e) { await updateEntry(e.id, e.data); renderTimetables(); renderHome(); }
+  async function ttSave(e) { const lessons = e.data.lessons; await patchEntry(e.id, d => ({ ...d, lessons })); renderTimetables(); renderHome(); }
   document.addEventListener('change', (ev) => {
     if (!ev.target.matches('#tte-home, #tte-rm') || !ttEdit) return;
     const e = entries.find(x => x.id === ttEdit.id); if (!e) return;
@@ -1933,6 +1973,7 @@ input.switch:disabled { opacity: .5; }
       .subscribe();
   }
   function unsubscribeChat() {
+    if (entriesChannel) { sb.removeChannel(entriesChannel); entriesChannel = null; rtOk = false; }
     if (chatChannel) { sb.removeChannel(chatChannel); chatChannel = null; }
     chatMsgs = []; chatIds.clear();
     stopPlaying();
@@ -2259,7 +2300,7 @@ input.switch:disabled { opacity: .5; }
 
   // Datum im Kopf + automatische Aktualisierung
   renderToday(); fillLangSelects(); applyStatic();
-  setInterval(() => { loadEntries(); if (currentTab === 'chat') loadChat(); }, 15000);
+  setInterval(() => { pollN++; if (!rtOk || pollN % 4 === 0) loadEntries(); if (currentTab === 'chat') loadChat(); }, 15000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) { loadEntries(); syncPush(); } });
 </script>
 </body>
