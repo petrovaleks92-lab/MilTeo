@@ -380,6 +380,7 @@ input.switch:disabled { opacity: .5; }
         <button class="fold-h" type="button" data-fold="fold-imp">📎 Termine aus Datei<span class="caret" aria-hidden="true"></span></button>
         <div class="fold-b" style="display:grid; gap:12px;">
         <p class="hint">Foto, PDF oder Kalenderdatei (.ics): Die Termine werden gelesen und zur Auswahl angezeigt.</p>
+        <p class="hint">Foto und PDF werden zum Lesen an Google (Gemini) gesendet. Lade nichts Privates hoch.</p>
         <button class="btn ghost" id="btn-import" type="button">Datei wählen</button>
         <input type="file" id="in-import" accept="image/*,.pdf,.ics,.txt,.csv,text/calendar,application/pdf" hidden>
         <div id="import-box"></div></div>
@@ -396,6 +397,7 @@ input.switch:disabled { opacity: .5; }
             <button class="fold-h" type="button" data-fold="fold-ttadd">Stundenplan hinzufügen<span class="caret" aria-hidden="true"></span></button>
             <div class="fold-b" style="display:grid; gap:8px; margin-top:10px;">
               <p class="hint">Stundenplan eines Kindes hochladen (Foto oder PDF). Mit Namen, falls du mehrere Kinder hast.</p>
+              <p class="hint">Foto und PDF werden zum Lesen an Google (Gemini) gesendet. Lade nichts Privates hoch.</p>
               <form id="f-tt" style="display:grid; gap:8px;">
                 <input type="text" id="in-child" enterkeyhint="go" placeholder="Name des Kindes" maxlength="40">
                 <button class="btn ghost" type="submit">Stundenplan hochladen</button>
@@ -486,6 +488,7 @@ input.switch:disabled { opacity: .5; }
           <p class="hint">Milteo speichert deine E-Mail-Adresse, deinen Namen und alles, was du einträgst: Einkauf, Aufgaben, Termine, Timer, Stundenpläne und den Chat mit Bildern und Sprachnachrichten.</p>
           <p class="hint">Die Daten liegen in einer Datenbank bei Supabase in der EU (Frankreich). Sehen können sie nur die Mitglieder deiner Familie und der Betreiber der App.</p>
           <p class="hint">Für Gerichte und das Lesen von Fotos und PDFs wird der Text oder die Datei an die KI von Google (Gemini) gesendet. Sonst gibt Milteo keine Daten an Dritte weiter. Es gibt keine Werbung und kein Tracking.</p>
+          <p class="hint">Bei der kostenlosen Nutzung von Gemini darf Google die gesendeten Inhalte zur Verbesserung seiner Produkte verwenden, und Mitarbeitende können sie lesen (ohne Bezug zu deinem Konto). Sende deshalb nichts, was privat bleiben soll.</p>
           <p class="hint">Beim Laden der App sehen GitHub (Hosting) und Google Fonts (Schriftarten) deine IP-Adresse. Einstellungen wie die Sprache bleiben auf deinem Gerät.</p>
           <p class="hint">Du kannst dein Konto jederzeit unter «Konto &amp; Passwort» löschen.</p>
         </div>

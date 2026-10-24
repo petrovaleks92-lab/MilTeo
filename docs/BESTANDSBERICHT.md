@@ -95,3 +95,6 @@ Jeder Schritt: klein, getestet, danach wieder lauffähig. Schritte mit ⛔ warte
 - **Dein eigenes Konto (petrov.aleks92@gmail.com) lässt sich im Moment nicht löschen:** 6 Einträge der alten Tabelle `shopping_items` verweisen auf dich und blockieren das Löschen. Die App zeigt dann die freundliche Fehlermeldung. Andere Konten sind nicht betroffen. Lösung braucht eine Datenbankänderung (⛔, mit Freigabe).
 - Hochgeladene Chat-Bilder und Sprachnachrichten bleiben nach dem Löschen im Speicher liegen (die Nachrichten selbst werden gelöscht). Das Aufräumen braucht eine neue Speicher-Regel (⛔).
 - In Einträgen der Familie kann der Name des Erstellers als Text stehen bleiben (steht so im Hinweis in der App).
+
+## 6. Nachtrag: Hinweis zur KI (Gemini)
+Laut den Gemini-API-Bedingungen (ai.google.dev/terms, geprüft am 24.10.2026) darf Google bei der kostenlosen Nutzung gesendete Inhalte zur Verbesserung seiner Produkte verwenden, und Mitarbeitende können sie lesen; persönliche oder vertrauliche Daten sollen nicht gesendet werden. Deshalb steht dazu jetzt ein Absatz im Datenschutz-Text und ein kurzer Hinweis bei «Termine aus Datei» und beim Stundenplan-Upload (8 Sprachen). Die Alternative wäre ein bezahlter Gemini-Plan (dort wird nicht zum Training verwendet) – kostet Geld, daher nicht umgesetzt.
