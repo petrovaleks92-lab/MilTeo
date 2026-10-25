@@ -329,8 +329,6 @@ input.switch:focus-visible { outline-offset: 3px; }
     <button class="link" id="reset-cancel" type="button">Abbrechen</button>
   </div>
 </div>
-  </div>
-</div>
 
 <div class="screen" id="screen-family" hidden>
   <div class="narrow">
@@ -1396,7 +1394,7 @@ input.switch:focus-visible { outline-offset: 3px; }
   document.getElementById('btn-leave').onclick = async () => {
     if (!confirm(T('Familie wirklich verlassen? Du siehst die Einträge dann nicht mehr, kannst aber mit dem Code wieder beitreten.'))) return;
     const r = await sb.rpc('leave_family');
-    if (r.error) { toast(T('Verlassen nicht möglich: ') + r.error.message); return; }
+    if (r.error) { toast(T('Das hat nicht geklappt')); return; }
     fid = null; entries = []; unsubscribeChat();
     document.getElementById('fam-code').textContent = '-';
     const { data } = await sb.auth.getSession();
