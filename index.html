@@ -250,6 +250,18 @@ input.switch:disabled { opacity: .5; }
 .freq { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 10px; align-items: center; }
 .freq .field-label { margin: 0 4px 0 0; }
 #shop-q { margin-bottom: 8px; }
+/* Termine: Wochenansicht, Ort */
+.ev-view { display: flex; gap: 6px; align-items: center; margin: 0 0 10px; flex-wrap: wrap; }
+.ev-view .sp { flex: 1; }
+.wk-day { border-top: 1px solid var(--line); padding: 8px 2px; }
+.wk-day h3 { margin: 0 0 4px; font-size: .9rem; color: var(--muted); }
+.wk-day.today h3 { color: var(--mil); }
+.wk-ev { display: flex; gap: 8px; padding: 3px 0; }
+.wk-ev .tm { min-width: 48px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.wk-none { color: var(--muted); font-size: .85rem; }
+.ev-place { flex-basis: 100%; font-size: .85rem; color: var(--muted); }
+.ev-place a { color: inherit; text-decoration: underline; }
+.ev-edit { flex-basis: 100%; display: grid; gap: 8px; }
 /* Tastaturbedienung: gut sichtbarer Fokusrahmen */
 :focus-visible { outline: 3px solid var(--mil); outline-offset: 2px; }
 .cef:focus-visible { outline: none; }
@@ -427,6 +439,8 @@ input.switch:focus-visible { outline-offset: 3px; }
             <input type="date" id="in-edate" aria-label="Datum">
             <input type="time" id="in-etime" aria-label="Uhrzeit">
           </div>
+          <input type="text" id="in-eplace" maxlength="80" enterkeyhint="done" placeholder="Ort (optional)">
+          <select id="in-erepeat" aria-label="Wiederholen"></select>
           <select id="in-eremind" aria-label="Erinnerung">
             <option value="">🔕 Keine Erinnerung</option>
             <option value="0">🔔 Zur Startzeit</option>
@@ -451,7 +465,14 @@ input.switch:focus-visible { outline-offset: 3px; }
       </div>
       <div class="card fold" id="fold-list">
         <button class="fold-h" type="button" data-fold="fold-list">Termine <span class="cnt" id="cnt-events"></span><span class="caret" aria-hidden="true"></span></button>
-        <div class="fold-b"><div id="list-events"></div></div>
+        <div class="fold-b">
+          <div class="ev-view" id="ev-view" role="group" aria-label="Ansicht">
+            <button class="chip on" type="button" data-view="list" aria-pressed="true">Liste</button>
+            <button class="chip" type="button" data-view="week" aria-pressed="false">Woche</button>
+          </div>
+          <div id="ev-week" hidden></div>
+          <div id="list-events"></div>
+        </div>
       </div>
       <div class="card fold" id="fold-tt">
         <button class="fold-h" type="button" data-fold="fold-tt">🎒 Stundenplan<span class="caret" aria-hidden="true"></span></button>
@@ -700,7 +721,7 @@ input.switch:focus-visible { outline-offset: 3px; }
   function changeLang(l) {
     I18N.set(l);
     ['sel-lang', 'sel-lang-auth'].forEach(id => { const el = $(id); if (el) el.value = l; });
-    applyStatic(); renderToday(); fillThemeSelect(); todoRefresh();
+    applyStatic(); renderToday(); fillThemeSelect(); todoRefresh(); fillEvRepeat(); applyEvView();
     try { showNet(); $('pw-box').innerHTML = ''; $('del-box').innerHTML = ''; } catch (_) {}
     try { setMode(authMode); } catch (_) {}
     if (myName && $('fam-hello')) $('fam-hello').textContent = T('Hallo') + ' ' + myName;
@@ -849,6 +870,77 @@ input.switch:focus-visible { outline-offset: 3px; }
     }
     const ok = await addEntry('shop', { text, done: false, by: myName, ...(qty ? { qty } : {}) });
     renderFreq(); return !!ok;
+  }
+  // Termine: Wiederholung (täglich/wöchentlich/monatlich/jährlich), Ort, Wochenansicht
+  const EV_REP = { daily: 'Täglich', weekly: 'Wöchentlich', monthly: 'Monatlich', yearly: 'Jährlich' };
+  const pd = (iso) => { const [y, m, d] = iso.split('-').map(Number); return new Date(y, m - 1, d); };
+  const dim = (y, m) => new Date(y, m + 1, 0).getDate();
+  // früheste Wiederholung ab "from" (>= from und >= Anfang)
+  function nextOcc(anchor, rep, from) {
+    const a = pd(anchor), f = pd(from);
+    if (f <= a) return anchor;
+    if (rep === 'daily') return from;
+    if (rep === 'weekly') { const k = Math.ceil((f - a) / 864e5 / 7); const d = new Date(a); d.setDate(a.getDate() + 7 * k); return ymd(d); }
+    const step = rep === 'yearly' ? 12 : 1;
+    let k = Math.max(0, Math.floor(((f.getFullYear() - a.getFullYear()) * 12 + f.getMonth() - a.getMonth()) / step));
+    for (let i = 0; i < 4; i++, k++) {
+      const mo = a.getMonth() + k * step, y = a.getFullYear() + Math.floor(mo / 12), m = ((mo % 12) + 12) % 12;
+      const d = new Date(y, m, Math.min(a.getDate(), dim(y, m)));
+      if (d >= f) return ymd(d);
+    }
+    return from;
+  }
+  const evAnchor = (d) => d.anchor || d.date;
+  function occursOn(e, day) {
+    const d = e.data; if (!d.date) return false;
+    if (!d.repeat || !EV_REP[d.repeat]) return d.date === day;
+    return day >= evAnchor(d) && nextOcc(evAnchor(d), d.repeat, day) === day;
+  }
+  const rolled = new Set();
+  function rollRepeats() {
+    const td = todayYmd();
+    entries.forEach(e => {
+      if (e.kind !== 'events' || !e.data.repeat || !EV_REP[e.data.repeat] || !e.data.date || e.data.date >= td) return;
+      const key = e.id + ':' + e.data.date; if (rolled.has(key)) return; rolled.add(key);
+      const nd = nextOcc(evAnchor(e.data), e.data.repeat, td);
+      e.data = { ...e.data, date: nd, reminded: false };
+      patchEntry(e.id, d => (!d.repeat || !d.date || d.date >= td) ? d : { ...d, date: nextOcc(evAnchor(d), d.repeat, td), reminded: false });
+    });
+  }
+  let evView = 'list', weekOff = 0, evForm = null, evFormShown = false;
+  try { if (localStorage.getItem('milteo_evview') === 'week') evView = 'week'; } catch (_) {}
+  const mapLink = (pl) => `<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(pl)}" target="_blank" rel="noopener" aria-label="${esc(T('Ort auf der Karte öffnen: {name}', { name: pl }))}">${esc(pl)}</a>`;
+  function repOptions(sel) { return `<option value="">🔁 ${esc(T('Keine Wiederholung'))}</option>` + Object.keys(EV_REP).map(k => `<option value="${k}"${sel === k ? ' selected' : ''}>${esc(T(EV_REP[k]))}</option>`).join(''); }
+  function fillEvRepeat() { const el = $('in-erepeat'); if (el) { const v = el.value; el.innerHTML = repOptions(v); } }
+  function renderWeek() {
+    const box = $('ev-week'); if (!box) return;
+    const base = new Date(); base.setHours(0, 0, 0, 0); base.setDate(base.getDate() - ((base.getDay() + 6) % 7) + weekOff * 7);
+    const evs = entries.filter(e => e.kind === 'events' && e.data.type !== 'timetable' && e.data.date);
+    const td = todayYmd(); let html = '';
+    const first = new Date(base), last = new Date(base); last.setDate(last.getDate() + 6);
+    const fm = (d) => d.toLocaleDateString(I18N.loc(), { day: 'numeric', month: 'short' });
+    html += `<div class="ev-view"><button class="chip" type="button" data-wk="-1" aria-label="${esc(T('Vorherige Woche'))}">‹</button><button class="chip" type="button" data-wk="0">${esc(T('Diese Woche'))}</button><button class="chip" type="button" data-wk="1" aria-label="${esc(T('Nächste Woche'))}">›</button><span class="sp"></span><span class="who" style="margin:0">${esc(fm(first))} – ${esc(fm(last))}</span></div>`;
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(base); d.setDate(base.getDate() + i); const day = ymd(d);
+      const list = evs.filter(e => occursOn(e, day)).sort((a, b) => (a.data.time || '').localeCompare(b.data.time || ''));
+      html += `<div class="wk-day ${day === td ? 'today' : ''}"><h3>${esc(d.toLocaleDateString(I18N.loc(), { weekday: 'long', day: 'numeric', month: 'short' }))}</h3>` +
+        (list.length ? list.map(e => `<div class="wk-ev"><span class="tm">${esc(e.data.time || '')}</span><span>${esc(e.data.title || '')}${e.data.repeat ? ' 🔁' : ''}${e.data.place ? ` <span class="who" style="display:inline">📍 ${esc(e.data.place)}</span>` : ''}</span></div>`).join('') : `<div class="wk-none">–</div>`) + '</div>';
+    }
+    box.innerHTML = html;
+  }
+  function applyEvView() {
+    $('ev-week').hidden = evView !== 'week'; $('list-events').hidden = evView === 'week';
+    document.querySelectorAll('#ev-view [data-view]').forEach(c => { const on = c.dataset.view === evView; c.classList.toggle('on', on); c.setAttribute('aria-pressed', String(on)); });
+    if (evView === 'week') renderWeek();
+  }
+  function evFormHtml(e) {
+    const d = e.data;
+    return `<form class="ev-edit" data-id="${e.id}">
+      <input type="text" class="ev-t" value="${esc(d.title || '')}" maxlength="80" aria-label="${esc(T('Titel'))}">
+      <div class="grid2"><input type="date" class="ev-d" value="${esc(d.date || '')}" aria-label="${esc(T('Datum'))}"><input type="time" class="ev-tm" value="${esc(d.time || '')}" aria-label="${esc(T('Uhrzeit'))}"></div>
+      <input type="text" class="ev-p" value="${esc(d.place || '')}" maxlength="80" placeholder="${esc(T('Ort (optional)'))}" aria-label="${esc(T('Ort'))}">
+      <select class="ev-r" aria-label="${esc(T('Wiederholen'))}">${repOptions(d.repeat || '')}</select>
+      <div style="display:flex; gap:8px"><button class="btn" type="submit">${esc(T('Speichern'))}</button><button class="btn ghost" type="button" data-act="evcancel">${esc(T('Abbrechen'))}</button></div></form>`;
   }
   function todoRefresh() { const o = document.getElementById('todo-opts'); if (o && o.querySelector('[data-f=as]')) todoSelects(o, readTodoOpts(o)); }
   const TODO_KEYS = ['assignee', 'assigneeName', 'due', 'prio', 'repeat'];
@@ -1396,7 +1488,7 @@ input.switch:focus-visible { outline-offset: 3px; }
     }
     if (writing > 0) { scheduleReload(); return; }                 // während der Abfrage hat jemand hier gespeichert: gleich nochmal
     setNet(true);
-    entries = r.data; loadedOnce = true;
+    entries = r.data; loadedOnce = true; try { rollRepeats(); } catch (_) {}
     serverData.clear(); r.data.forEach(e => serverData.set(e.id, JSON.stringify(e.data)));
     renderAll();
     if (!memberCount || Date.now() - lastMembers > 60000) loadMembers();
@@ -1580,6 +1672,8 @@ input.switch:focus-visible { outline-offset: 3px; }
   }
   function renderEvents() {
     const el = document.getElementById('list-events');
+    if (evForm && evFormShown) return;   // während des Bearbeitens nicht neu zeichnen (Eingabe bleibt erhalten)
+    if (!evForm) evFormShown = false;
     const items = entries.filter(e => e.kind === 'events' && e.data.type !== 'timetable')
       .sort((a, b) => ((a.data.date || '') + (a.data.time || '')).localeCompare((b.data.date || '') + (b.data.time || '')));
     { const c = $('cnt-events'); if (c) c.textContent = items.length ? '(' + items.length + ')' : ''; }
@@ -1587,11 +1681,13 @@ input.switch:focus-visible { outline-offset: 3px; }
     el.innerHTML = '<ul class="list">' + items.map(e => {
       const d = e.data.date ? new Date(e.data.date + 'T00:00').toLocaleDateString(I18N.loc(), { weekday: 'short', day: 'numeric', month: 'short' }) : '';
       const rmv = (e.data.remind !== null && e.data.remind !== undefined && e.data.remind !== '') ? String(e.data.remind) : '';
-      const ed = evEdit === e.id ? `<div style="flex-basis:100%; display:flex; gap:8px; align-items:center; flex-wrap:wrap"><select class="mini" id="ev-rm" data-v="${esc(rmv)}" aria-label="${esc(T('Erinnerung'))}">${$('in-eremind').innerHTML}</select><button type="button" class="chip ${e.data.home === false ? '' : 'on'}" data-act="evhome" data-id="${e.id}">📌 ${esc(T('Im Hauptmenü anzeigen'))}</button></div>` : '';
-      return `<li class="row" style="flex-wrap:wrap"><span class="txt" data-act="evedit" data-id="${e.id}" role="button" tabindex="0" style="cursor:pointer">${esc(e.data.title || '')}${e.data.home === false ? ' <span class="who">🚫📌</span>' : ''}<span class="who">${d} ${esc(e.data.time || '')}</span>${(e.data.remind !== null && e.data.remind !== undefined && e.data.remind !== '') ? `<span class="who">🔔 ${remindText(Number(e.data.remind))}</span>` : ''}${byHtml(e)}</span>
-        <button class="del" type="button" aria-label="${esc(T('Löschen: {name}', { name: e.data.title || '' }))}" data-act="del" data-id="${e.id}">×</button>${ed}</li>`;
+      const ed = evForm === e.id ? evFormHtml(e) : evEdit === e.id ? `<div style="flex-basis:100%; display:flex; gap:8px; align-items:center; flex-wrap:wrap"><select class="mini" id="ev-rm" data-v="${esc(rmv)}" aria-label="${esc(T('Erinnerung'))}">${$('in-eremind').innerHTML}</select><button type="button" class="chip ${e.data.home === false ? '' : 'on'}" data-act="evhome" data-id="${e.id}">📌 ${esc(T('Im Hauptmenü anzeigen'))}</button><button type="button" class="chip" data-act="evform" data-id="${e.id}">✏️ ${esc(T('Bearbeiten'))}</button></div>` : '';
+      return `<li class="row" style="flex-wrap:wrap"><span class="txt" data-act="evedit" data-id="${e.id}" role="button" tabindex="0" style="cursor:pointer">${esc(e.data.title || '')}${e.data.home === false ? ' <span class="who">🚫📌</span>' : ''}<span class="who">${d} ${esc(e.data.time || '')}</span>${(e.data.remind !== null && e.data.remind !== undefined && e.data.remind !== '') ? `<span class="who">🔔 ${remindText(Number(e.data.remind))}</span>` : ''}${e.data.repeat && EV_REP[e.data.repeat] ? `<span class="who">🔁 ${esc(T(EV_REP[e.data.repeat]))}</span>` : ''}${byHtml(e)}</span>
+        <button class="del" type="button" aria-label="${esc(T('Löschen: {name}', { name: e.data.title || '' }))}" data-act="del" data-id="${e.id}">×</button>${e.data.place ? `<div class="ev-place">📍 ${mapLink(e.data.place)}</div>` : ''}${ed}</li>`;
     }).join('') + '</ul>';
     const sel = $('ev-rm'); if (sel) sel.value = sel.dataset.v;
+    const f = el.querySelector('.ev-edit'); if (f) { evFormShown = true; f.querySelectorAll('input[type=text]').forEach(cefify); const t = f.querySelector('.ev-t'); if (t) t.focus(); }
+    if (evView === 'week') renderWeek();
   }
   let evEdit = null;
   document.addEventListener('click', (ev) => {
@@ -1601,6 +1697,34 @@ input.switch:focus-visible { outline-offset: 3px; }
     const showIt = e.data.home === false;
     e.data = { ...e.data, home: showIt }; renderAll();
     patchEntry(e.id, d => ({ ...d, home: showIt }));
+  });
+  document.addEventListener('click', (ev) => {
+    const b = ev.target.closest('[data-act="evform"],[data-act="evcancel"]'); if (!b) return;
+    if (b.dataset.act === 'evform') { evForm = b.dataset.id; evFormShown = false; }
+    else { evForm = null; evFormShown = false; evEdit = null; }
+    renderEvents();
+  });
+  document.addEventListener('submit', (ev) => {
+    const f = ev.target.closest && ev.target.closest('.ev-edit'); if (!f) return;
+    ev.preventDefault();
+    const e = entries.find(x => x.id === f.dataset.id);
+    const title = f.querySelector('.ev-t').value.trim(), date = f.querySelector('.ev-d').value, time = f.querySelector('.ev-tm').value, place = f.querySelector('.ev-p').value.trim(), rep = f.querySelector('.ev-r').value;
+    if (!title || !date) { toast(T('Titel und Datum fehlen')); return; }
+    evForm = null; evFormShown = false; evEdit = null;
+    if (!e) { renderAll(); return; }
+    const apply = (d) => {
+      const x = { ...d, title, date, time };
+      if (place) x.place = place; else delete x.place;
+      if (rep) { x.repeat = rep; x.anchor = date; } else { delete x.repeat; delete x.anchor; }
+      if (d.date !== date || (d.time || '') !== time) x.reminded = false;
+      return x;
+    };
+    e.data = apply(e.data); renderAll();
+    patchEntry(e.id, apply);
+  });
+  document.addEventListener('click', (ev) => {
+    const v = ev.target.closest('#ev-view [data-view]'); if (v) { evView = v.dataset.view; try { localStorage.setItem('milteo_evview', evView); } catch (_) {} applyEvView(); return; }
+    const w = ev.target.closest('#ev-week [data-wk]'); if (w) { const n = Number(w.dataset.wk); weekOff = n === 0 ? 0 : weekOff + n; renderWeek(); }
   });
   document.addEventListener('change', (ev) => {
     if (ev.target.id !== 'ev-rm' || !evEdit) return;
@@ -1946,8 +2070,9 @@ input.switch:focus-visible { outline-offset: 3px; }
     if (!title || !date) { toast(T('Titel und Datum fehlen')); return; }
     if (evBusy) return;
     const rv = document.getElementById('in-eremind').value;
+    const place = $('in-eplace').value.trim(), rep = $('in-erepeat').value;
     evBusy = true;
-    try { if (await addEntry('events', { title, date, time, remind: rv === '' ? null : Number(rv) })) document.getElementById('in-etitle').value = ''; }
+    try { if (await addEntry('events', { title, date, time, remind: rv === '' ? null : Number(rv), ...(place ? { place } : {}), ...(rep ? { repeat: rep, anchor: date } : {}) })) { document.getElementById('in-etitle').value = ''; $('in-eplace').value = ''; $('in-erepeat').value = ''; } }
     finally { evBusy = false; }
   };
 
@@ -2628,7 +2753,7 @@ input.switch:focus-visible { outline-offset: 3px; }
   }
 
   // Datum im Kopf + automatische Aktualisierung
-  renderToday(); fillLangSelects(); fillThemeSelect(); applyStatic(); todoRefresh();
+  renderToday(); fillLangSelects(); fillThemeSelect(); applyStatic(); todoRefresh(); fillEvRepeat(); if (typeof applyEvView === 'function') applyEvView();
   setInterval(() => { pollN++; if (!rtOk || pollN % 4 === 0) loadEntries(); if (currentTab === 'chat') loadChat(); }, 15000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) { loadEntries(); syncPush(); } });
 </script>

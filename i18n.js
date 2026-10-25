@@ -325,6 +325,18 @@
     ['Tiefgekühltes', 'Замрзнато', 'Surgelés', 'Surgelati', 'Smrznuto', 'Të ngrira', 'Dondurulmuş', 'Frozen'],
     ['Haushalt & Pflege', 'Домаќинство и нега', 'Maison et hygiène', 'Casa e igiene', 'Domaćinstvo i nega', 'Shtëpi dhe higjienë', 'Ev ve bakım', 'Household & care'],
     ['Sonstiges', 'Друго', 'Divers', 'Altro', 'Ostalo', 'Të tjera', 'Diğer', 'Other'],
+    ['Ort (optional)', 'Место (по избор)', 'Lieu (facultatif)', 'Luogo (facoltativo)', 'Mesto (opciono)', 'Vendi (opsionale)', 'Yer (isteğe bağlı)', 'Place (optional)'],
+    ['Ort', 'Место', 'Lieu', 'Luogo', 'Mesto', 'Vendi', 'Yer', 'Place'],
+    ['Jährlich', 'Секоја година', 'Chaque année', 'Ogni anno', 'Svake godine', 'Çdo vit', 'Her yıl', 'Yearly'],
+    ['Bearbeiten', 'Уреди', 'Modifier', 'Modifica', 'Uredi', 'Ndrysho', 'Düzenle', 'Edit'],
+    ['Liste', 'Листа', 'Liste', 'Elenco', 'Lista', 'Lista', 'Liste', 'List'],
+    ['Woche', 'Недела', 'Semaine', 'Settimana', 'Nedelja', 'Java', 'Hafta', 'Week'],
+    ['Ansicht', 'Приказ', 'Affichage', 'Vista', 'Prikaz', 'Pamja', 'Görünüm', 'View'],
+    ['Diese Woche', 'Оваа недела', 'Cette semaine', 'Questa settimana', 'Ove nedelje', 'Kjo javë', 'Bu hafta', 'This week'],
+    ['Vorherige Woche', 'Претходна недела', 'Semaine précédente', 'Settimana precedente', 'Prethodna nedelja', 'Java e kaluar', 'Önceki hafta', 'Previous week'],
+    ['Nächste Woche', 'Следна недела', 'Semaine suivante', 'Settimana successiva', 'Sledeća nedelja', 'Java tjetër', 'Sonraki hafta', 'Next week'],
+    ['Ort auf der Karte öffnen: {name}', 'Отвори на карта: {name}', 'Ouvrir sur la carte : {name}', 'Apri sulla mappa: {name}', 'Otvori na mapi: {name}', 'Hap në hartë: {name}', 'Haritada aç: {name}', 'Open on map: {name}'],
+    ['Keine Wiederholung', 'Без повторување', 'Pas de répétition', 'Nessuna ripetizione', 'Bez ponavljanja', 'Pa përsëritje', 'Tekrar yok', 'No repeat'],
     ['__end__', '', '', '', '', '', '', '']
   ];
   R.pop();
