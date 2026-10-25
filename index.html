@@ -234,6 +234,17 @@ input.switch:checked { background: var(--mil); }
 input.switch:checked::after { transform: translateX(20px); }
 input.switch:disabled { opacity: .5; }
 .push-types { display: grid; gap: 2px; padding-left: 8px; border-left: 3px solid var(--line); }
+/* Aufgaben: Optionen, Filter, Kennzeichen */
+.opts, .ed-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; margin: 0 0 10px; }
+.opts[hidden] { display: none; }
+.opts > div, .ed-opts > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.opts .field-label, .ed-opts .field-label { margin: 0; }
+.opts select, .opts input, .ed-opts select, .ed-opts input { min-height: 40px; width: 100%; }
+.flt { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 10px; }
+.tags { display: flex; gap: 4px 8px; flex-wrap: wrap; margin-top: 2px; }
+.tag { font-size: .8rem; color: var(--muted); }
+.tag.late { color: var(--danger); font-weight: 600; }
+.tag.hi { color: var(--danger); font-weight: 600; }
 /* Tastaturbedienung: gut sichtbarer Fokusrahmen */
 :focus-visible { outline: 3px solid var(--mil); outline-offset: 2px; }
 .cef:focus-visible { outline: none; }
@@ -371,6 +382,19 @@ input.switch:focus-visible { outline-offset: 3px; }
         <input type="text" id="in-todos" enterkeyhint="send" placeholder="Was ist zu erledigen?">
         <button class="btn" type="submit">Hinzufügen</button>
       </form>
+      <button class="chip" type="button" id="todo-more" aria-expanded="false" aria-controls="todo-opts" style="margin-bottom:10px">⚙️ <span>Optionen</span></button>
+      <div class="opts" id="todo-opts" hidden>
+        <div><label class="field-label" for="todo-as">Zugewiesen an</label><select id="todo-as" data-f="as"></select></div>
+        <div><label class="field-label" for="todo-due">Fällig am</label><input type="date" id="todo-due" data-f="due"></div>
+        <div><label class="field-label" for="todo-prio">Wichtigkeit</label><select id="todo-prio" data-f="prio"></select></div>
+        <div><label class="field-label" for="todo-rep">Wiederholen</label><select id="todo-rep" data-f="rep"></select></div>
+      </div>
+      <div class="flt" id="todo-flt" role="group" aria-label="Filter">
+        <button class="chip on" type="button" data-flt="all" aria-pressed="true">Alle</button>
+        <button class="chip" type="button" data-flt="mine" aria-pressed="false">Meine</button>
+        <button class="chip" type="button" data-flt="late" aria-pressed="false">Überfällig</button>
+        <button class="chip" type="button" data-flt="done" aria-pressed="false">Erledigt</button>
+      </div>
       <div id="list-todos"></div>
     </section>
 
@@ -669,7 +693,7 @@ input.switch:focus-visible { outline-offset: 3px; }
   function changeLang(l) {
     I18N.set(l);
     ['sel-lang', 'sel-lang-auth'].forEach(id => { const el = $(id); if (el) el.value = l; });
-    applyStatic(); renderToday(); fillThemeSelect();
+    applyStatic(); renderToday(); fillThemeSelect(); todoRefresh();
     try { showNet(); $('pw-box').innerHTML = ''; $('del-box').innerHTML = ''; } catch (_) {}
     try { setMode(authMode); } catch (_) {}
     if (myName && $('fam-hello')) $('fam-hello').textContent = T('Hallo') + ' ' + myName;
@@ -728,6 +752,55 @@ input.switch:focus-visible { outline-offset: 3px; }
   const openDishes = new Set();
   try { JSON.parse(localStorage.getItem('milteo_open_dishes') || '[]').forEach(i => openDishes.add(i)); } catch (_) {}
   let chatUnread = 0, memberCount = 0, memberNames = {};
+  // Aufgaben: Zuweisung, Fälligkeit, Wichtigkeit, Wiederholung (alles im Datenfeld, keine DB-Änderung)
+  const ymd = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  const todayYmd = () => ymd(new Date());
+  const fmtDay = (iso) => new Date(iso + 'T00:00').toLocaleDateString(I18N.loc(), { weekday: 'short', day: 'numeric', month: 'short' });
+  function nextDue(due, rep) {
+    const t = new Date(); t.setHours(0, 0, 0, 0);
+    const d = due ? new Date(due + 'T00:00') : new Date(t);
+    do { if (rep === 'daily') d.setDate(d.getDate() + 1); else if (rep === 'weekly') d.setDate(d.getDate() + 7); else d.setMonth(d.getMonth() + 1); } while (due && d <= t);
+    return ymd(d);
+  }
+  const isLate = (e) => !!(e.data.due && !e.data.done && e.data.due < todayYmd());
+  let todoFlt = 'all';
+  const REP_L = { daily: 'Täglich', weekly: 'Wöchentlich', monthly: 'Monatlich' };
+  function todoSelects(root, cur) {
+    const c = cur || {};
+    const asel = root.querySelector('[data-f=as]'), psel = root.querySelector('[data-f=prio]'), rsel = root.querySelector('[data-f=rep]');
+    const names = Object.entries(memberNames).filter(([, n]) => n);
+    asel.innerHTML = `<option value="">${esc(T('Alle'))}</option>` + names.map(([id, n]) => `<option value="${esc(id)}">${esc(n)}</option>`).join('')
+      + (c.assignee && !memberNames[c.assignee] ? `<option value="${esc(c.assignee)}">${esc(c.assigneeName || '')}</option>` : '');
+    psel.innerHTML = `<option value="">${esc(T('Normal'))}</option><option value="high">${esc(T('Wichtig'))}</option>`;
+    rsel.innerHTML = `<option value="">${esc(T('Nie'))}</option>` + Object.keys(REP_L).map(k => `<option value="${k}">${esc(T(REP_L[k]))}</option>`).join('');
+    asel.value = c.assignee || ''; psel.value = c.prio || ''; rsel.value = c.repeat || '';
+    const di = root.querySelector('[data-f=due]'); di.value = c.due || '';
+  }
+  function readTodoOpts(root) {
+    const g = (k) => root.querySelector('[data-f=' + k + ']').value;
+    const o = {}; const as = g('as');
+    if (as) { o.assignee = as; o.assigneeName = memberNames[as] || ''; }
+    if (g('due')) o.due = g('due');
+    if (g('prio')) o.prio = g('prio');
+    if (g('rep')) o.repeat = g('rep');
+    return o;
+  }
+  function todoRefresh() { const o = document.getElementById('todo-opts'); if (o && o.querySelector('[data-f=as]')) todoSelects(o, readTodoOpts(o)); }
+  const TODO_KEYS = ['assignee', 'assigneeName', 'due', 'prio', 'repeat'];
+  function todoTags(e) {
+    const d = e.data, a = [];
+    if (d.prio === 'high') a.push(`<span class="tag hi">❗ ${esc(T('Wichtig'))}</span>`);
+    if (d.due) {
+      const late = isLate(e), td = todayYmd(), tm = ymd(new Date(Date.now() + 864e5));
+      const lbl = d.due === td ? T('Heute') : d.due === tm ? T('Morgen') : fmtDay(d.due);
+      a.push(`<span class="tag ${late ? 'late' : ''}">${late ? '⚠️ ' + esc(T('Überfällig')) + ' · ' : '📅 '}${esc(late ? fmtDay(d.due) : lbl)}</span>`);
+    }
+    const who = memberNames[d.assignee] || d.assigneeName || '';
+    if (d.assignee && who) a.push(`<span class="tag">👤 ${esc(who)}</span>`);
+    if (d.repeat && REP_L[d.repeat]) a.push(`<span class="tag">🔁 ${esc(T(REP_L[d.repeat]))}</span>`);
+    return a.length ? `<span class="tags">${a.join('')}</span>` : '';
+  }
+  const todoCmp = (a, b) => (!!a.data.done - !!b.data.done) || ((a.data.due || '9999').localeCompare(b.data.due || '9999')) || ((b.data.prio === 'high') - (a.data.prio === 'high'));
   const byHtml = (e) => { const n = memberNames[e.created_by] || (e.data && e.data.by) || ''; return n ? `<span class="who-by">${T('von')} ${esc(n)}</span>` : ''; }; let chatMsgs = [], chatChannel = null, stickBottom = true, rec = null, playing = null;
   const chatIds = new Set();
   const urlCache = new Map();
@@ -805,7 +878,8 @@ input.switch:focus-visible { outline-offset: 3px; }
     const shopAny = E.some(e => e.kind === 'shop');
     $('ti-shop').textContent = !shopAny ? T('Liste ist leer') : shopOpen ? T('{n} offen', { n: shopOpen }) : T('Alles besorgt ✓');
     const todosAll = E.filter(e => e.kind === 'todos'), todosOpen = todosAll.filter(e => !e.data.done).length;
-    $('ti-todos').textContent = !todosAll.length ? T('Nichts zu tun') : todosOpen ? T('{n} offen', { n: todosOpen }) : T('Alles erledigt ✓');
+    const todosLate = todosAll.filter(isLate).length;
+    $('ti-todos').textContent = !todosAll.length ? T('Nichts zu tun') : todosOpen ? T('{n} offen', { n: todosOpen }) + (todosLate ? ' · ' + T('{n} überfällig', { n: todosLate }) : '') : T('Alles erledigt ✓');
     const run = E.filter(e => e.kind === 'timers' && e.data.end > Date.now());
     $('ti-timers').textContent = run.length ? T(run.length === 1 ? '{n} läuft' : '{n} laufen', { n: run.length }) : T('Kein Timer aktiv');
     const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -820,9 +894,9 @@ input.switch:focus-visible { outline-offset: 3px; }
     const last = chatMsgs[chatMsgs.length - 1];
     $('ti-chat').textContent = last ? ((last.user_id === myId ? T('Du') : (last.display_name || '')) + ': ' + (last.media_path ? (String(last.media_type || '').startsWith('audio') ? T('🎤 Sprachnachricht') : T('📷 Bild')) : (last.body || ''))) : T('Noch keine Nachrichten');
     const bd = $('tb-chat'); bd.hidden = !chatUnread; bd.textContent = chatUnread > 9 ? '9+' : chatUnread; bd.setAttribute('aria-label', T('{n} ungelesen', { n: chatUnread }));
-    const oc = $('home-open'), openT = E.filter(e => e.kind === 'todos' && !e.data.done);
+    const oc = $('home-open'), openT = E.filter(e => e.kind === 'todos' && !e.data.done).sort(todoCmp);
     oc.hidden = !openT.length;
-    $('home-open-list').innerHTML = openT.slice(0, 3).map(e => `<div class="txt">☐ ${esc(e.data.text || '')}</div>`).join('') + (openT.length > 3 ? `<div class="who" style="margin:0">+${openT.length - 3}</div>` : '');
+    $('home-open-list').innerHTML = openT.slice(0, 3).map(e => `<div class="txt">☐ ${esc(e.data.text || '')}${isLate(e) ? ` <span class="tag late">${esc(T('Überfällig'))}</span>` : ''}</div>`).join('') + (openT.length > 3 ? `<div class="who" style="margin:0">+${openT.length - 3}</div>` : '');
     const famNames = Object.values(memberNames).filter(Boolean);
     $('ti-family').textContent = famNames.length > 1 && famNames.length <= 4 ? famNames.join(', ') : memberCount ? T(memberCount === 1 ? '{n} Mitglied' : '{n} Mitglieder', { n: memberCount }) : T('Familie & Konto');
     $('home-tt').innerHTML = ttUpcoming().map(o => {
@@ -1356,6 +1430,11 @@ input.switch:focus-visible { outline-offset: 3px; }
     return `<div class="empty"><p style="margin:0 0 12px">${esc(T(msg))}</p><button class="btn small" type="button" data-go="${go}">${esc(T(btn))}</button></div>`;
   }
   // Eintrag bearbeiten (Tipp auf den Text): Text und, beim Einkauf, Menge
+  const TODO_OPTS_HTML = (p) => `<div class="ed-opts">
+        <div><label class="field-label" for="${p}-as">${esc(T('Zugewiesen an'))}</label><select id="${p}-as" data-f="as"></select></div>
+        <div><label class="field-label" for="${p}-due">${esc(T('Fällig am'))}</label><input type="date" id="${p}-due" data-f="due"></div>
+        <div><label class="field-label" for="${p}-prio">${esc(T('Wichtigkeit'))}</label><select id="${p}-prio" data-f="prio"></select></div>
+        <div><label class="field-label" for="${p}-rep">${esc(T('Wiederholen'))}</label><select id="${p}-rep" data-f="rep"></select></div></div>`;
   function editRowHtml(e, i) {
     const isItem = i !== undefined, it = isItem ? (e.data.items || [])[i] || {} : null;
     const t = isItem ? (it.name || '') : (e.data.text || ''), q = isItem ? (it.amount || '') : (e.data.qty || '');
@@ -1363,7 +1442,8 @@ input.switch:focus-visible { outline-offset: 3px; }
       <input type="text" class="ed-t" value="${esc(t)}" maxlength="200" aria-label="${esc(T(e.kind === 'todos' ? 'Aufgabe' : 'Artikel'))}">
       ${e.kind === 'shop' ? `<input type="text" class="ed-q" value="${esc(q)}" maxlength="20" placeholder="${esc(T('Menge'))}" aria-label="${esc(T('Menge'))}">` : ''}
       <button class="ic-btn primary" type="submit" aria-label="${esc(T('Speichern'))}">✓</button>
-      <button class="ic-btn" type="button" data-act="ed-cancel" aria-label="${esc(T('Abbrechen'))}">✕</button></form>`;
+      <button class="ic-btn" type="button" data-act="ed-cancel" aria-label="${esc(T('Abbrechen'))}">✕</button>
+      ${e.kind === 'todos' && !isItem ? TODO_OPTS_HTML('ed') : ''}</form>`;
   }
   function startEdit(id, i) {
     const e = entries.find(x => x.id === id); if (!e) return;
@@ -1372,6 +1452,7 @@ input.switch:focus-visible { outline-offset: 3px; }
   }
   function setupEdit(el) {
     el.querySelectorAll('.ed-form input[type=text]').forEach(cefify);
+    const ef = el.querySelector('.ed-form'); if (ef && ef.querySelector('.ed-opts')) { const te = entries.find(x => x.id === ef.dataset.id); todoSelects(ef, te && te.data); }
     const t = el.querySelector('.ed-form .ed-t');
     if (t) { t.focus(); const r = document.createRange(); r.selectNodeContents(t); r.collapse(false); const sl = getSelection(); sl.removeAllRanges(); sl.addRange(r); }
   }
@@ -1379,7 +1460,13 @@ input.switch:focus-visible { outline-offset: 3px; }
     const el = document.getElementById('list-' + kind);
     if (editing && editing.kind === kind) { if (editShown) return; }   // während des Bearbeitens nicht neu zeichnen (Eingabe bleibt erhalten)
     if (editing && editing.kind === kind) editShown = false;
-    const items = entries.filter(e => e.kind === kind);
+    let items = entries.filter(e => e.kind === kind);
+    const allCount = items.length;
+    if (kind === 'todos') {
+      items = items.filter(e => todoFlt === 'mine' ? e.data.assignee === myId : todoFlt === 'late' ? isLate(e) : todoFlt === 'done' ? !!e.data.done : true);
+      items = items.map((e, n) => [e, n]).sort((x, y) => todoCmp(x[0], y[0]) || (x[1] - y[1])).map(x => x[0]);
+      if (allCount && !items.length) { el.innerHTML = `<div class="empty">${esc(T('Keine Aufgaben in diesem Filter.'))}</div>`; return; }
+    }
     if (!items.length) { el.innerHTML = !loadedOnce ? '' : kind === 'shop' ? emptyHtml('Deine Einkaufsliste ist noch leer. Füge deinen ersten Artikel hinzu.', 'Artikel hinzufügen', 'shop') : emptyHtml('Noch keine Aufgaben. Erstelle eine Aufgabe für eure Familie.', 'Aufgabe erstellen', 'todos'); return; }
     el.innerHTML = '<ul class="list">' + items.map(e => {
       if (kind === 'shop' && e.data.type === 'dish') return dishHtml(e);
@@ -1389,7 +1476,7 @@ input.switch:focus-visible { outline-offset: 3px; }
       return `
       <li class="row ${e.data.done ? 'done' : ''}">
         <button class="check" type="button" role="checkbox" aria-checked="${!!e.data.done}" aria-label="${esc(nm)}" data-act="toggle" data-id="${e.id}">${e.data.done ? '✓' : ''}</button>
-        <span class="txt" data-act="edit" data-id="${e.id}" role="button" tabindex="0" style="cursor:pointer">${esc(kind === 'shop' ? tx(e.data.text || '') : (e.data.text || ''))}${q}${kind === 'todos' ? byHtml(e) : ''}</span>
+        <span class="txt" data-act="edit" data-id="${e.id}" role="button" tabindex="0" style="cursor:pointer">${esc(kind === 'shop' ? tx(e.data.text || '') : (e.data.text || ''))}${q}${kind === 'todos' ? byHtml(e) + todoTags(e) : ''}</span>
         <button class="del" type="button" aria-label="${esc(T('Löschen: {name}', { name: nm }))}" data-act="del" data-id="${e.id}">×</button>
       </li>`;
     }).join('') + '</ul>';
@@ -1470,7 +1557,11 @@ input.switch:focus-visible { outline-offset: 3px; }
     if (act === 'del') delEntry(id);
     if (act === 'toggle') {
       const e = entries.find(x => x.id === id);
-      if (e) { const nv = !e.data.done; e.data = { ...e.data, done: nv }; renderAll(); patchEntry(id, d => ({ ...d, done: nv })); }
+      if (e && e.kind === 'todos' && e.data.repeat && !e.data.done) {
+        const nd = nextDue(e.data.due, e.data.repeat);
+        e.data = { ...e.data, due: nd, done: false }; renderAll(); toast(T('Nächste Fälligkeit: {date}', { date: fmtDay(nd) }));
+        patchEntry(id, d => ({ ...d, due: nextDue(d.due, d.repeat || e.data.repeat), done: false }));
+      } else if (e) { const nv = !e.data.done; e.data = { ...e.data, done: nv }; renderAll(); patchEntry(id, d => ({ ...d, done: nv })); }
     }
     if (act === 'dish') {
       if (openDishes.has(id)) openDishes.delete(id); else openDishes.add(id);
@@ -1522,7 +1613,8 @@ input.switch:focus-visible { outline-offset: 3px; }
       e.data = { ...e.data, items: e.data.items.map((x, n) => n === i ? { ...x, name: t, amount: q } : x) }; renderAll();
       patchEntry(e.id, d => { const k = itemIdx(d, ref, i); if (k < 0) return d; const a = (d.items || []).map(x => ({ ...x })); a[k].name = t; a[k].amount = q; return { ...d, items: a }; });
     } else {
-      const apply = (d) => { const x = { ...d, text: t }; if (e.kind === 'shop') { if (q) x.qty = q; else delete x.qty; } return x; };
+      const opts = e.kind === 'todos' && f.querySelector('.ed-opts') ? readTodoOpts(f) : null;
+      const apply = (d) => { const x = { ...d, text: t }; if (e.kind === 'shop') { if (q) x.qty = q; else delete x.qty; } if (opts) { TODO_KEYS.forEach(k => delete x[k]); Object.assign(x, opts); } return x; };
       e.data = apply(e.data); renderAll();
       patchEntry(e.id, apply);
     }
@@ -1538,7 +1630,7 @@ input.switch:focus-visible { outline-offset: 3px; }
   });
 
   // Formulare
-  function bindAdd(formId, inputId, kind, qtyId) {
+  function bindAdd(formId, inputId, kind, qtyId, extra, reset) {
     let busy = false;
     document.getElementById(formId).onsubmit = async (e) => {
       e.preventDefault();
@@ -1547,12 +1639,21 @@ input.switch:focus-visible { outline-offset: 3px; }
       if (!text || busy) return;
       const qinp = qtyId ? document.getElementById(qtyId) : null, qty = qinp ? qinp.value.trim() : '';
       busy = true;
-      try { if (await addEntry(kind, { text, done: false, by: myName, ...(qty ? { qty } : {}) })) { inp.value = ''; if (qinp) qinp.value = ''; } }   // Text bleibt stehen, wenn das Speichern nicht klappt
+      try { if (await addEntry(kind, { text, done: false, by: myName, ...(qty ? { qty } : {}), ...(extra ? extra() : {}) })) { inp.value = ''; if (qinp) qinp.value = ''; if (reset) reset(); } }   // Text bleibt stehen, wenn das Speichern nicht klappt
       finally { busy = false; }
     };
   }
   bindAdd('f-shop', 'in-shop', 'shop', 'in-shop-qty');
-  bindAdd('f-todos', 'in-todos', 'todos');
+  const todoOpts = $('todo-opts');
+  todoSelects(todoOpts, null);
+  bindAdd('f-todos', 'in-todos', 'todos', null, () => readTodoOpts(todoOpts), () => todoSelects(todoOpts, null));
+  $('todo-more').onclick = () => { const open = todoOpts.hidden; todoOpts.hidden = !open; $('todo-more').setAttribute('aria-expanded', String(open)); if (open) todoSelects(todoOpts, readTodoOpts(todoOpts)); };
+  $('todo-flt').addEventListener('click', (ev) => {
+    const b = ev.target.closest('[data-flt]'); if (!b) return;
+    todoFlt = b.dataset.flt;
+    document.querySelectorAll('#todo-flt .chip').forEach(c => { const on = c === b; c.classList.toggle('on', on); c.setAttribute('aria-pressed', String(on)); });
+    renderChecklist('todos');
+  });
 
   // Eingebaute Rezepte (Menge pro Person) – kostenlos, ohne KI
   const RECIPES = {
@@ -1763,7 +1864,6 @@ input.switch:focus-visible { outline-offset: 3px; }
 
 
   // ---------- Termine aus Datei & Stundenplan ----------
-  const ymd = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   const fileToB64 = (blob) => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1]); r.onerror = rej; r.readAsDataURL(blob); });
 
   function parseIcs(text) {
@@ -2438,7 +2538,7 @@ input.switch:focus-visible { outline-offset: 3px; }
   }
 
   // Datum im Kopf + automatische Aktualisierung
-  renderToday(); fillLangSelects(); fillThemeSelect(); applyStatic();
+  renderToday(); fillLangSelects(); fillThemeSelect(); applyStatic(); todoRefresh();
   setInterval(() => { pollN++; if (!rtOk || pollN % 4 === 0) loadEntries(); if (currentTab === 'chat') loadChat(); }, 15000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) { loadEntries(); syncPush(); } });
 </script>

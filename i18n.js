@@ -292,6 +292,23 @@
     ['Löschen: {name}', 'Избриши: {name}', 'Supprimer : {name}', 'Elimina: {name}', 'Obriši: {name}', 'Fshi: {name}', 'Sil: {name}', 'Delete: {name}'],
     ['Datum', 'Датум', 'Date', 'Data', 'Datum', 'Data', 'Tarih', 'Date'],
     ['Uhrzeit', 'Време', 'Heure', 'Ora', 'Vreme', 'Ora', 'Saat', 'Time'],
+    ['Optionen', 'Опции', 'Options', 'Opzioni', 'Opcije', 'Opsionet', 'Seçenekler', 'Options'],
+    ['Zugewiesen an', 'Доделено на', 'Attribué à', 'Assegnato a', 'Dodeljeno', 'Caktuar për', 'Atanan kişi', 'Assigned to'],
+    ['Fällig am', 'Рок', 'Échéance', 'Scadenza', 'Rok', 'Afati', 'Son tarih', 'Due date'],
+    ['Wichtigkeit', 'Важност', 'Priorité', 'Priorità', 'Važnost', 'Rëndësia', 'Öncelik', 'Priority'],
+    ['Normal', 'Нормално', 'Normale', 'Normale', 'Normalno', 'Normale', 'Normal', 'Normal'],
+    ['Wichtig', 'Важно', 'Important', 'Importante', 'Važno', 'E rëndësishme', 'Önemli', 'Important'],
+    ['Nie', 'Никогаш', 'Jamais', 'Mai', 'Nikad', 'Kurrë', 'Asla', 'Never'],
+    ['Täglich', 'Секој ден', 'Chaque jour', 'Ogni giorno', 'Svaki dan', 'Çdo ditë', 'Her gün', 'Daily'],
+    ['Wöchentlich', 'Секоја недела', 'Chaque semaine', 'Ogni settimana', 'Svake nedelje', 'Çdo javë', 'Her hafta', 'Weekly'],
+    ['Monatlich', 'Секој месец', 'Chaque mois', 'Ogni mese', 'Svakog meseca', 'Çdo muaj', 'Her ay', 'Monthly'],
+    ['Meine', 'Мои', 'Les miennes', 'Mie', 'Moje', 'Të miat', 'Benim', 'Mine'],
+    ['Überfällig', 'Задоцнето', 'En retard', 'In ritardo', 'Kasni', 'Me vonesë', 'Gecikmiş', 'Overdue'],
+    ['Erledigt', 'Завршено', 'Terminé', 'Fatto', 'Završeno', 'Përfunduar', 'Tamamlandı', 'Done'],
+    ['Keine Aufgaben in diesem Filter.', 'Нема задачи во овој филтер.', 'Aucune tâche dans ce filtre.', 'Nessuna attività in questo filtro.', 'Nema zadataka u ovom filteru.', 'Asnjë detyrë në këtë filtër.', 'Bu filtrede görev yok.', 'No tasks in this filter.'],
+    ['{n} überfällig', '{n} задоцнети', '{n} en retard', '{n} in ritardo', '{n} kasni', '{n} me vonesë', '{n} gecikmiş', '{n} overdue'],
+    ['Nächste Fälligkeit: {date}', 'Следен рок: {date}', 'Prochaine échéance : {date}', 'Prossima scadenza: {date}', 'Sledeći rok: {date}', 'Afati i radhës: {date}', 'Sonraki tarih: {date}', 'Next due: {date}'],
+    ['Filter', 'Филтер', 'Filtre', 'Filtro', 'Filter', 'Filtri', 'Filtre', 'Filter'],
     ['__end__', '', '', '', '', '', '', '']
   ];
   R.pop();
