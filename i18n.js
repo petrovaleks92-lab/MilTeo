@@ -309,6 +309,22 @@
     ['{n} überfällig', '{n} задоцнети', '{n} en retard', '{n} in ritardo', '{n} kasni', '{n} me vonesë', '{n} gecikmiş', '{n} overdue'],
     ['Nächste Fälligkeit: {date}', 'Следен рок: {date}', 'Prochaine échéance : {date}', 'Prossima scadenza: {date}', 'Sledeći rok: {date}', 'Afati i radhës: {date}', 'Sonraki tarih: {date}', 'Next due: {date}'],
     ['Filter', 'Филтер', 'Filtre', 'Filtro', 'Filter', 'Filtri', 'Filtre', 'Filter'],
+    ['Häufig gekauft', 'Често купувано', 'Souvent acheté', 'Acquistati spesso', 'Često kupovano', 'Blerë shpesh', 'Sık alınanlar', 'Often bought'],
+    ['Hinzufügen: {name}', 'Додади: {name}', 'Ajouter : {name}', 'Aggiungi: {name}', 'Dodaj: {name}', 'Shto: {name}', 'Ekle: {name}', 'Add: {name}'],
+    ['«{name}» steht schon auf der Liste', '„{name}“ веќе е на листата', '« {name} » est déjà sur la liste', '«{name}» è già nella lista', '„{name}“ je već na listi', '«{name}» është tashmë në listë', '«{name}» zaten listede', '“{name}” is already on the list'],
+    ['«{name}» ist wieder auf der Liste', '„{name}“ повторно е на листата', '« {name} » est de nouveau sur la liste', '«{name}» è di nuovo nella lista', '„{name}“ je ponovo na listi', '«{name}» është përsëri në listë', '«{name}» yeniden listede', '“{name}” is back on the list'],
+    ['Nichts gefunden.', 'Нема резултати.', 'Rien trouvé.', 'Nessun risultato.', 'Nema rezultata.', 'Nuk u gjet asgjë.', 'Bir şey bulunamadı.', 'Nothing found.'],
+    ['Einkaufsliste durchsuchen', 'Пребарај ја листата', 'Rechercher dans la liste', 'Cerca nella lista', 'Pretraži listu', 'Kërko në listë', 'Listede ara', 'Search the list'],
+    ['Kategorie', 'Категорија', 'Catégorie', 'Categoria', 'Kategorija', 'Kategoria', 'Kategori', 'Category'],
+    ['Obst & Gemüse', 'Овошје и зеленчук', 'Fruits et légumes', 'Frutta e verdura', 'Voće i povrće', 'Fruta e perime', 'Meyve ve sebze', 'Fruit & vegetables'],
+    ['Milch & Eier', 'Млеко и јајца', 'Lait et œufs', 'Latte e uova', 'Mleko i jaja', 'Qumësht dhe vezë', 'Süt ve yumurta', 'Milk & eggs'],
+    ['Brot & Backwaren', 'Леб и пекарски производи', 'Pain et pâtisseries', 'Pane e prodotti da forno', 'Hleb i pekarski proizvodi', 'Buke dhe pjekur', 'Ekmek ve unlu mamüller', 'Bread & bakery'],
+    ['Fleisch & Fisch', 'Месо и риба', 'Viande et poisson', 'Carne e pesce', 'Meso i riba', 'Mish dhe peshk', 'Et ve balık', 'Meat & fish'],
+    ['Vorrat', 'Намирници', 'Épicerie', 'Dispensa', 'Namirnice', 'Ushqime bazë', 'Kuru gıda', 'Pantry'],
+    ['Getränke', 'Пијалоци', 'Boissons', 'Bevande', 'Pića', 'Pije', 'İçecekler', 'Drinks'],
+    ['Tiefgekühltes', 'Замрзнато', 'Surgelés', 'Surgelati', 'Smrznuto', 'Të ngrira', 'Dondurulmuş', 'Frozen'],
+    ['Haushalt & Pflege', 'Домаќинство и нега', 'Maison et hygiène', 'Casa e igiene', 'Domaćinstvo i nega', 'Shtëpi dhe higjienë', 'Ev ve bakım', 'Household & care'],
+    ['Sonstiges', 'Друго', 'Divers', 'Altro', 'Ostalo', 'Të tjera', 'Diğer', 'Other'],
     ['__end__', '', '', '', '', '', '', '']
   ];
   R.pop();

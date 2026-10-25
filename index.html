@@ -245,6 +245,11 @@ input.switch:disabled { opacity: .5; }
 .tag { font-size: .8rem; color: var(--muted); }
 .tag.late { color: var(--danger); font-weight: 600; }
 .tag.hi { color: var(--danger); font-weight: 600; }
+/* Einkauf: Kategorien, Suche, häufig gekauft */
+.cat-h { list-style: none; margin: 14px 2px 4px; font-size: .85rem; font-weight: 700; color: var(--muted); letter-spacing: .02em; }
+.freq { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 10px; align-items: center; }
+.freq .field-label { margin: 0 4px 0 0; }
+#shop-q { margin-bottom: 8px; }
 /* Tastaturbedienung: gut sichtbarer Fokusrahmen */
 :focus-visible { outline: 3px solid var(--mil); outline-offset: 2px; }
 .cef:focus-visible { outline: none; }
@@ -365,6 +370,7 @@ input.switch:focus-visible { outline-offset: 3px; }
         <input type="text" id="in-shop-qty" class="qty" enterkeyhint="send" placeholder="Menge" maxlength="20">
         <button class="btn" type="submit">Hinzufügen</button>
       </form>
+      <div class="freq" id="shop-freq" hidden></div>
       <p class="field-label" style="margin-top:14px">🍽️ Gericht → Zutaten</p>
       <form class="add dish-add" id="f-dish">
         <input type="text" id="in-dish" enterkeyhint="go" placeholder="Gericht oder Wunsch, z. B. Lasagne" maxlength="200" autocomplete="off">
@@ -373,6 +379,7 @@ input.switch:focus-visible { outline-offset: 3px; }
         <button class="btn" type="submit" id="btn-dish">Zutaten</button>
       </form>
       <p class="hint" style="margin-bottom:14px" id="dish-hint">Gericht und Anzahl Personen eingeben: Die Zutaten werden vorgeschlagen und erscheinen unter dem Gericht, mit + aufklappbar.</p>
+      <input type="text" id="shop-q" placeholder="Einkaufsliste durchsuchen" aria-label="Einkaufsliste durchsuchen" maxlength="60" hidden>
       <div id="list-shop"></div>
     </section>
 
@@ -784,6 +791,64 @@ input.switch:focus-visible { outline-offset: 3px; }
     if (g('prio')) o.prio = g('prio');
     if (g('rep')) o.repeat = g('rep');
     return o;
+  }
+  // Einkauf: Kategorie (automatisch aus dem Namen erraten, im Bearbeiten änderbar), Suche, häufig gekauft
+  const CATS = [['veg', '🥬', 'Obst & Gemüse'], ['dairy', '🥛', 'Milch & Eier'], ['bake', '🍞', 'Brot & Backwaren'], ['meat', '🥩', 'Fleisch & Fisch'], ['pantry', '🍝', 'Vorrat'], ['drink', '🥤', 'Getränke'], ['frozen', '🧊', 'Tiefgekühltes'], ['house', '🧴', 'Haushalt & Pflege'], ['other', '📦', 'Sonstiges']];
+  const CAT_KW = {
+    frozen: ['tiefkühl', 'glace', '=eis', 'pizza', 'pommes', 'fischstäbli', 'gefroren', '=tk'],
+    drink: ['wasser', 'mineral', '$saft', 'cola', 'bier', 'wein', 'limonade', 'sirup', 'getränk', 'eistee', 'prosecco', 'sprudel', 'ice tea', 'energy'],
+    dairy: ['milch', 'joghurt', '$joghurt', 'käse', '$käse', 'butter', 'rahm', 'quark', '=eier', '=ei', 'mozzarella', 'parmesan', 'schmand', 'margarine', 'gruyère', 'emmentaler', 'ziger', 'mascarpone'],
+    bake: ['brot', 'brötchen', 'zopf', 'gipfel', 'croissant', 'toast', 'kuchen', 'weggli', 'baguette', 'semmel', 'backware', 'bürli'],
+    meat: ['fleisch', '$fleisch', 'poulet', 'huhn', 'hähnchen', 'wurst', '$wurst', 'schinken', 'speck', 'salami', 'lachs', 'fisch', 'thon', 'rind', 'schwein', 'kalb', 'geschnetzeltes', 'cervelat', 'steak', 'schnitzel', 'crevetten', 'aufschnitt', 'chicken'],
+    pantry: ['pasta', 'spaghetti', 'nudeln', 'hörnli', 'reis', 'mehl', 'zucker', '=salz', 'pfeffer', '$öl', 'essig', 'müesli', 'müsli', 'cornflakes', 'haferflocken', 'konserve', 'bohnen', 'linsen', 'kichererbsen', 'sauce', '$sauce', 'pelati', 'passata', 'honig', 'konfitüre', 'nutella', 'schokolade', '$chips', 'chips', 'guetzli', 'keks', 'nüsse', 'gewürz', 'bouillon', 'maizena', 'hefe', 'backpulver', '=tee', 'kaffee', 'apfelmus', 'senf', 'ketchup', 'mayo', 'suppe', 'tomatenpüree', 'couscous', 'polenta'],
+    veg: ['apfel', 'äpfel', 'birne', 'banane', 'orange', 'zitrone', 'trauben', '$beeren', 'erdbeer', 'himbeer', 'heidelbeer', 'tomate', 'gurke', 'salat', 'karotte', 'rüebli', 'möhre', 'zwiebel', 'knoblauch', 'kartoffel', 'paprika', 'peperoni', 'zucchini', 'broccoli', 'brokkoli', 'spinat', 'pilz', 'champignon', 'lauch', 'kohl', 'avocado', 'kiwi', 'mango', 'melone', 'gemüse', 'obst', 'kräuter', 'basilikum', 'petersilie', 'aubergine', 'fenchel', 'sellerie', 'ingwer', 'mais', 'kürbis', 'rüeblis', 'nektarine', 'pfirsich', 'ananas'],
+    house: ['toilettenpapier', 'wc', 'putz', 'spülmittel', 'waschmittel', 'seife', 'shampoo', 'zahnpasta', 'zahnbürste', '=deo', 'windeln', 'tücher', 'taschentücher', 'küchenrolle', 'kehrichtsack', 'müllsack', 'schwamm', 'duschgel', 'tampon', 'watte', 'batterie', 'glühbirne', 'servietten', 'alufolie', 'backpapier', 'kerzen', 'sack', 'säcke'],
+  };
+  const CAT_ORDER = ['frozen', 'drink', 'dairy', 'bake', 'meat', 'pantry', 'veg', 'house'];
+  const normName = (t) => String(t || '').toLowerCase().replace(/\s+/g, ' ').trim();
+  function guessCat(text) {
+    const toks = normName(text).split(/[^a-zäöüéèàç]+/).filter(Boolean);
+    for (const c of CAT_ORDER) for (const k of CAT_KW[c]) {
+      const w = k.replace(/^[=$]/, '');
+      for (const t of toks) { if (k[0] === '=' ? t === w : k[0] === '$' ? t.endsWith(w) : t.startsWith(w)) return c; }
+    }
+    return 'other';
+  }
+  const catOf = (e) => (e.data.cat && CATS.some(c => c[0] === e.data.cat)) ? e.data.cat : guessCat(e.data.text);
+  let shopQ = '';
+  const FREQ_KEY = () => 'milteo_freq_' + (fid || '');
+  function freqLoad() { try { return JSON.parse(localStorage.getItem(FREQ_KEY()) || '{}'); } catch (_) { return {}; } }
+  function freqBump(name) {
+    const n = String(name || '').trim(); if (!n) return;
+    const m = freqLoad(), k = normName(n); const cur = m[k] || { n, c: 0 };
+    cur.n = n; cur.c++; cur.t = Date.now(); m[k] = cur;
+    const keys = Object.keys(m); if (keys.length > 80) keys.sort((a, b) => (m[a].c - m[b].c) || (m[a].t - m[b].t)).slice(0, keys.length - 80).forEach(x => delete m[x]);
+    try { localStorage.setItem(FREQ_KEY(), JSON.stringify(m)); } catch (_) {}
+  }
+  function renderFreq() {
+    const box = $('shop-freq'); if (!box) return;
+    const have = new Set(entries.filter(e => e.kind === 'shop' && e.data.type !== 'dish' && !e.data.done).map(e => normName(e.data.text)));
+    const top = Object.values(freqLoad()).filter(x => x.c >= 2 && !have.has(normName(x.n))).sort((a, b) => (b.c - a.c) || (b.t - a.t)).slice(0, 6);
+    box.hidden = !top.length;
+    box.innerHTML = top.length ? `<span class="field-label">${esc(T('Häufig gekauft'))}</span>` + top.map(x => `<button class="chip" type="button" data-freq="${esc(x.n)}" aria-label="${esc(T('Hinzufügen: {name}', { name: x.n }))}">＋ ${esc(tx(x.n))}</button>`).join('') : '';
+  }
+  // Hinzufügen mit Schutz vor Doppelten: gleicher Artikel offen → nur Hinweis (Menge wird ergänzt); erledigt → wieder auf die Liste
+  async function addShop(text, qty) {
+    const k = normName(text);
+    const dup = entries.find(e => e.kind === 'shop' && e.data.type !== 'dish' && normName(e.data.text) === k);
+    if (dup) {
+      if (!dup.data.done) {
+        toast(T('«{name}» steht schon auf der Liste', { name: tx(dup.data.text) }));
+        if (qty && !dup.data.qty) { dup.data = { ...dup.data, qty }; renderAll(); patchEntry(dup.id, d => ({ ...d, qty })); }
+      } else {
+        dup.data = { ...dup.data, done: false, ...(qty ? { qty } : {}) }; renderAll();
+        patchEntry(dup.id, d => { const x = { ...d, done: false }; if (qty) x.qty = qty; return x; });
+        toast(T('«{name}» ist wieder auf der Liste', { name: tx(dup.data.text) }));
+      }
+      renderFreq(); return true;
+    }
+    const ok = await addEntry('shop', { text, done: false, by: myName, ...(qty ? { qty } : {}) });
+    renderFreq(); return !!ok;
   }
   function todoRefresh() { const o = document.getElementById('todo-opts'); if (o && o.querySelector('[data-f=as]')) todoSelects(o, readTodoOpts(o)); }
   const TODO_KEYS = ['assignee', 'assigneeName', 'due', 'prio', 'repeat'];
@@ -1443,6 +1508,7 @@ input.switch:focus-visible { outline-offset: 3px; }
       ${e.kind === 'shop' ? `<input type="text" class="ed-q" value="${esc(q)}" maxlength="20" placeholder="${esc(T('Menge'))}" aria-label="${esc(T('Menge'))}">` : ''}
       <button class="ic-btn primary" type="submit" aria-label="${esc(T('Speichern'))}">✓</button>
       <button class="ic-btn" type="button" data-act="ed-cancel" aria-label="${esc(T('Abbrechen'))}">✕</button>
+      ${e.kind === 'shop' && !isItem ? `<div class="ed-opts"><div><label class="field-label" for="ed-cat">${esc(T('Kategorie'))}</label><select id="ed-cat">${[['', '🔄 ' + T('Automatisch')]].concat(CATS.map(c => [c[0], c[1] + ' ' + T(c[2])])).map(([v, l]) => `<option value="${v}"${(e.data.cat || '') === v ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select></div></div>` : ''}
       ${e.kind === 'todos' && !isItem ? TODO_OPTS_HTML('ed') : ''}</form>`;
   }
   function startEdit(id, i) {
@@ -1452,7 +1518,7 @@ input.switch:focus-visible { outline-offset: 3px; }
   }
   function setupEdit(el) {
     el.querySelectorAll('.ed-form input[type=text]').forEach(cefify);
-    const ef = el.querySelector('.ed-form'); if (ef && ef.querySelector('.ed-opts')) { const te = entries.find(x => x.id === ef.dataset.id); todoSelects(ef, te && te.data); }
+    const ef = el.querySelector('.ed-form'); if (ef && ef.querySelector('[data-f=as]')) { const te = entries.find(x => x.id === ef.dataset.id); todoSelects(ef, te && te.data); }
     const t = el.querySelector('.ed-form .ed-t');
     if (t) { t.focus(); const r = document.createRange(); r.selectNodeContents(t); r.collapse(false); const sl = getSelection(); sl.removeAllRanges(); sl.addRange(r); }
   }
@@ -1462,18 +1528,31 @@ input.switch:focus-visible { outline-offset: 3px; }
     if (editing && editing.kind === kind) editShown = false;
     let items = entries.filter(e => e.kind === kind);
     const allCount = items.length;
+    if (kind === 'shop') {
+      const q = $('shop-q'); if (q) q.hidden = allCount < 6 && !shopQ;
+      const sq = normName(shopQ);
+      if (sq) { items = items.filter(e => normName(tx(e.data.text || '')).includes(sq) || normName(e.data.text || '').includes(sq) || (e.data.type === 'dish' && (e.data.items || []).some(i => normName(tx(i.name)).includes(sq) || normName(i.name).includes(sq)))); if (allCount && !items.length) { el.innerHTML = `<div class="empty">${esc(T('Nichts gefunden.'))}</div>`; return; } }
+    }
     if (kind === 'todos') {
       items = items.filter(e => todoFlt === 'mine' ? e.data.assignee === myId : todoFlt === 'late' ? isLate(e) : todoFlt === 'done' ? !!e.data.done : true);
       items = items.map((e, n) => [e, n]).sort((x, y) => todoCmp(x[0], y[0]) || (x[1] - y[1])).map(x => x[0]);
       if (allCount && !items.length) { el.innerHTML = `<div class="empty">${esc(T('Keine Aufgaben in diesem Filter.'))}</div>`; return; }
     }
     if (!items.length) { el.innerHTML = !loadedOnce ? '' : kind === 'shop' ? emptyHtml('Deine Einkaufsliste ist noch leer. Füge deinen ersten Artikel hinzu.', 'Artikel hinzufügen', 'shop') : emptyHtml('Noch keine Aufgaben. Erstelle eine Aufgabe für eure Familie.', 'Aufgabe erstellen', 'todos'); return; }
+    let lastCat = null; const grouping = kind === 'shop';
+    if (grouping) {
+      const ci = (e) => e.data.type === 'dish' ? -1 : CATS.findIndex(c => c[0] === catOf(e));
+      items = items.map((e, n) => [e, n]).sort((a, b) => (ci(a[0]) - ci(b[0])) || ((!!a[0].data.done) - (!!b[0].data.done)) || (a[1] - b[1])).map(x => x[0]);
+    }
     el.innerHTML = '<ul class="list">' + items.map(e => {
+      let head = '';
+      if (grouping && e.data.type !== 'dish') { const c = catOf(e); if (c !== lastCat) { lastCat = c; const ct = CATS.find(x => x[0] === c); head = `<li class="cat-h" role="presentation">${ct[1]} ${esc(T(ct[2]))}</li>`; } }
       if (kind === 'shop' && e.data.type === 'dish') return dishHtml(e);
+      if (head && editing && editing.id === e.id && editing.i === undefined) { editShown = true; return head + `<li class="row edit">${editRowHtml(e)}</li>`; }
       if (editing && editing.id === e.id && editing.i === undefined) { editShown = true; return `<li class="row edit">${editRowHtml(e)}</li>`; }
       const q = kind === 'shop' && e.data.qty ? `<span class="amt">${esc(I18N.unit(e.data.qty))}</span>` : '';
       const nm = kind === 'shop' ? tx(e.data.text || '') : (e.data.text || '');
-      return `
+      return head + `
       <li class="row ${e.data.done ? 'done' : ''}">
         <button class="check" type="button" role="checkbox" aria-checked="${!!e.data.done}" aria-label="${esc(nm)}" data-act="toggle" data-id="${e.id}">${e.data.done ? '✓' : ''}</button>
         <span class="txt" data-act="edit" data-id="${e.id}" role="button" tabindex="0" style="cursor:pointer">${esc(kind === 'shop' ? tx(e.data.text || '') : (e.data.text || ''))}${q}${kind === 'todos' ? byHtml(e) + todoTags(e) : ''}</span>
@@ -1531,7 +1610,7 @@ input.switch:focus-visible { outline-offset: 3px; }
     e.data = { ...e.data, remind: rv, reminded: false }; renderAll();
     patchEntry(e.id, d => ({ ...d, remind: rv, reminded: false }));
   });
-  function renderAll() { renderChecklist('shop'); renderChecklist('todos'); renderTimers(); renderEvents(); renderTimetables(); renderHome(); }
+  function renderAll() { renderFreq(); renderChecklist('shop'); renderChecklist('todos'); renderTimers(); renderEvents(); renderTimetables(); renderHome(); }
 
   // Tick für Timer
   setInterval(() => {
@@ -1561,7 +1640,7 @@ input.switch:focus-visible { outline-offset: 3px; }
         const nd = nextDue(e.data.due, e.data.repeat);
         e.data = { ...e.data, due: nd, done: false }; renderAll(); toast(T('Nächste Fälligkeit: {date}', { date: fmtDay(nd) }));
         patchEntry(id, d => ({ ...d, due: nextDue(d.due, d.repeat || e.data.repeat), done: false }));
-      } else if (e) { const nv = !e.data.done; e.data = { ...e.data, done: nv }; renderAll(); patchEntry(id, d => ({ ...d, done: nv })); }
+      } else if (e) { const nv = !e.data.done; if (nv && e.kind === 'shop' && e.data.type !== 'dish') { freqBump(e.data.text); } e.data = { ...e.data, done: nv }; renderAll(); patchEntry(id, d => ({ ...d, done: nv })); }
     }
     if (act === 'dish') {
       if (openDishes.has(id)) openDishes.delete(id); else openDishes.add(id);
@@ -1614,7 +1693,8 @@ input.switch:focus-visible { outline-offset: 3px; }
       patchEntry(e.id, d => { const k = itemIdx(d, ref, i); if (k < 0) return d; const a = (d.items || []).map(x => ({ ...x })); a[k].name = t; a[k].amount = q; return { ...d, items: a }; });
     } else {
       const opts = e.kind === 'todos' && f.querySelector('.ed-opts') ? readTodoOpts(f) : null;
-      const apply = (d) => { const x = { ...d, text: t }; if (e.kind === 'shop') { if (q) x.qty = q; else delete x.qty; } if (opts) { TODO_KEYS.forEach(k => delete x[k]); Object.assign(x, opts); } return x; };
+      const cs = f.querySelector('#ed-cat'), catV = cs ? cs.value : '';
+      const apply = (d) => { const x = { ...d, text: t }; if (e.kind === 'shop') { if (q) x.qty = q; else delete x.qty; if (catV) x.cat = catV; else delete x.cat; } if (opts) { TODO_KEYS.forEach(k => delete x[k]); Object.assign(x, opts); } return x; };
       e.data = apply(e.data); renderAll();
       patchEntry(e.id, apply);
     }
@@ -1643,7 +1723,17 @@ input.switch:focus-visible { outline-offset: 3px; }
       finally { busy = false; }
     };
   }
-  bindAdd('f-shop', 'in-shop', 'shop', 'in-shop-qty');
+  (function () {
+    let busy = false;
+    $('f-shop').onsubmit = async (ev) => {
+      ev.preventDefault();
+      const inp = $('in-shop'), qinp = $('in-shop-qty'), text = inp.value.trim(), qty = qinp.value.trim();
+      if (!text || busy) return; busy = true;
+      try { if (await addShop(text, qty)) { inp.value = ''; qinp.value = ''; } } finally { busy = false; }
+    };
+    document.addEventListener('input', (ev) => { if (ev.target.id === 'shop-q') { shopQ = ev.target.value; renderChecklist('shop'); } });
+    $('shop-freq').addEventListener('click', (ev) => { const b = ev.target.closest('[data-freq]'); if (b) addShop(b.dataset.freq, ''); });
+  })();
   const todoOpts = $('todo-opts');
   todoSelects(todoOpts, null);
   bindAdd('f-todos', 'in-todos', 'todos', null, () => readTodoOpts(todoOpts), () => todoSelects(todoOpts, null));
