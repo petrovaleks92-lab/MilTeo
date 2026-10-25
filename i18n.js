@@ -337,6 +337,12 @@
     ['Nächste Woche', 'Следна недела', 'Semaine suivante', 'Settimana successiva', 'Sledeća nedelja', 'Java tjetër', 'Sonraki hafta', 'Next week'],
     ['Ort auf der Karte öffnen: {name}', 'Отвори на карта: {name}', 'Ouvrir sur la carte : {name}', 'Apri sulla mappa: {name}', 'Otvori na mapi: {name}', 'Hap në hartë: {name}', 'Haritada aç: {name}', 'Open on map: {name}'],
     ['Keine Wiederholung', 'Без повторување', 'Pas de répétition', 'Nessuna ripetizione', 'Bez ponavljanja', 'Pa përsëritje', 'Tekrar yok', 'No repeat'],
+    ['{n} pausiert', '{n} паузиран', '{n} en pause', '{n} in pausa', '{n} pauziran', '{n} në pauzë', '{n} duraklatıldı', '{n} paused'],
+    ['Pausiert', 'Паузиран', 'En pause', 'In pausa', 'Pauziran', 'Në pauzë', 'Duraklatıldı', 'Paused'],
+    ['Pausieren: {name}', 'Паузирај: {name}', 'Mettre en pause : {name}', 'Metti in pausa: {name}', 'Pauziraj: {name}', 'Pauzo: {name}', 'Duraklat: {name}', 'Pause: {name}'],
+    ['Fortsetzen: {name}', 'Продолжи: {name}', 'Reprendre : {name}', 'Riprendi: {name}', 'Nastavi: {name}', 'Vazhdo: {name}', 'Devam et: {name}', 'Resume: {name}'],
+    ['+1 Minute: {name}', '+1 минута: {name}', '+1 minute : {name}', '+1 minuto: {name}', '+1 minut: {name}', '+1 minutë: {name}', '+1 dakika: {name}', '+1 minute: {name}'],
+    ['Nochmal starten: {name}', 'Стартувај повторно: {name}', 'Relancer : {name}', 'Riavvia: {name}', 'Pokreni ponovo: {name}', 'Nise përsëri: {name}', 'Yeniden başlat: {name}', 'Restart: {name}'],
     ['__end__', '', '', '', '', '', '', '']
   ];
   R.pop();

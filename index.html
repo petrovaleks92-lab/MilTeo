@@ -262,6 +262,10 @@ input.switch:disabled { opacity: .5; }
 .ev-place { flex-basis: 100%; font-size: .85rem; color: var(--muted); }
 .ev-place a { color: inherit; text-decoration: underline; }
 .ev-edit { flex-basis: 100%; display: grid; gap: 8px; }
+/* Timer: Pause, +1 Minute, Nochmal */
+.t-btns { display: flex; gap: 2px; flex: none; }
+.t-btns .ic-btn { width: 44px; height: 44px; font-size: 18px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--text); }
+.t-paused { color: var(--muted); }
 /* Tastaturbedienung: gut sichtbarer Fokusrahmen */
 :focus-visible { outline: 3px solid var(--mil); outline-offset: 2px; }
 .cef:focus-visible { outline: none; }
@@ -1037,8 +1041,8 @@ input.switch:focus-visible { outline-offset: 3px; }
     const todosAll = E.filter(e => e.kind === 'todos'), todosOpen = todosAll.filter(e => !e.data.done).length;
     const todosLate = todosAll.filter(isLate).length;
     $('ti-todos').textContent = !todosAll.length ? T('Nichts zu tun') : todosOpen ? T('{n} offen', { n: todosOpen }) + (todosLate ? ' · ' + T('{n} überfällig', { n: todosLate }) : '') : T('Alles erledigt ✓');
-    const run = E.filter(e => e.kind === 'timers' && e.data.end > Date.now());
-    $('ti-timers').textContent = run.length ? T(run.length === 1 ? '{n} läuft' : '{n} laufen', { n: run.length }) : T('Kein Timer aktiv');
+    const run = E.filter(e => e.kind === 'timers' && !e.data.paused && e.data.end > Date.now()), pausedN = E.filter(e => e.kind === 'timers' && e.data.paused).length;
+    $('ti-timers').textContent = run.length ? T(run.length === 1 ? '{n} läuft' : '{n} laufen', { n: run.length }) : pausedN ? T('{n} pausiert', { n: pausedN }) : T('Kein Timer aktiv');
     const today = new Date(); today.setHours(0, 0, 0, 0);
     const evs = E.filter(e => e.kind === 'events' && e.data.date && e.data.home !== false && new Date(e.data.date + 'T' + (e.data.time || '23:59')) >= new Date())
       .sort((a, b) => ((a.data.date) + (a.data.time || '')).localeCompare((b.data.date) + (b.data.time || '')));
@@ -1664,9 +1668,11 @@ input.switch:focus-visible { outline-offset: 3px; }
     const items = entries.filter(e => e.kind === 'timers');
     if (!items.length) { el.innerHTML = loadedOnce ? emptyHtml('Kein Timer läuft. Starte einen, zum Beispiel für den Backofen.', 'Timer starten', 'timers') : ''; return; }
     el.innerHTML = '<ul class="list">' + items.map(e => {
-      const left = e.data.end - Date.now();
-      return `<li class="row"><span class="txt">${esc(e.data.label || T('Timer'))}
-        <span class="who timer-left" data-end="${e.data.end}" data-id="${e.id}">${left > 0 ? fmtLeft(left) : T('Fertig!')}</span></span>
+      const d = e.data, nm = d.label || T('Timer'), paused = !!d.paused, left = paused ? (d.left || 0) : d.end - Date.now();
+      const bt = (act, ic, key) => `<button class="ic-btn" type="button" data-act="${act}" data-id="${e.id}" aria-label="${esc(T(key, { name: nm }))}">${ic}</button>`;
+      const btns = `<span class="t-btns">${paused ? bt('tresume', '▶', 'Fortsetzen: {name}') : left > 0 ? bt('tpause', '⏸', 'Pausieren: {name}') : (d.dur ? bt('trestart', '↻', 'Nochmal starten: {name}') : '')}${bt('tplus', '+1', '+1 Minute: {name}')}</span>`;
+      return `<li class="row"><span class="txt">${esc(nm)}
+        ${paused ? `<span class="who t-paused timer-static">⏸ ${fmtLeft(left)} · ${esc(T('Pausiert'))}</span>` : `<span class="who timer-left" data-end="${d.end}" data-id="${e.id}">${left > 0 ? fmtLeft(left) : T('Fertig!')}</span>`}</span>${btns}
         <button class="del" type="button" aria-label="${esc(T('Löschen: {name}', { name: e.data.label || T('Timer') }))}" data-act="del" data-id="${e.id}">×</button></li>`;
     }).join('') + '</ul>';
   }
@@ -1736,6 +1742,26 @@ input.switch:focus-visible { outline-offset: 3px; }
   });
   function renderAll() { renderFreq(); renderChecklist('shop'); renderChecklist('todos'); renderTimers(); renderEvents(); renderTimetables(); renderHome(); }
 
+  // Timer: pausieren, fortsetzen, +1 Minute, nochmal. Pausiert = end weit in der Zukunft (der Server meldet dann nichts), Rest in "left".
+  const T_PAUSE_END = 3.15e11;   // ca. 10 Jahre
+  function timerOp(id, act) {
+    const e = entries.find(x => x.id === id); if (!e || e.kind !== 'timers') return;
+    const fn = (d) => {
+      const now = Date.now(), x = { ...d };
+      if (act === 'tpause') { if (d.paused) return d; x.left = Math.max(0, (d.end || now) - now); x.paused = true; x.end = now + T_PAUSE_END; return x; }
+      if (act === 'tresume') { if (!d.paused) return d; x.end = now + (d.left || 0); x.paused = false; delete x.left; x.notified = false; return x; }
+      if (act === 'tplus') {
+        if (d.paused) { x.left = (d.left || 0) + 60000; return x; }
+        x.end = Math.max(d.end || now, now) + 60000; x.notified = false; return x;
+      }
+      if (act === 'trestart') { if (!d.dur) return d; x.end = now + d.dur; x.paused = false; delete x.left; x.notified = false; return x; }
+      return d;
+    };
+    notified.delete(id);
+    e.data = fn(e.data); renderAll();
+    patchEntry(id, fn);
+  }
+
   // Tick für Timer
   setInterval(() => {
     document.querySelectorAll('.timer-left').forEach(s => {
@@ -1758,6 +1784,7 @@ input.switch:focus-visible { outline-offset: 3px; }
     if (act === 'edit') { startEdit(id, b.dataset.i); return; }
     if (act === 'ed-cancel') { editing = null; editShown = false; renderAll(); return; }
     if (act === 'del') delEntry(id);
+    if (act === 'tpause' || act === 'tresume' || act === 'tplus' || act === 'trestart') { timerOp(id, act); return; }
     if (act === 'toggle') {
       const e = entries.find(x => x.id === id);
       if (e && e.kind === 'todos' && e.data.repeat && !e.data.done) {
@@ -2059,7 +2086,7 @@ input.switch:focus-visible { outline-offset: 3px; }
     const label = document.getElementById('in-tlabel').value.trim() || T('Timer');
     const min = Number(document.getElementById('in-tmin').value);
     if (!(min > 0)) return;
-    addEntry('timers', { label, end: Date.now() + min * 60000 });
+    addEntry('timers', { label, end: Date.now() + min * 60000, dur: min * 60000 });
   };
   let evBusy = false;
   document.getElementById('f-event').onsubmit = async (e) => {
