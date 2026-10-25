@@ -11,6 +11,7 @@
 <meta name="apple-mobile-web-app-title" content="Milteo">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>Milteo</title>
+<script>try{var __t=localStorage.getItem('milteo_theme');if(__t==='light'||__t==='dark')document.documentElement.setAttribute('data-theme',__t);}catch(e){}</script>
 
 <!-- PWA -->
 <link rel="manifest" href="manifest.json">
@@ -20,15 +21,22 @@
 <style>
 :root {
   --bg: #F2F5FA; --surface: #FFFFFF; --ink: #16213A; --muted: #5C6884; --line: #DDE3EF;
-  --mil: #1F8A4C; --on-mil: #FFFFFF; --mil-soft: #DDF3E4; --teo: #EDB800; --teo-soft: #FFF1BF;
-  --danger: #B93A26; --font-display: "Bricolage Grotesque", system-ui, sans-serif; --font-body: "DM Sans", system-ui, sans-serif;
+  --mil: #1A7A43; --on-mil: #FFFFFF; --mil-soft: #DDF3E4; --teo: #EDB800; --teo-soft: #FFF1BF;
+  --danger: #B93A26; --on-danger: #FFFFFF; --font-display: "Bricolage Grotesque", system-ui, sans-serif; --font-body: "DM Sans", system-ui, sans-serif;
 }
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --bg: #0E1424; --surface: #172038; --ink: #EAF0FF; --muted: #9AA7C7; --line: #27324F;
     --mil: #4CD27E; --on-mil: #05210F; --mil-soft: #123A24; --teo: #F5CB3D; --teo-soft: #46391A; --danger: #FF8A75;
+    --on-danger: #2A0A04;
   }
 }
+:root[data-theme="dark"] {
+    --bg: #0E1424; --surface: #172038; --ink: #EAF0FF; --muted: #9AA7C7; --line: #27324F;
+    --mil: #4CD27E; --on-mil: #05210F; --mil-soft: #123A24; --teo: #F5CB3D; --teo-soft: #46391A; --danger: #FF8A75;
+    --on-danger: #2A0A04; color-scheme: dark;
+}
+:root[data-theme="light"] { color-scheme: light; }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 html, body { margin: 0; }
@@ -56,7 +64,7 @@ input[type=text], input[type=number], input[type=date], input[type=time], input[
   width: 100%; min-height: 46px; padding: 0 14px; background: var(--surface); border: 1.5px solid var(--line); border-radius: 12px;
 }
 .lang-sel { margin-top: 12px; }
-.fold-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; background: none; border: 0; padding: 2px 0; font-weight: 700; font-size: 15px; color: inherit; text-align: left; }
+.fold-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; min-height: 40px; background: none; border: 0; padding: 2px 0; font-weight: 700; font-size: 15px; color: inherit; text-align: left; }
 .fold-h .caret::after { content: '▾'; color: var(--muted); }
 .fold.closed > .fold-h .caret::after { content: '▸'; }
 .fold.closed > .fold-b { display: none !important; }
@@ -78,15 +86,15 @@ input[type=text], input[type=number], input[type=date], input[type=time], input[
 .btn { min-height: 46px; padding: 0 18px; border: 0; border-radius: 12px; font-weight: 600; background: var(--mil); color: var(--on-mil); }
 .btn.ghost { background: transparent; color: var(--muted); border: 1.5px solid var(--line); }
 .btn.danger { background: transparent; color: var(--danger); border: 1.5px solid var(--danger); }
-.btn.small { min-height: 36px; padding: 0 12px; font-size: 14px; }
+.btn.small { min-height: 40px; padding: 0 12px; font-size: 14px; }
 .btn.block { width: 100%; }
 .link { background: none; border: 0; color: var(--mil); font-weight: 600; padding: 10px 0; text-decoration: underline; }
 .msg { margin: 0; font-size: 14px; color: var(--danger); }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
-.chip { min-height: 34px; padding: 0 12px; border-radius: 999px; background: var(--surface); border: 1.5px solid var(--line); font-size: 14px; }
+.chip { min-height: 40px; padding: 0 12px; border-radius: 999px; background: var(--surface); border: 1.5px solid var(--line); font-size: 14px; }
 ul.list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .row { display: flex; align-items: center; gap: 12px; background: var(--surface); border-radius: 14px; padding: 8px 8px 8px 10px; border: 1px solid var(--line); }
-.check { width: 32px; height: 32px; border-radius: 10px; border: 2px solid var(--mil); background: transparent; display: grid; place-items: center; color: var(--on-mil); }
+.check { width: 40px; height: 40px; border-radius: 10px; border: 2px solid var(--mil); background: transparent; display: grid; place-items: center; color: var(--on-mil); }
 .check[aria-checked="true"] { background: var(--mil); }
 .txt { flex: 1; overflow-wrap: anywhere; }
 .row.done .txt { color: var(--muted); text-decoration: line-through; }
@@ -101,7 +109,7 @@ nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface);
 .nav-in { max-width: 640px; margin: 0 auto; display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; }
 .tab { border: 0; background: transparent; border-radius: 16px; padding: 10px 2px; min-height: 68px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 12px; color: var(--muted); position: relative; }
 .tab .ic { font-size: 26px; line-height: 1; }
-.tab[aria-selected="true"] { background: var(--mil-soft); color: var(--ink); font-weight: 600; }
+.tab[aria-current="page"] { background: var(--mil-soft); color: var(--ink); font-weight: 600; }
 #toast .undo-btn { margin-left: 10px; border: 0; background: transparent; color: var(--teo); font-weight: 700; text-decoration: underline; padding: 4px 2px; }
 #toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: 150px; background: var(--ink); color: var(--bg); border-radius: 12px; padding: 10px 16px; font-size: 14px; z-index: 9; }
 .chat { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 8px; padding: 4px 2px 10px; }
@@ -168,21 +176,21 @@ body.composing #toast { bottom: 90px; }
 /* Einkauf: Gericht mit Zutaten */
 .dish { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
 .dish .dish-head { border: 0; border-radius: 0; background: transparent; }
-.plus { width: 36px; height: 36px; border-radius: 10px; border: 2px solid var(--teo); background: var(--teo-soft); color: var(--ink); font-size: 24px; font-weight: 700; line-height: 1; display: grid; place-items: center; flex: none; padding: 0; }
-.dish.open .plus { background: var(--teo); }
+.plus { width: 40px; height: 40px; border-radius: 10px; border: 2px solid var(--teo); background: var(--teo-soft); color: var(--ink); font-size: 24px; font-weight: 700; line-height: 1; display: grid; place-items: center; flex: none; padding: 0; }
+.dish.open .plus { background: var(--teo); color: #16213A; }
 .dish ul.sub { list-style: none; margin: 0; padding: 8px; display: flex; flex-direction: column; gap: 4px; border-top: 1px solid var(--line); }
 .sub-row { display: flex; align-items: center; gap: 10px; padding: 3px 2px 3px 6px; }
 .sub-row .amt { color: var(--muted); font-size: 13px; margin-left: 8px; }
 .sub-row.done .txt { color: var(--muted); text-decoration: line-through; }
-.sub-row .check { width: 28px; height: 28px; border-radius: 8px; }
-.sub-row .del { width: 34px; height: 34px; font-size: 20px; }
+.sub-row .check { width: 36px; height: 36px; border-radius: 8px; }
+.sub-row .del { width: 40px; height: 40px; font-size: 20px; }
 form.dish-add input.servings { width: 62px; flex: none; text-align: center; padding: 0 4px; }
 
 /* Schalter */
 .switch-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 40px; }
 /* Textfelder als bearbeitbare Flächen: Chrome/Tastatur blenden dort keine Autofill-Leiste (Passwort/Karte/Adresse) ein */
 .cef { display: block; width: 100%; min-height: 46px; line-height: 43px; padding: 0 14px; background: var(--surface); border: 1.5px solid var(--line); border-radius: 12px; white-space: nowrap; overflow: hidden; outline: none; -webkit-user-select: text; user-select: text; cursor: text; }
-.cef:empty::before { content: attr(data-ph); color: var(--muted); opacity: .75; pointer-events: none; }
+.cef:empty::before { content: attr(data-ph); color: var(--muted); opacity: .9; pointer-events: none; }
 .cef:focus { border-color: var(--mil); box-shadow: 0 0 0 3px var(--mil-soft); }
 .composer .cef { flex: 1; min-width: 0; border-radius: 23px; }
 form.dish-add .cef.servings { width: 62px; flex: none; text-align: center; padding: 0 4px; }
@@ -190,7 +198,8 @@ form.dish-add .cef.dish-ingr { flex: 1 1 100%; }
 .cef[hidden] { display: none; }
 /* Startseite mit Kacheln */
 :root { --t-shop: #DDF3E4; --t-todos: #DCEBFF; --t-timers: #FFE6CC; --t-events: #FFE0E3; --t-chat: #E8E1FF; --t-family: #FFF1BF; }
-@media (prefers-color-scheme: dark) { :root { --t-shop: #14392A; --t-todos: #14305A; --t-timers: #4A2E12; --t-events: #4A1F27; --t-chat: #2E2552; --t-family: #46391A; } }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --t-shop: #14392A; --t-todos: #14305A; --t-timers: #4A2E12; --t-events: #4A1F27; --t-chat: #2E2552; --t-family: #46391A; } }
+:root[data-theme="dark"] { --t-shop: #14392A; --t-todos: #14305A; --t-timers: #4A2E12; --t-events: #4A1F27; --t-chat: #2E2552; --t-family: #46391A; }
 .hello { margin: 4px 0 16px; }
 .hello h1 { font-size: 30px; margin: 0; }
 .hello p { margin: 2px 0 0; color: var(--muted); }
@@ -204,7 +213,7 @@ form.dish-add .cef.dish-ingr { flex: 1 1 100%; }
 .tile .ti { font-size: 46px; line-height: 1; }
 .tile .tt { font-family: var(--font-display); font-weight: 700; font-size: 20px; line-height: 1.15; }
 .tile .tinfo { display: block; margin-top: 3px; font-size: 13.5px; opacity: .78; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-.tile .badge { position: absolute; top: 12px; right: 12px; min-width: 26px; height: 26px; padding: 0 7px; border-radius: 13px; background: var(--danger); color: #fff; font-size: 13px; font-weight: 700; display: grid; place-items: center; }
+.tile .badge { position: absolute; top: 12px; right: 12px; min-width: 26px; height: 26px; padding: 0 7px; border-radius: 13px; background: var(--danger); color: var(--on-danger); font-size: 13px; font-weight: 700; display: grid; place-items: center; }
 .tile[data-t=shop] { background: var(--t-shop); } .tile[data-t=todos] { background: var(--t-todos); }
 .tile[data-t=timers] { background: var(--t-timers); } .tile[data-t=events] { background: var(--t-events); }
 .tile[data-t=chat] { background: var(--t-chat); } .tile[data-t=family] { background: var(--t-family); }
@@ -225,6 +234,16 @@ input.switch:checked { background: var(--mil); }
 input.switch:checked::after { transform: translateX(20px); }
 input.switch:disabled { opacity: .5; }
 .push-types { display: grid; gap: 2px; padding-left: 8px; border-left: 3px solid var(--line); }
+/* Tastaturbedienung: gut sichtbarer Fokusrahmen */
+:focus-visible { outline: 3px solid var(--mil); outline-offset: 2px; }
+.cef:focus-visible { outline: none; }
+input.switch:focus-visible { outline-offset: 3px; }
+.txt[data-act] { padding: 9px 0; }
+/* Weniger Bewegung, wenn das Gerät es verlangt */
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; } }
+/* Tablet und Computer: breiter, mehr Kacheln pro Zeile */
+@media (min-width: 760px) { .wrap, .nav-in { max-width: 860px; } .tiles { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 1100px) { .wrap, .nav-in { max-width: 1000px; } }
 </style>
 </head>
 <body>
@@ -250,7 +269,7 @@ input.switch:disabled { opacity: .5; }
       </div>
       <label class="check-row" id="auth-remember-wrap"><input type="checkbox" id="in-remember" checked> Passwort speichern</label>
       <button class="btn block" type="submit" id="auth-submit">Anmelden</button>
-      <p class="msg" id="auth-msg"></p>
+      <p class="msg" id="auth-msg" role="alert"></p>
     </form>
     <button class="link" id="auth-forgot" type="button">Passwort vergessen?</button><br>
     <button class="link" id="auth-toggle" type="button">Neu hier? Konto erstellen</button>
@@ -273,7 +292,7 @@ input.switch:disabled { opacity: .5; }
         <input type="password" id="in-newpw2" autocomplete="new-password" enterkeyhint="go" minlength="8" required>
       </div>
       <button class="btn block" type="submit">Passwort speichern</button>
-      <p class="msg" id="reset-msg"></p>
+      <p class="msg" id="reset-msg" role="alert"></p>
     </form>
     <button class="link" id="reset-cancel" type="button">Abbrechen</button>
   </div>
@@ -296,7 +315,7 @@ input.switch:disabled { opacity: .5; }
         <button class="btn block" type="submit" style="margin-top:8px">Beitreten</button>
       </form>
     </div>
-    <p class="msg" id="fam-msg"></p>
+    <p class="msg" id="fam-msg" role="alert"></p>
     <button class="link" id="fam-logout" type="button">Abmelden</button>
   </div>
 </div>
@@ -307,7 +326,7 @@ input.switch:disabled { opacity: .5; }
       <div class="brand"><div class="word"><span class="a">Mil</span><span class="b">teo</span></div></div>
       <div class="head-right">
         <div class="today"><strong id="todayDay"></strong><span id="todayDate"></span></div>
-        <button class="icon-btn" id="btn-family" type="button" onclick="switchTab('family')">⚙️</button>
+        <button class="icon-btn" id="btn-family" type="button" aria-label="Familie &amp; Konto" onclick="switchTab('family')"><span aria-hidden="true">⚙️</span></button>
       </div>
     </header>
     <div class="net" id="net" role="status" aria-live="polite" hidden></div>
@@ -317,7 +336,7 @@ input.switch:disabled { opacity: .5; }
       <div id="home-tt"></div>
       <div class="next-card" id="home-next" hidden><span class="nic" id="home-next-ic">📅</span><div><small id="home-next-k">Als Nächstes</small><strong id="home-next-t"></strong></div></div>
       <div class="qa" id="home-qa"><button class="chip" type="button" data-go="shop">＋ <span>Einkauf</span></button><button class="chip" type="button" data-go="todos">＋ <span>Aufgabe</span></button><button class="chip" type="button" data-go="events">＋ <span>Termin</span></button></div>
-      <div class="card" id="home-open" hidden onclick="switchTab('todos')" style="gap:6px; cursor:pointer"><p class="field-label" style="margin:0">Offene Aufgaben</p><div id="home-open-list"></div></div>
+      <div class="card" id="home-open" role="button" tabindex="0" hidden onclick="switchTab('todos')" style="gap:6px; cursor:pointer"><p class="field-label" style="margin:0">Offene Aufgaben</p><div id="home-open-list"></div></div>
       <div class="tiles">
         <button class="tile" data-t="shop" type="button" onclick="switchTab('shop')"><span class="ti" aria-hidden="true">🛒</span><span><span class="tt">Einkauf</span><span class="tinfo" id="ti-shop"></span></span></button>
         <button class="tile" data-t="todos" type="button" onclick="switchTab('todos')"><span class="ti" aria-hidden="true">✅</span><span><span class="tt">Aufgaben</span><span class="tinfo" id="ti-todos"></span></span></button>
@@ -374,8 +393,8 @@ input.switch:disabled { opacity: .5; }
         <div class="fold-b"><form id="f-event" style="display:grid; gap:8px;">
           <input type="text" id="in-etitle" enterkeyhint="done" placeholder="Titel">
           <div class="grid2">
-            <input type="date" id="in-edate">
-            <input type="time" id="in-etime">
+            <input type="date" id="in-edate" aria-label="Datum">
+            <input type="time" id="in-etime" aria-label="Uhrzeit">
           </div>
           <select id="in-eremind" aria-label="Erinnerung">
             <option value="">🔕 Keine Erinnerung</option>
@@ -457,6 +476,8 @@ input.switch:disabled { opacity: .5; }
       <div class="card">
         <label class="field-label" for="sel-lang">Sprache</label>
         <select id="sel-lang"></select>
+        <label class="field-label" for="sel-theme">Darstellung</label>
+        <select id="sel-theme"></select>
       </div>
       <div class="card">
         <p class="field-label">Benachrichtigungen</p>
@@ -511,19 +532,19 @@ input.switch:disabled { opacity: .5; }
     </section>
   </div>
 
-  <nav>
+  <nav aria-label="Hauptmenü">
     <div class="nav-in">
       <button class="tab" id="t-home" onclick="switchTab('home')"><span class="ic" aria-hidden="true">🏠</span><span>Start</span></button>
       <button class="tab" id="t-shop" onclick="switchTab('shop')"><span class="ic" aria-hidden="true">🛒</span><span>Einkauf</span></button>
       <button class="tab" id="t-todos" onclick="switchTab('todos')"><span class="ic" aria-hidden="true">✅</span><span>Aufgaben</span></button>
       <button class="tab" id="t-timers" onclick="switchTab('timers')"><span class="ic" aria-hidden="true">⏱️</span><span>Timer</span></button>
       <button class="tab" id="t-events" onclick="switchTab('events')"><span class="ic" aria-hidden="true">📅</span><span>Termine</span></button>
-      <button class="tab" id="t-chat" onclick="switchTab('chat')"><span class="ic" aria-hidden="true">💬</span><span>Chat</span><span class="dot" id="chat-dot" hidden></span></button>
+      <button class="tab" id="t-chat" onclick="switchTab('chat')"><span class="ic" aria-hidden="true">💬</span><span>Chat</span><span class="dot" id="chat-dot" role="img" aria-label="Neue Nachrichten" hidden></span></button>
     </div>
   </nav>
 </div>
-<div id="lightbox" hidden><button class="x" type="button" aria-label="Schliessen">✕</button><img alt=""></div>
-<div id="toast" hidden></div>
+<div id="lightbox" role="dialog" aria-modal="true" aria-label="Bild" hidden><button class="x" type="button" aria-label="Schliessen">✕</button><img alt=""></div>
+<div id="toast" role="status" aria-live="polite" hidden></div>
 
 <!-- Supabase Client eingebunden -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
@@ -622,6 +643,21 @@ input.switch:disabled { opacity: .5; }
     $('todayDay').textContent = d.toLocaleDateString(I18N.loc(), { weekday: 'long' });
     $('todayDate').textContent = d.toLocaleDateString(I18N.loc(), { day: 'numeric', month: 'long' });
   }
+  // Darstellung (Automatisch / Hell / Dunkel), pro Gerät gemerkt
+  const THEME_META = [...document.querySelectorAll('meta[name=theme-color]')].map(m => [m, m.content]);
+  const themePref = () => { try { const t = localStorage.getItem('milteo_theme'); return t === 'light' || t === 'dark' ? t : 'auto'; } catch (_) { return 'auto'; } };
+  function applyTheme(t) {
+    if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t); else document.documentElement.removeAttribute('data-theme');
+    THEME_META.forEach(([m, c]) => { m.content = t === 'dark' ? '#0E1424' : t === 'light' ? '#F2F5FA' : c; });
+  }
+  function fillThemeSelect() {
+    const el = $('sel-theme'); if (!el) return;
+    el.innerHTML = [['auto', 'Automatisch'], ['light', 'Hell'], ['dark', 'Dunkel']].map(([v, k]) => `<option value="${v}">${esc(T(k))}</option>`).join('');
+    el.value = themePref();
+    el.onchange = () => { try { localStorage.setItem('milteo_theme', el.value); } catch (_) {} applyTheme(el.value); };
+  }
+  applyTheme(themePref());
+  document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && $('lightbox') && !$('lightbox').hidden) $('lightbox').hidden = true; });
   function fillLangSelects() {
     ['sel-lang', 'sel-lang-auth'].forEach(id => {
       const el = $(id); if (!el) return;
@@ -633,7 +669,7 @@ input.switch:disabled { opacity: .5; }
   function changeLang(l) {
     I18N.set(l);
     ['sel-lang', 'sel-lang-auth'].forEach(id => { const el = $(id); if (el) el.value = l; });
-    applyStatic(); renderToday();
+    applyStatic(); renderToday(); fillThemeSelect();
     try { showNet(); $('pw-box').innerHTML = ''; $('del-box').innerHTML = ''; } catch (_) {}
     try { setMode(authMode); } catch (_) {}
     if (myName && $('fam-hello')) $('fam-hello').textContent = T('Hallo') + ' ' + myName;
@@ -734,7 +770,7 @@ input.switch:disabled { opacity: .5; }
       const p = document.getElementById('p-' + t);
       if (p) p.hidden = (t !== tab);
       const btn = document.getElementById('t-' + t);
-      if (btn) btn.setAttribute('aria-selected', t === tab ? 'true' : 'false');
+      if (btn) { if (t === tab) btn.setAttribute('aria-current', 'page'); else btn.removeAttribute('aria-current'); }
     });
     window.scrollTo(0, 0);
     updateCompose();
@@ -783,7 +819,7 @@ input.switch:disabled { opacity: .5; }
     $('ti-events').textContent = evs.length ? fmtEv(evs[0]) : T('Keine Termine');
     const last = chatMsgs[chatMsgs.length - 1];
     $('ti-chat').textContent = last ? ((last.user_id === myId ? T('Du') : (last.display_name || '')) + ': ' + (last.media_path ? (String(last.media_type || '').startsWith('audio') ? T('🎤 Sprachnachricht') : T('📷 Bild')) : (last.body || ''))) : T('Noch keine Nachrichten');
-    const bd = $('tb-chat'); bd.hidden = !chatUnread; bd.textContent = chatUnread > 9 ? '9+' : chatUnread;
+    const bd = $('tb-chat'); bd.hidden = !chatUnread; bd.textContent = chatUnread > 9 ? '9+' : chatUnread; bd.setAttribute('aria-label', T('{n} ungelesen', { n: chatUnread }));
     const oc = $('home-open'), openT = E.filter(e => e.kind === 'todos' && !e.data.done);
     oc.hidden = !openT.length;
     $('home-open-list').innerHTML = openT.slice(0, 3).map(e => `<div class="txt">☐ ${esc(e.data.text || '')}</div>`).join('') + (openT.length > 3 ? `<div class="who" style="margin:0">+${openT.length - 3}</div>` : '');
@@ -1270,7 +1306,7 @@ input.switch:disabled { opacity: .5; }
     const shown = steps && recipeOpen.has(e.id);
     const label = recipeBusy.has(e.id) ? T('Rezept wird geladen …') : shown ? T('📖 Rezept ausblenden') : steps ? T('📖 Rezept anzeigen') : T('📖 Rezept Schritt für Schritt (optional)');
     let h = `<div class="recipe"><button class="btn ghost small" type="button" data-act="recipe" data-id="${e.id}" ${recipeBusy.has(e.id) ? 'disabled' : ''}>${label}</button>`;
-    if (shown) h += '<ol class="steps">' + steps.map((t, n) => `<li class="step ${stepsDone.has(e.id + ':' + n) ? 'done' : ''}" data-act="step" data-id="${e.id}" data-i="${n}"><span class="n">${n + 1}</span><span class="st">${esc(tx(t))}</span></li>`).join('') + '</ol><p class="hint" style="margin-top:8px">Tippe auf einen Schritt, um ihn abzuhaken.</p>';
+    if (shown) h += '<ol class="steps">' + steps.map((t, n) => `<li class="step ${stepsDone.has(e.id + ':' + n) ? 'done' : ''}" role="checkbox" aria-checked="${stepsDone.has(e.id + ':' + n)}" tabindex="0" data-act="step" data-id="${e.id}" data-i="${n}"><span class="n">${n + 1}</span><span class="st">${esc(tx(t))}</span></li>`).join('') + '</ol><p class="hint" style="margin-top:8px">Tippe auf einen Schritt, um ihn abzuhaken.</p>';
     return h + '</div>';
   }
   async function loadRecipe(id) {
@@ -1302,9 +1338,9 @@ input.switch:disabled { opacity: .5; }
     const done = items.filter(i => i.done).length;
     const sub = items.map((i, n) => (editing && editing.id === e.id && editing.i === n) ? (editShown = true, `<li class="sub-row">${editRowHtml(e, n)}</li>`) : `
       <li class="sub-row ${i.done ? 'done' : ''}">
-        <button class="check" type="button" role="checkbox" aria-checked="${!!i.done}" data-act="item" data-id="${e.id}" data-i="${n}">${i.done ? '✓' : ''}</button>
+        <button class="check" type="button" role="checkbox" aria-checked="${!!i.done}" aria-label="${esc(tx(i.name))}" data-act="item" data-id="${e.id}" data-i="${n}">${i.done ? '✓' : ''}</button>
         <span class="txt" data-act="edit" data-id="${e.id}" data-i="${n}" role="button" tabindex="0" style="cursor:pointer">${esc(tx(i.name))}${i.amount ? `<span class="amt">${esc(I18N.unit(i.amount))}</span>` : ''}</span>
-        <button class="del" type="button" aria-label="${T('Zutat löschen')}" data-act="item-del" data-id="${e.id}" data-i="${n}">×</button>
+        <button class="del" type="button" aria-label="${esc(T('Löschen: {name}', { name: tx(i.name) }))}" data-act="item-del" data-id="${e.id}" data-i="${n}">×</button>
       </li>`).join('');
     return `<li class="dish ${open ? 'open' : ''}">
       <div class="row dish-head">
@@ -1349,11 +1385,12 @@ input.switch:disabled { opacity: .5; }
       if (kind === 'shop' && e.data.type === 'dish') return dishHtml(e);
       if (editing && editing.id === e.id && editing.i === undefined) { editShown = true; return `<li class="row edit">${editRowHtml(e)}</li>`; }
       const q = kind === 'shop' && e.data.qty ? `<span class="amt">${esc(I18N.unit(e.data.qty))}</span>` : '';
+      const nm = kind === 'shop' ? tx(e.data.text || '') : (e.data.text || '');
       return `
       <li class="row ${e.data.done ? 'done' : ''}">
-        <button class="check" type="button" role="checkbox" aria-checked="${!!e.data.done}" data-act="toggle" data-id="${e.id}">${e.data.done ? '✓' : ''}</button>
+        <button class="check" type="button" role="checkbox" aria-checked="${!!e.data.done}" aria-label="${esc(nm)}" data-act="toggle" data-id="${e.id}">${e.data.done ? '✓' : ''}</button>
         <span class="txt" data-act="edit" data-id="${e.id}" role="button" tabindex="0" style="cursor:pointer">${esc(kind === 'shop' ? tx(e.data.text || '') : (e.data.text || ''))}${q}${kind === 'todos' ? byHtml(e) : ''}</span>
-        <button class="del" type="button" aria-label="${T('Löschen')}" data-act="del" data-id="${e.id}">×</button>
+        <button class="del" type="button" aria-label="${esc(T('Löschen: {name}', { name: nm }))}" data-act="del" data-id="${e.id}">×</button>
       </li>`;
     }).join('') + '</ul>';
     if (editing && editing.kind === kind && editShown) setupEdit(el);
@@ -1372,7 +1409,7 @@ input.switch:disabled { opacity: .5; }
       const left = e.data.end - Date.now();
       return `<li class="row"><span class="txt">${esc(e.data.label || T('Timer'))}
         <span class="who timer-left" data-end="${e.data.end}" data-id="${e.id}">${left > 0 ? fmtLeft(left) : T('Fertig!')}</span></span>
-        <button class="del" type="button" aria-label="${T('Löschen')}" data-act="del" data-id="${e.id}">×</button></li>`;
+        <button class="del" type="button" aria-label="${esc(T('Löschen: {name}', { name: e.data.label || T('Timer') }))}" data-act="del" data-id="${e.id}">×</button></li>`;
     }).join('') + '</ul>';
   }
   function renderEvents() {
@@ -1385,8 +1422,8 @@ input.switch:disabled { opacity: .5; }
       const d = e.data.date ? new Date(e.data.date + 'T00:00').toLocaleDateString(I18N.loc(), { weekday: 'short', day: 'numeric', month: 'short' }) : '';
       const rmv = (e.data.remind !== null && e.data.remind !== undefined && e.data.remind !== '') ? String(e.data.remind) : '';
       const ed = evEdit === e.id ? `<div style="flex-basis:100%; display:flex; gap:8px; align-items:center; flex-wrap:wrap"><select class="mini" id="ev-rm" data-v="${esc(rmv)}" aria-label="${esc(T('Erinnerung'))}">${$('in-eremind').innerHTML}</select><button type="button" class="chip ${e.data.home === false ? '' : 'on'}" data-act="evhome" data-id="${e.id}">📌 ${esc(T('Im Hauptmenü anzeigen'))}</button></div>` : '';
-      return `<li class="row" style="flex-wrap:wrap"><span class="txt" data-act="evedit" data-id="${e.id}" style="cursor:pointer">${esc(e.data.title || '')}${e.data.home === false ? ' <span class="who">🚫📌</span>' : ''}<span class="who">${d} ${esc(e.data.time || '')}</span>${(e.data.remind !== null && e.data.remind !== undefined && e.data.remind !== '') ? `<span class="who">🔔 ${remindText(Number(e.data.remind))}</span>` : ''}${byHtml(e)}</span>
-        <button class="del" type="button" aria-label="${T('Löschen')}" data-act="del" data-id="${e.id}">×</button>${ed}</li>`;
+      return `<li class="row" style="flex-wrap:wrap"><span class="txt" data-act="evedit" data-id="${e.id}" role="button" tabindex="0" style="cursor:pointer">${esc(e.data.title || '')}${e.data.home === false ? ' <span class="who">🚫📌</span>' : ''}<span class="who">${d} ${esc(e.data.time || '')}</span>${(e.data.remind !== null && e.data.remind !== undefined && e.data.remind !== '') ? `<span class="who">🔔 ${remindText(Number(e.data.remind))}</span>` : ''}${byHtml(e)}</span>
+        <button class="del" type="button" aria-label="${esc(T('Löschen: {name}', { name: e.data.title || '' }))}" data-act="del" data-id="${e.id}">×</button>${ed}</li>`;
     }).join('') + '</ul>';
     const sel = $('ev-rm'); if (sel) sel.value = sel.dataset.v;
   }
@@ -1441,7 +1478,7 @@ input.switch:disabled { opacity: .5; }
       renderChecklist('shop');
     }
     if (act === 'recipe') { loadRecipe(id); return; }
-    if (act === 'step') { const k = id + ':' + b.dataset.i; if (stepsDone.has(k)) stepsDone.delete(k); else stepsDone.add(k); b.classList.toggle('done'); return; }
+    if (act === 'step') { const k = id + ':' + b.dataset.i; if (stepsDone.has(k)) stepsDone.delete(k); else stepsDone.add(k); b.classList.toggle('done'); b.setAttribute('aria-checked', b.classList.contains('done')); return; }
     if (act === 'item' || act === 'item-del') {
       const e = entries.find(x => x.id === id);
       if (!e) return;
@@ -1468,7 +1505,7 @@ input.switch:disabled { opacity: .5; }
   });
 
   document.addEventListener('keydown', (ev) => {
-    if ((ev.key === 'Enter' || ev.key === ' ') && ev.target.matches && ev.target.matches('[data-act="edit"]')) { ev.preventDefault(); ev.target.click(); }
+    if ((ev.key === 'Enter' || ev.key === ' ') && ev.target.matches && ev.target.matches('[data-act="edit"],[data-act="evedit"],[data-act="lsn"],[data-act="step"],#home-open')) { ev.preventDefault(); ev.target.click(); }
   });
   document.addEventListener('submit', (ev) => {
     const f = ev.target.closest && ev.target.closest('.ed-form'); if (!f) return;
@@ -1785,7 +1822,7 @@ input.switch:disabled { opacity: .5; }
     const loc = I18N.loc();
     box.innerHTML = `<p class="hint">${esc(T('{n} Termine gefunden. Wähle aus, was übernommen werden soll.', { n: importFound.length }))}</p><ul class="list">` + importFound.map((e, i) => {
       const d = new Date(e.date + 'T00:00').toLocaleDateString(loc, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
-      return `<li class="row ${e.on ? '' : 'done'}" style="flex-wrap:wrap"><button class="check" type="button" role="checkbox" aria-checked="${e.on}" data-act="imp" data-i="${i}">${e.on ? '✓' : ''}</button><span class="txt">${esc(e.title)}<span class="who">${esc(d)} ${esc(e.time || '')}</span></span>
+      return `<li class="row ${e.on ? '' : 'done'}" style="flex-wrap:wrap"><button class="check" type="button" role="checkbox" aria-checked="${e.on}" aria-label="${esc(e.title)}" data-act="imp" data-i="${i}">${e.on ? '✓' : ''}</button><span class="txt">${esc(e.title)}<span class="who">${esc(d)} ${esc(e.time || '')}</span></span>
         <div style="flex-basis:100%; display:flex; gap:8px; align-items:center; flex-wrap:wrap"><select class="mini" data-act="imprm" data-i="${i}" data-v="${esc(e.rm)}" aria-label="${esc(T('Erinnerung'))}">${$('in-eremind').innerHTML}</select><button type="button" class="chip ${e.home ? 'on' : ''}" data-act="imphome" data-i="${i}">📌 ${esc(T('Im Hauptmenü anzeigen'))}</button></div></li>`;
     }).join('') + `</ul><label class="field-label" for="imp-remind" style="margin-top:10px">${esc(T('Erinnerung für alle'))}</label><select id="imp-remind">${$('in-eremind').innerHTML}</select><div style="display:flex; gap:8px; margin-top:10px"><button class="btn" type="button" id="imp-ok">${esc(T('Übernehmen'))} (${importFound.filter(e => e.on).length})</button><button class="btn ghost" type="button" id="imp-cancel">${esc(T('Abbrechen'))}</button></div>`;
     const sel = $('imp-remind'); sel.value = importRemind;
@@ -1825,7 +1862,7 @@ input.switch:disabled { opacity: .5; }
   let ttDraft = null, ttCtx = null, ttEdit = null;
   const hasRm = (l) => l.rm !== undefined && l.rm !== null && l.rm !== '';
   const lsIc = (l) => (l.home ? '📌' : '') + (hasRm(l) ? '🔔' : '');
-  const lsAttr = (l) => ttCtx ? ` data-act="lsn" data-eid="${ttCtx.id}" data-i="${ttCtx.all.indexOf(l)}" style="cursor:pointer;margin:0"` : ' style="margin:0"';
+  const lsAttr = (l) => ttCtx ? ` data-act="lsn" data-eid="${ttCtx.id}" data-i="${ttCtx.all.indexOf(l)}" role="button" tabindex="0" style="cursor:pointer;margin:0"` : ' style="margin:0"';
   const dayName = (d, style) => new Date(2024, 0, d).toLocaleDateString(I18N.loc(), { weekday: style || 'short' });
   const toMin = (s) => { const m = /^(\d{1,2}):(\d{2})/.exec(s || ''); return m ? (+m[1]) * 60 + (+m[2]) : null; };
   const hueOf = (s) => { let h = 0; for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) % 360; return h; };
@@ -1865,7 +1902,7 @@ input.switch:disabled { opacity: .5; }
       h += `<div class="ttc">` + ls.map(l => {
         const lanes = Math.max(...l._cl.map(x => x._ln)) + 1, top = (toMin(l.from) - t0) * K, ht = Math.max(16, (end(l) - toMin(l.from)) * K - 1);
         const tip = `${l.from}${l.to ? '–' + l.to : ''} ${l.subject}${l.group ? ' (' + l.group + ')' : ''}${l.room ? ' · ' + l.room : ''}`;
-        return `<div class="ttb" title="${esc(tip)}"${ttCtx ? ` data-act="lsn" data-eid="${ttCtx.id}" data-i="${ttCtx.all.indexOf(l)}"` : ''} style="${ttCtx ? 'cursor:pointer;' : ''}top:${top}px;height:${ht}px;left:${l._ln * 100 / lanes}%;width:calc(${100 / lanes}% - 1px);background:${blockColor(l)}"><b>${esc(groupIcon(l.group || ''))}${esc(l.subject)} ${lsIc(l)}</b><i>${esc(l.from)}${l.to ? '–' + esc(l.to) : ''}</i></div>`;
+        return `<div class="ttb" title="${esc(tip)}"${ttCtx ? ` data-act="lsn" data-eid="${ttCtx.id}" data-i="${ttCtx.all.indexOf(l)}" role="button" tabindex="0"` : ''} style="${ttCtx ? 'cursor:pointer;' : ''}top:${top}px;height:${ht}px;left:${l._ln * 100 / lanes}%;width:calc(${100 / lanes}% - 1px);background:${blockColor(l)}"><b>${esc(groupIcon(l.group || ''))}${esc(l.subject)} ${lsIc(l)}</b><i>${esc(l.from)}${l.to ? '–' + esc(l.to) : ''}</i></div>`;
       }).join('') + `</div>`;
     });
     h += `</div>`;
@@ -2017,7 +2054,7 @@ input.switch:disabled { opacity: .5; }
       if (String(m.media_type || '').startsWith('audio') || m.duration_ms != null) {
         inner = `<div class="player"><button type="button" class="pbtn play" data-act="play" data-path="${esc(m.media_path)}" data-id="${m.id}" aria-label="${T('Abspielen')}">▶</button><div class="bar"><i></i></div><span class="dur">${fmtDur(m.duration_ms)}</span></div>`;
       } else {
-        inner = `<img class="chat-img" data-path="${esc(m.media_path)}" alt="Bild" loading="lazy">`;
+        inner = `<img class="chat-img" data-path="${esc(m.media_path)}" alt="${esc(T('Bild'))}" loading="lazy">`;
       }
     }
     if (m.body) inner += `<div>${esc(m.body)}</div>`;
@@ -2401,7 +2438,7 @@ input.switch:disabled { opacity: .5; }
   }
 
   // Datum im Kopf + automatische Aktualisierung
-  renderToday(); fillLangSelects(); applyStatic();
+  renderToday(); fillLangSelects(); fillThemeSelect(); applyStatic();
   setInterval(() => { pollN++; if (!rtOk || pollN % 4 === 0) loadEntries(); if (currentTab === 'chat') loadChat(); }, 15000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) { loadEntries(); syncPush(); } });
 </script>

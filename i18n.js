@@ -281,6 +281,17 @@
     ['Timer starten', 'Стартувај тајмер', 'Lancer un minuteur', 'Avvia timer', 'Pokreni tajmer', 'Nise kohëmatësin', 'Zamanlayıcı başlat', 'Start timer'],
     ['Noch keine Nachrichten. Schreibe deiner Familie.', 'Сè уште нема пораки. Напиши на твоето семејство.', 'Pas encore de messages. Écris à ta famille.', 'Ancora nessun messaggio. Scrivi alla tua famiglia.', 'Još nema poruka. Napiši svojoj porodici.', 'Ende nuk ka mesazhe. Shkruaj familjes sate.', 'Henüz mesaj yok. Ailene yaz.', 'No messages yet. Write to your family.'],
     ['Nachricht schreiben', 'Напиши порака', 'Écrire un message', 'Scrivi un messaggio', 'Napiši poruku', 'Shkruaj mesazh', 'Mesaj yaz', 'Write a message'],
+    ['Hauptmenü', 'Главно мени', 'Menu principal', 'Menu principale', 'Glavni meni', 'Menuja kryesore', 'Ana menü', 'Main menu'],
+    ['Neue Nachrichten', 'Нови пораки', 'Nouveaux messages', 'Nuovi messaggi', 'Nove poruke', 'Mesazhe të reja', 'Yeni mesajlar', 'New messages'],
+    ['{n} ungelesen', '{n} непрочитани', '{n} non lus', '{n} non letti', '{n} nepročitanih', '{n} të palexuara', '{n} okunmamış', '{n} unread'],
+    ['Darstellung', 'Изглед', 'Apparence', 'Aspetto', 'Izgled', 'Pamja', 'Görünüm', 'Appearance'],
+    ['Automatisch', 'Автоматски', 'Automatique', 'Automatico', 'Automatski', 'Automatike', 'Otomatik', 'Automatic'],
+    ['Hell', 'Светло', 'Clair', 'Chiaro', 'Svetlo', 'E çelët', 'Açık', 'Light'],
+    ['Dunkel', 'Темно', 'Sombre', 'Scuro', 'Tamno', 'E errët', 'Koyu', 'Dark'],
+    ['Bild', 'Слика', 'Image', 'Immagine', 'Slika', 'Imazhi', 'Görsel', 'Image'],
+    ['Löschen: {name}', 'Избриши: {name}', 'Supprimer : {name}', 'Elimina: {name}', 'Obriši: {name}', 'Fshi: {name}', 'Sil: {name}', 'Delete: {name}'],
+    ['Datum', 'Датум', 'Date', 'Data', 'Datum', 'Data', 'Tarih', 'Date'],
+    ['Uhrzeit', 'Време', 'Heure', 'Ora', 'Vreme', 'Ora', 'Saat', 'Time'],
     ['__end__', '', '', '', '', '', '', '']
   ];
   R.pop();
