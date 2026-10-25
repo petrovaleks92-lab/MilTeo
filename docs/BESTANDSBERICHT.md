@@ -37,8 +37,8 @@ Alles ist anhand von Code und Datenbank-Regeln beurteilt. Auf echten Geräten ge
 ### Priorität 2 – Dashboard und Oberfläche
 | Punkt | Status | Befund |
 |---|---|---|
-| Dashboard | 🟡 | Begrüssung, nächster Termin, Stundenplan, 6 Kacheln mit Kurzinfo ✅. Fehlen: Familienname (⛔, `families` hat keinen Namen), Mitgliederübersicht, offene Aufgaben als Liste, mehrere neueste Chatnachrichten, Schnell-Hinzufügen. |
-| Leere Ansichten | 🟡 | Texte vorhanden, aber knapp («Noch nichts da.») und ohne Aktion. |
+| Dashboard | 🟡 | Begrüssung, nächster Termin, Stundenplan, 6 Kacheln mit Kurzinfo ✅; seit Schritt 4 auch Schnell-Hinzufügen (Einkauf/Aufgabe/Termin), Karte «Offene Aufgaben», Namen der Mitglieder in der Familien-Kachel. Fehlen: Familienname (⛔, `families` hat keinen Namen), mehrere neueste Chatnachrichten. |
+| Leere Ansichten | ✅ | Seit Schritt 4: verständlicher Text und Knopf, der zum Eingabefeld führt (Einkauf, Aufgaben, Termine, Timer, Chat). |
 | Navigation | ✅ | Untere Leiste, aktiver Punkt hervorgehoben. Auf der Startseite ausgeblendet (bewusst). |
 | Einheitliches Design, responsiv | 🟡 | Einheitlich auf dem Smartphone; Tablet/Desktop nur ein schmaler Mittelstreifen (max. 640 px). |
 | Dark Mode | 🟡 | Automatisch nach Systemeinstellung ✅, kein Schalter. |
@@ -47,7 +47,7 @@ Alles ist anhand von Code und Datenbank-Regeln beurteilt. Auf echten Geräten ge
 ### Priorität 3–5 – Einkauf, Aufgaben, Termine
 | Bereich | Status | Befund |
 |---|---|---|
-| Einkauf | 🟡 | Hinzufügen, abhaken, löschen (mit Rückgängig), Gericht → Zutaten (eingebaute Rezepte + kostenlose KI), 8 Sprachen ✅. Fehlen: Bearbeiten, Menge/Einheit pro Artikel, Kategorien, Suche, «häufig gekauft», Notizen, Duplikat-Schutz, mehrere Listen. Wochenmenü ❌. |
+| Einkauf | 🟡 | Hinzufügen, abhaken, löschen (mit Rückgängig), Gericht → Zutaten (eingebaute Rezepte + kostenlose KI), 8 Sprachen ✅; seit Schritt 4: Menge pro Artikel und Bearbeiten durch Antippen (auch Zutaten im Gericht und Aufgaben). Fehlen: Kategorien, Suche, «häufig gekauft», Notizen, Duplikat-Schutz, mehrere Listen. Wochenmenü ❌. |
 | Aufgaben | 🟡 | Erstellen, abhaken, löschen, Ersteller anzeigen ✅. Fehlen: Bearbeiten, Zuweisen, Fälligkeit, Priorität, Wiederholung, Filter. Belohnungssystem ❌. |
 | Termine | 🟡 | Erstellen, löschen, Erinnerung (auch nachträglich), Import aus Datei, Stundenplan mit Gruppen, einklappbar ✅. Fehlen: Ort/Beschreibung, Personen-Zuordnung, wiederkehrend, Tages-/Wochenansicht, Titel/Datum nachträglich ändern, Kalenderexport. |
 
@@ -99,3 +99,4 @@ Jeder Schritt: klein, getestet, danach wieder lauffähig. Schritte mit ⛔ warte
 ## 6. Nachtrag: Hinweis zur KI (Gemini)
 Laut den Gemini-API-Bedingungen (ai.google.dev/terms, geprüft am 24.10.2026) darf Google bei der kostenlosen Nutzung gesendete Inhalte zur Verbesserung seiner Produkte verwenden, und Mitarbeitende können sie lesen; persönliche oder vertrauliche Daten sollen nicht gesendet werden. Deshalb steht dazu jetzt ein Absatz im Datenschutz-Text und ein kurzer Hinweis bei «Termine aus Datei» und beim Stundenplan-Upload (8 Sprachen). Die Alternative wäre ein bezahlter Gemini-Plan (dort wird nicht zum Training verwendet) – kostet Geld, daher nicht umgesetzt.
 | 3 Echtzeit und Überschreibschutz | `index.html` (`subscribeEntries`, `patchEntry`, `scheduleReload`, `itemIdx`; Abfrage der Mitglieder höchstens alle 60 Sekunden) | Automatisch im Browser mit simuliertem Server (alle bestanden): Änderung einer anderen Person erscheint ohne Warten; gleichzeitiges Abhaken zweier Zutaten bleibt beides erhalten; inzwischen gelöschte Zutat oder Eintrag verursacht keinen Fehler; Löschen trifft trotz verschobener Position die richtige Zutat; Server-Markierung «Erinnerung gesendet» bleibt erhalten; Offline-Verhalten aus Schritt 1 funktioniert weiter. **Nicht getestet:** echte Echtzeit-Verbindung zwischen zwei Geräten (nur simuliert), das bitte kurz zu zweit ausprobieren. Datenbank unverändert. |
+| 4 Menge, Bearbeiten, leere Ansichten, Dashboard, letzte Seite | `index.html`, `i18n.js` (15 neue Texte in 8 Sprachen) | Automatisch im Browser mit simuliertem Server (alle bestanden): Menge speichern/anzeigen/entfernen, Bearbeiten per Antippen (Text und Menge; Eingabe bleibt beim Neuladen durch andere erhalten; leerer Text wird abgelehnt; Abbrechen), Zutat im Gericht bearbeiten, leere Ansichten mit Knopf und Fokus, Schnellaktionen, Karte «Offene Aufgaben», zuletzt besuchte Seite nach Neustart und beim Zurückwechseln (Anmelde-Ereignis ändert die Seite nicht mehr), Start ohne Verbindung aus dem Zwischenspeicher, Zurück-Taste führt zur Startseite. Sichtkontrolle per Bildschirmfoto (390 px breit). **Nicht getestet:** echtes Handy (App-Wechsel, Tastatur), die neuen Übersetzungen (mk, sr, sq, tr) stammen von mir. |

@@ -113,6 +113,17 @@ nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface);
 .bubble .when { font-size: 11px; color: var(--muted); margin-top: 2px; text-align: right; }
 .dot { position: absolute; top: 6px; right: 20%; width: 11px; height: 11px; border-radius: 50%; background: var(--danger); border: 2px solid var(--surface); }
 .hint { margin: 0; font-size: 13px; color: var(--muted); }
+.row .amt { color: var(--muted); font-size: 13px; margin-left: 8px; }
+form.add .cef.qty { width: 88px; flex: none; padding: 0 8px; }
+.ed-form { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; width: 100%; }
+.ed-form .cef.ed-t { flex: 1 1 100px; width: auto; min-width: 0; }
+.ed-form .cef.ed-q { flex: 0 0 80px; width: 80px; padding: 0 8px; }
+.ed-form .ic-btn { width: 42px; height: 42px; }
+.row.edit { padding: 8px; }
+[data-act="edit"]:focus-visible { outline: 2px solid var(--mil); outline-offset: 2px; border-radius: 6px; }
+.qa { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 16px; }
+.qa .chip { min-height: 44px; padding: 0 16px; font-weight: 600; }
+.empty .btn { min-width: 170px; }
 .net { flex: none; position: sticky; top: 0; z-index: 6; margin: 0 0 10px; padding: 10px 14px; border-radius: 12px; background: var(--teo-soft); border: 1.5px solid var(--teo); color: var(--ink); font-size: 14px; font-weight: 600; }
 .msg.ok { color: var(--mil); }
 .check-row { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--muted); }
@@ -305,6 +316,8 @@ input.switch:disabled { opacity: .5; }
       <div class="hello"><h1 id="home-hello">Hallo</h1><p id="home-sub"></p></div>
       <div id="home-tt"></div>
       <div class="next-card" id="home-next" hidden><span class="nic" id="home-next-ic">📅</span><div><small id="home-next-k">Als Nächstes</small><strong id="home-next-t"></strong></div></div>
+      <div class="qa" id="home-qa"><button class="chip" type="button" data-go="shop">＋ <span>Einkauf</span></button><button class="chip" type="button" data-go="todos">＋ <span>Aufgabe</span></button><button class="chip" type="button" data-go="events">＋ <span>Termin</span></button></div>
+      <div class="card" id="home-open" hidden onclick="switchTab('todos')" style="gap:6px; cursor:pointer"><p class="field-label" style="margin:0">Offene Aufgaben</p><div id="home-open-list"></div></div>
       <div class="tiles">
         <button class="tile" data-t="shop" type="button" onclick="switchTab('shop')"><span class="ti" aria-hidden="true">🛒</span><span><span class="tt">Einkauf</span><span class="tinfo" id="ti-shop"></span></span></button>
         <button class="tile" data-t="todos" type="button" onclick="switchTab('todos')"><span class="ti" aria-hidden="true">✅</span><span><span class="tt">Aufgaben</span><span class="tinfo" id="ti-todos"></span></span></button>
@@ -319,6 +332,7 @@ input.switch:disabled { opacity: .5; }
       <h2>Einkaufsliste</h2>
       <form class="add" id="f-shop">
         <input type="text" id="in-shop" enterkeyhint="send" placeholder="Was fehlt?">
+        <input type="text" id="in-shop-qty" class="qty" enterkeyhint="send" placeholder="Menge" maxlength="20">
         <button class="btn" type="submit">Hinzufügen</button>
       </form>
       <p class="field-label" style="margin-top:14px">🍽️ Gericht → Zutaten</p>
@@ -526,10 +540,10 @@ input.switch:disabled { opacity: .5; }
 
   const $ = (id) => document.getElementById(id);
   // Textfelder in bearbeitbare Flächen umwandeln (verhindert die Autofill-Leiste mit Schlüssel/Karte/Standort)
-  (function () {
-    const plain = ('contentEditable' in document.documentElement) ? 'plaintext-only' : 'true';
-    document.querySelectorAll('input[type=text], input[type=number]').forEach(inp => {
-      if (inp.id === 'in-name') return;                      // Registrierung: Name bleibt normal
+  const cefPlain = ('contentEditable' in document.documentElement) ? 'plaintext-only' : 'true';
+  function cefify(inp) {
+      const plain = cefPlain;
+      if (inp.id === 'in-name') return null;                 // Registrierung: Name bleibt normal
       const d = document.createElement('div');
       d.id = inp.id;
       d.className = (inp.className ? inp.className + ' ' : '') + 'cef';
@@ -570,8 +584,9 @@ input.switch:disabled { opacity: .5; }
         document.execCommand('insertText', false, numeric ? t.replace(/\D+/g, '') : t);
       });
       inp.replaceWith(d);
-    });
-  })();
+      return d;
+  }
+  document.querySelectorAll('input[type=text], input[type=number]').forEach(cefify);
 
   // ---------- Sprachen ----------
   document.documentElement.lang = I18N.lang;
@@ -673,7 +688,7 @@ input.switch:disabled { opacity: .5; }
   });
   function clearStaleAuth() { try { Object.keys(localStorage).filter(k => /^sb-.*-auth-token/.test(k)).forEach(k => localStorage.removeItem(k)); } catch (_) {} }
   let fid = null, myId = null, myName = '', myEmail = '', currentTab = 'home';
-  let entries = [];
+  let entries = [], loadedOnce = false, editing = null, editShown = false, appReady = false;
   const openDishes = new Set();
   try { JSON.parse(localStorage.getItem('milteo_open_dishes') || '[]').forEach(i => openDishes.add(i)); } catch (_) {}
   let chatUnread = 0, memberCount = 0, memberNames = {};
@@ -697,12 +712,19 @@ input.switch:disabled { opacity: .5; }
   const authNodes = {};
   ['screen-auth', 'screen-reset'].forEach(n => { const el = document.getElementById(n); if (el) authNodes[n] = { el, mark: document.createComment(n) }; });
 
+  const TABS = ['home', 'shop', 'todos', 'timers', 'events', 'chat', 'family'];
+  function startTab() {
+    if (location.hash === '#chat') return 'chat';
+    try { const t = localStorage.getItem('milteo_tab'); if (TABS.includes(t)) return t; } catch (_) {}
+    return 'home';
+  }
   function switchTab(tab, fromPop) {
     // Zurück zur Startseite: Verlauf nutzen, damit die Zurück-Taste des Handys mitspielt
     if (tab === 'home' && !fromPop && history.state && history.state.milteo) { history.back(); return; }
     if (tab !== 'home' && currentTab === 'home' && !fromPop) { try { history.pushState({ milteo: 1 }, ''); } catch (_) {} }
     if (currentTab === 'chat' && tab !== 'chat') { if (rec) stopRec(false); closeEmoji(); stopPlaying(); }
     currentTab = tab;
+    try { localStorage.setItem('milteo_tab', tab); } catch (_) {}
     document.body.classList.toggle('in-chat', tab === 'chat');
     document.body.classList.toggle('on-home', tab === 'home');
     if (tab === 'home') renderHome();
@@ -762,7 +784,11 @@ input.switch:disabled { opacity: .5; }
     const last = chatMsgs[chatMsgs.length - 1];
     $('ti-chat').textContent = last ? ((last.user_id === myId ? T('Du') : (last.display_name || '')) + ': ' + (last.media_path ? (String(last.media_type || '').startsWith('audio') ? T('🎤 Sprachnachricht') : T('📷 Bild')) : (last.body || ''))) : T('Noch keine Nachrichten');
     const bd = $('tb-chat'); bd.hidden = !chatUnread; bd.textContent = chatUnread > 9 ? '9+' : chatUnread;
-    $('ti-family').textContent = memberCount ? T(memberCount === 1 ? '{n} Mitglied' : '{n} Mitglieder', { n: memberCount }) : T('Familie & Konto');
+    const oc = $('home-open'), openT = E.filter(e => e.kind === 'todos' && !e.data.done);
+    oc.hidden = !openT.length;
+    $('home-open-list').innerHTML = openT.slice(0, 3).map(e => `<div class="txt">☐ ${esc(e.data.text || '')}</div>`).join('') + (openT.length > 3 ? `<div class="who" style="margin:0">+${openT.length - 3}</div>` : '');
+    const famNames = Object.values(memberNames).filter(Boolean);
+    $('ti-family').textContent = famNames.length > 1 && famNames.length <= 4 ? famNames.join(', ') : memberCount ? T(memberCount === 1 ? '{n} Mitglied' : '{n} Mitglieder', { n: memberCount }) : T('Familie & Konto');
     $('home-tt').innerHTML = ttUpcoming().map(o => {
       const day = o.k === 0 ? T('Heute') : o.k === 1 ? T('Morgen') : o.d.toLocaleDateString(I18N.loc(), { weekday: 'short' });
       const name = (o.l.subject || '') + (o.l.group ? ' (' + o.l.group + ')' : '');
@@ -823,7 +849,7 @@ input.switch:disabled { opacity: .5; }
   window.addEventListener('pagehide', () => commitPending());
 
   function route(session) {
-    if (!session) { showScreen('auth'); return; }
+    if (!session) { appReady = false; try { localStorage.removeItem('milteo_fam'); } catch (_) {} showScreen('auth'); return; }
     if (recoveryMode) { showScreen('reset'); return; }
     myId = session.user.id; myEmail = session.user.email || '';
     myName = session.user.user_metadata?.name || session.user.email.split('@')[0];
@@ -831,17 +857,26 @@ input.switch:disabled { opacity: .5; }
     if (nameInput) nameInput.value = myName;
     
     sb.from('members').select('family_id, display_name, families(code)').eq('user_id', myId).maybeSingle().then(r => {
-      if (!r.data) {
+      let row = r.data;
+      if (!row && r.error) {          // keine Verbindung: nicht mit "keine Familie" verwechseln
+        if (isNetErr(r.error)) setNet(false);
+        if (appReady) return;
+        let c = null; try { c = JSON.parse(localStorage.getItem('milteo_fam') || 'null'); } catch (_) {}
+        if (c && c.uid === myId && c.fid) row = { family_id: c.fid, families: { code: c.code || '' } };
+        else { showScreen('auth'); $('auth-msg').textContent = T('Keine Antwort vom Server. Prüfe die Verbindung und versuche es nochmal.'); return; }
+      } else if (row) { try { localStorage.setItem('milteo_fam', JSON.stringify({ uid: myId, fid: row.family_id, code: (row.families && row.families.code) || '' })); } catch (_) {} }
+      if (!row) {
+        appReady = false; try { localStorage.removeItem('milteo_fam'); } catch (_) {}
         document.getElementById('fam-hello').textContent = T('Hallo') + ' ' + myName;
         showScreen('family');
         return;
       }
-      fid = r.data.family_id;
-      if (r.data.families) {
-        document.getElementById('fam-code').textContent = r.data.families.code;
+      fid = row.family_id;
+      if (row.families) {
+        document.getElementById('fam-code').textContent = row.families.code;
       }
-      showScreen('app');
-      switchTab(location.hash === '#chat' ? 'chat' : 'home');
+      // Nur beim ersten Start die Seite wählen (zuletzt besuchte). Spätere Anmelde-Ereignisse (z. B. beim Zurückwechseln in die App) ändern die Seite nicht.
+      if (!appReady) { appReady = true; showScreen('app'); switchTab(startTab()); }
       loadEntries();
       subscribeChat();
       subscribeEntries();
@@ -1135,7 +1170,10 @@ input.switch:disabled { opacity: .5; }
   }
   function setNet(ok) { if (ok === netOk) return; netOk = ok; showNet(); }
   window.addEventListener('offline', () => setNet(false));
-  window.addEventListener('online', () => { loadEntries(); if (currentTab === 'chat') loadChat(); });
+  window.addEventListener('online', () => {
+    if (!appReady) sb.auth.getSession().then(({ data }) => { if (data.session) route(data.session); });
+    loadEntries(); if (currentTab === 'chat') loadChat();
+  });
   // Zuletzt vom Server bestätigter Stand pro Eintrag: Anzeige springt dorthin zurück, wenn Speichern scheitert
   const serverData = new Map();
   function saveFailed(err, adding) {
@@ -1183,7 +1221,7 @@ input.switch:disabled { opacity: .5; }
     }
     if (writing > 0) { scheduleReload(); return; }                 // während der Abfrage hat jemand hier gespeichert: gleich nochmal
     setNet(true);
-    entries = r.data;
+    entries = r.data; loadedOnce = true;
     serverData.clear(); r.data.forEach(e => serverData.set(e.id, JSON.stringify(e.data)));
     renderAll();
     if (!memberCount || Date.now() - lastMembers > 60000) loadMembers();
@@ -1262,10 +1300,10 @@ input.switch:disabled { opacity: .5; }
     const d = e.data, items = Array.isArray(d.items) ? d.items : [];
     const open = openDishes.has(e.id);
     const done = items.filter(i => i.done).length;
-    const sub = items.map((i, n) => `
+    const sub = items.map((i, n) => (editing && editing.id === e.id && editing.i === n) ? (editShown = true, `<li class="sub-row">${editRowHtml(e, n)}</li>`) : `
       <li class="sub-row ${i.done ? 'done' : ''}">
         <button class="check" type="button" role="checkbox" aria-checked="${!!i.done}" data-act="item" data-id="${e.id}" data-i="${n}">${i.done ? '✓' : ''}</button>
-        <span class="txt">${esc(tx(i.name))}${i.amount ? `<span class="amt">${esc(I18N.unit(i.amount))}</span>` : ''}</span>
+        <span class="txt" data-act="edit" data-id="${e.id}" data-i="${n}" role="button" tabindex="0" style="cursor:pointer">${esc(tx(i.name))}${i.amount ? `<span class="amt">${esc(I18N.unit(i.amount))}</span>` : ''}</span>
         <button class="del" type="button" aria-label="${T('Zutat löschen')}" data-act="item-del" data-id="${e.id}" data-i="${n}">×</button>
       </li>`).join('');
     return `<li class="dish ${open ? 'open' : ''}">
@@ -1278,19 +1316,47 @@ input.switch:disabled { opacity: .5; }
     </li>`;
   }
 
+  function emptyHtml(msg, btn, go) {
+    return `<div class="empty"><p style="margin:0 0 12px">${esc(T(msg))}</p><button class="btn small" type="button" data-go="${go}">${esc(T(btn))}</button></div>`;
+  }
+  // Eintrag bearbeiten (Tipp auf den Text): Text und, beim Einkauf, Menge
+  function editRowHtml(e, i) {
+    const isItem = i !== undefined, it = isItem ? (e.data.items || [])[i] || {} : null;
+    const t = isItem ? (it.name || '') : (e.data.text || ''), q = isItem ? (it.amount || '') : (e.data.qty || '');
+    return `<form class="ed-form" data-id="${e.id}"${isItem ? ` data-i="${i}"` : ''}>
+      <input type="text" class="ed-t" value="${esc(t)}" maxlength="200" aria-label="${esc(T(e.kind === 'todos' ? 'Aufgabe' : 'Artikel'))}">
+      ${e.kind === 'shop' ? `<input type="text" class="ed-q" value="${esc(q)}" maxlength="20" placeholder="${esc(T('Menge'))}" aria-label="${esc(T('Menge'))}">` : ''}
+      <button class="ic-btn primary" type="submit" aria-label="${esc(T('Speichern'))}">✓</button>
+      <button class="ic-btn" type="button" data-act="ed-cancel" aria-label="${esc(T('Abbrechen'))}">✕</button></form>`;
+  }
+  function startEdit(id, i) {
+    const e = entries.find(x => x.id === id); if (!e) return;
+    editing = { id, i: (i === undefined || i === '') ? undefined : Number(i), kind: e.kind }; editShown = false;
+    renderChecklist(e.kind);
+  }
+  function setupEdit(el) {
+    el.querySelectorAll('.ed-form input[type=text]').forEach(cefify);
+    const t = el.querySelector('.ed-form .ed-t');
+    if (t) { t.focus(); const r = document.createRange(); r.selectNodeContents(t); r.collapse(false); const sl = getSelection(); sl.removeAllRanges(); sl.addRange(r); }
+  }
   function renderChecklist(kind) {
     const el = document.getElementById('list-' + kind);
+    if (editing && editing.kind === kind) { if (editShown) return; }   // während des Bearbeitens nicht neu zeichnen (Eingabe bleibt erhalten)
+    if (editing && editing.kind === kind) editShown = false;
     const items = entries.filter(e => e.kind === kind);
-    if (!items.length) { el.innerHTML = '<div class="empty">' + T('Noch nichts da.') + '</div>'; return; }
+    if (!items.length) { el.innerHTML = !loadedOnce ? '' : kind === 'shop' ? emptyHtml('Deine Einkaufsliste ist noch leer. Füge deinen ersten Artikel hinzu.', 'Artikel hinzufügen', 'shop') : emptyHtml('Noch keine Aufgaben. Erstelle eine Aufgabe für eure Familie.', 'Aufgabe erstellen', 'todos'); return; }
     el.innerHTML = '<ul class="list">' + items.map(e => {
       if (kind === 'shop' && e.data.type === 'dish') return dishHtml(e);
+      if (editing && editing.id === e.id && editing.i === undefined) { editShown = true; return `<li class="row edit">${editRowHtml(e)}</li>`; }
+      const q = kind === 'shop' && e.data.qty ? `<span class="amt">${esc(I18N.unit(e.data.qty))}</span>` : '';
       return `
       <li class="row ${e.data.done ? 'done' : ''}">
         <button class="check" type="button" role="checkbox" aria-checked="${!!e.data.done}" data-act="toggle" data-id="${e.id}">${e.data.done ? '✓' : ''}</button>
-        <span class="txt">${esc(kind === 'shop' ? tx(e.data.text || '') : (e.data.text || ''))}${kind === 'todos' ? byHtml(e) : ''}</span>
+        <span class="txt" data-act="edit" data-id="${e.id}" role="button" tabindex="0" style="cursor:pointer">${esc(kind === 'shop' ? tx(e.data.text || '') : (e.data.text || ''))}${q}${kind === 'todos' ? byHtml(e) : ''}</span>
         <button class="del" type="button" aria-label="${T('Löschen')}" data-act="del" data-id="${e.id}">×</button>
       </li>`;
     }).join('') + '</ul>';
+    if (editing && editing.kind === kind && editShown) setupEdit(el);
   }
 
   function fmtLeft(ms) {
@@ -1301,7 +1367,7 @@ input.switch:disabled { opacity: .5; }
   function renderTimers() {
     const el = document.getElementById('list-timers');
     const items = entries.filter(e => e.kind === 'timers');
-    if (!items.length) { el.innerHTML = '<div class="empty">' + T('Kein Timer läuft.') + '</div>'; return; }
+    if (!items.length) { el.innerHTML = loadedOnce ? emptyHtml('Kein Timer läuft. Starte einen, zum Beispiel für den Backofen.', 'Timer starten', 'timers') : ''; return; }
     el.innerHTML = '<ul class="list">' + items.map(e => {
       const left = e.data.end - Date.now();
       return `<li class="row"><span class="txt">${esc(e.data.label || T('Timer'))}
@@ -1314,7 +1380,7 @@ input.switch:disabled { opacity: .5; }
     const items = entries.filter(e => e.kind === 'events' && e.data.type !== 'timetable')
       .sort((a, b) => ((a.data.date || '') + (a.data.time || '')).localeCompare((b.data.date || '') + (b.data.time || '')));
     { const c = $('cnt-events'); if (c) c.textContent = items.length ? '(' + items.length + ')' : ''; }
-    if (!items.length) { el.innerHTML = '<div class="empty">' + T('Keine Termine.') + '</div>'; return; }
+    if (!items.length) { el.innerHTML = loadedOnce ? emptyHtml('Keine Termine geplant. Trage euren nächsten Termin ein.', 'Termin eintragen', 'events') : ''; return; }
     el.innerHTML = '<ul class="list">' + items.map(e => {
       const d = e.data.date ? new Date(e.data.date + 'T00:00').toLocaleDateString(I18N.loc(), { weekday: 'short', day: 'numeric', month: 'short' }) : '';
       const rmv = (e.data.remind !== null && e.data.remind !== undefined && e.data.remind !== '') ? String(e.data.remind) : '';
@@ -1362,6 +1428,8 @@ input.switch:disabled { opacity: .5; }
     if (!b) return;
     const id = b.dataset.id;
     const act = b.dataset.act;
+    if (act === 'edit') { startEdit(id, b.dataset.i); return; }
+    if (act === 'ed-cancel') { editing = null; editShown = false; renderAll(); return; }
     if (act === 'del') delEntry(id);
     if (act === 'toggle') {
       const e = entries.find(x => x.id === id);
@@ -1399,20 +1467,54 @@ input.switch:disabled { opacity: .5; }
     }
   });
 
+  document.addEventListener('keydown', (ev) => {
+    if ((ev.key === 'Enter' || ev.key === ' ') && ev.target.matches && ev.target.matches('[data-act="edit"]')) { ev.preventDefault(); ev.target.click(); }
+  });
+  document.addEventListener('submit', (ev) => {
+    const f = ev.target.closest && ev.target.closest('.ed-form'); if (!f) return;
+    ev.preventDefault();
+    const e = entries.find(x => x.id === f.dataset.id);
+    const t = f.querySelector('.ed-t').value.trim(), qe = f.querySelector('.ed-q'), q = qe ? qe.value.trim() : '';
+    if (!t) { toast(T('Bitte einen Namen eingeben')); return; }
+    editing = null; editShown = false;
+    if (!e) { renderAll(); return; }
+    if (f.dataset.i !== undefined) {
+      const i = Number(f.dataset.i), it = (e.data.items || [])[i];
+      if (!it) { renderAll(); return; }
+      const ref = { name: it.name, amount: it.amount || '' };
+      e.data = { ...e.data, items: e.data.items.map((x, n) => n === i ? { ...x, name: t, amount: q } : x) }; renderAll();
+      patchEntry(e.id, d => { const k = itemIdx(d, ref, i); if (k < 0) return d; const a = (d.items || []).map(x => ({ ...x })); a[k].name = t; a[k].amount = q; return { ...d, items: a }; });
+    } else {
+      const apply = (d) => { const x = { ...d, text: t }; if (e.kind === 'shop') { if (q) x.qty = q; else delete x.qty; } return x; };
+      e.data = apply(e.data); renderAll();
+      patchEntry(e.id, apply);
+    }
+  });
+  // Schnellaktionen (Startseite, leere Ansichten): zur Seite wechseln und das Eingabefeld öffnen
+  document.addEventListener('click', (ev) => {
+    const b = ev.target.closest && ev.target.closest('[data-go]'); if (!b) return;
+    const go = b.dataset.go; switchTab(go);
+    setTimeout(() => {
+      if (go === 'events') $('fold-new').classList.remove('closed');
+      const el = $({ shop: 'in-shop', todos: 'in-todos', events: 'in-etitle', timers: 'in-tlabel', chat: 'in-chat' }[go]); if (el) el.focus();
+    }, 60);
+  });
+
   // Formulare
-  function bindAdd(formId, inputId, kind) {
+  function bindAdd(formId, inputId, kind, qtyId) {
     let busy = false;
     document.getElementById(formId).onsubmit = async (e) => {
       e.preventDefault();
       const inp = document.getElementById(inputId);
       const text = inp.value.trim();
       if (!text || busy) return;
+      const qinp = qtyId ? document.getElementById(qtyId) : null, qty = qinp ? qinp.value.trim() : '';
       busy = true;
-      try { if (await addEntry(kind, { text, done: false, by: myName })) inp.value = ''; }   // Text bleibt stehen, wenn das Speichern nicht klappt
+      try { if (await addEntry(kind, { text, done: false, by: myName, ...(qty ? { qty } : {}) })) { inp.value = ''; if (qinp) qinp.value = ''; } }   // Text bleibt stehen, wenn das Speichern nicht klappt
       finally { busy = false; }
     };
   }
-  bindAdd('f-shop', 'in-shop', 'shop');
+  bindAdd('f-shop', 'in-shop', 'shop', 'in-shop-qty');
   bindAdd('f-todos', 'in-todos', 'todos');
 
   // Eingebaute Rezepte (Menge pro Person) – kostenlos, ohne KI
@@ -1931,7 +2033,7 @@ input.switch:disabled { opacity: .5; }
   function renderChat() {
     const el = $('list-chat');
     if (!el) return;
-    if (!chatMsgs.length) { el.innerHTML = '<div class="empty">' + T('Noch keine Nachrichten. Schreib die erste!') + '</div>'; return; }
+    if (!chatMsgs.length) { el.innerHTML = fid ? emptyHtml('Noch keine Nachrichten. Schreibe deiner Familie.', 'Nachricht schreiben', 'chat') : ''; return; }
     el.innerHTML = chatMsgs.map(msgHtml).join('');
     hydrateMedia(el);
     if (stickBottom) el.scrollTop = el.scrollHeight;
@@ -1958,7 +2060,7 @@ input.switch:disabled { opacity: .5; }
     if (r.error) { if (isNetErr(r.error)) setNet(false); return; }
     setNet(true);
     const fresh = r.data.reverse();
-    if (fresh.length === chatMsgs.length && fresh.every((m, i) => m.id === chatMsgs[i].id)) return;
+    if (fresh.length === chatMsgs.length && fresh.every((m, i) => m.id === chatMsgs[i].id) && $('list-chat').children.length) return;
     chatMsgs = fresh; chatIds.clear(); fresh.forEach(m => chatIds.add(m.id));
     renderChat(); renderHome();
   }
