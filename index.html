@@ -1700,14 +1700,19 @@ input.switch:focus-visible { outline-offset: 3px; }
     queueNotify(kind, r.data);
     return r.data;
   }
-  // Familie benachrichtigen: neue Einträge sammeln (4 s), dann eine Mitteilung pro Art
-  let notifyIds = [], notifyTimer = null;
+  // Familie benachrichtigen: höchstens eine Mitteilung pro Art (Einkauf, Aufgaben, Termine, Timer) innerhalb von 5 Minuten.
+  // Der erste neue Eintrag löst sie aus (nach 4 s, damit gleichzeitig Hinzugefügtes gebündelt wird); weitere in den 5 Minuten bleiben still.
+  const NOTIFY_GAP = 5 * 60000;
+  let notifyQ = [], notifyTimer = null;
+  const lastNotified = (k) => { try { return Number(localStorage.getItem('milteo_nt_' + k)) || 0; } catch (_) { return 0; } };
   function queueNotify(kind, row) {
     if (!row || !row.id || !['shop', 'todos', 'events', 'timers'].includes(kind) || memberCount === 1) return;
-    notifyIds.push(row.id);
+    if (Date.now() - lastNotified(kind) < NOTIFY_GAP && !notifyQ.some(x => x.kind === kind)) return;
+    notifyQ.push({ kind, id: row.id });
     clearTimeout(notifyTimer);
     notifyTimer = setTimeout(async () => {
-      const ids = notifyIds.splice(0);
+      const q = notifyQ.splice(0), ids = q.map(x => x.id);
+      q.forEach(x => { try { localStorage.setItem('milteo_nt_' + x.kind, String(Date.now())); } catch (_) {} });
       for (let n = 0; n < 3; n++) {
         try { const x = await sb.functions.invoke('notify', { body: { entry_ids: ids } }); if (!x.error) return; } catch (_) {}
         await new Promise(res => setTimeout(res, 1500 * (n + 1)));
