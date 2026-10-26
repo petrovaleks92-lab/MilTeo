@@ -552,8 +552,10 @@ input.switch:focus-visible { outline-offset: 3px; }
         <p class="field-label">Dein Code</p>
         <div class="code" id="fam-code">-</div>
         <button class="btn small" id="fam-copy" type="button">Code kopieren</button>
+        <button class="btn small" id="fam-share" type="button">Einladung teilen</button>
         <button class="btn ghost small" id="fam-newcode" type="button">Neuen Code erzeugen</button>
-        <p class="hint">Falls der Code in falsche Hände geraten ist: Mit einem neuen Code können keine weiteren Personen mit dem alten beitreten. Aktuelle Mitglieder bleiben dabei.</p>
+        <p class="hint" id="fam-newcode-hint">Falls der Code in falsche Hände geraten ist: Mit einem neuen Code können keine weiteren Personen mit dem alten beitreten. Aktuelle Mitglieder bleiben dabei.</p>
+        <p class="hint" id="fam-admin-only" hidden>Nur Admins können einen neuen Code erzeugen und Mitglieder verwalten.</p>
       </div>
       <div class="card">
         <p class="field-label">Familie wechseln</p>
@@ -1137,7 +1139,7 @@ input.switch:focus-visible { outline-offset: 3px; }
       if (!row) {
         appReady = false; try { localStorage.removeItem('milteo_fam'); } catch (_) {}
         document.getElementById('fam-hello').textContent = T('Hallo') + ' ' + myName;
-        showScreen('family');
+        showScreen('family'); prefillInvite();
         return;
       }
       fid = row.family_id;
@@ -1405,10 +1407,25 @@ input.switch:focus-visible { outline-offset: 3px; }
   document.getElementById('fam-newcode').onclick = async () => {
     if (!confirm(T('Neuen Familiencode erzeugen? Der alte Code funktioniert danach nicht mehr. Aktuelle Mitglieder bleiben in der Familie.'))) return;
     const r = await sb.rpc('regenerate_family_code');
-    if (r.error || !r.data) { toast(T('Das hat nicht geklappt')); return; }
+    if (r.error || !r.data) { toast(roleErr(r.error)); return; }
     document.getElementById('fam-code').textContent = r.data;
     toast(T('Neuer Code: ') + r.data, 5000);
   };
+  document.getElementById('fam-share').onclick = async () => {
+    const code = document.getElementById('fam-code').textContent.trim();
+    const url = location.origin + location.pathname + '?code=' + encodeURIComponent(code);
+    const text = T('Komm in unsere Familie bei Milteo! Code: {code}', { code }) + '\n' + url;
+    try { if (navigator.share) { await navigator.share({ title: 'Milteo', text }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+    try { await navigator.clipboard.writeText(text); toast(T('Einladung kopiert!')); } catch (_) { toast(T('Das hat nicht geklappt')); }
+  };
+  // Einladungslink: ?code=XXXX füllt das Beitritts-Feld vor
+  try {
+    const pc = new URLSearchParams(location.search).get('code');
+    if (pc) { sessionStorage.setItem('milteo_invite', pc.slice(0, 20)); history.replaceState(null, '', location.pathname); }
+  } catch (_) {}
+  function prefillInvite() {
+    try { const c = sessionStorage.getItem('milteo_invite'); const el = document.getElementById('in-code'); if (c && el && !el.value) el.value = c; } catch (_) {}
+  }
   document.getElementById('fam-copy').onclick = () => {
     navigator.clipboard.writeText(document.getElementById('fam-code').textContent);
     toast(T('Code kopiert!'));
@@ -1418,13 +1435,55 @@ input.switch:focus-visible { outline-offset: 3px; }
   async function loadMembers() {
     if (!fid) return;
     lastMembers = Date.now();
-    const r = await sb.from('members').select('user_id, display_name, created_at').eq('family_id', fid).order('created_at');
+    let r = await sb.from('members').select('user_id, display_name, created_at, role').eq('family_id', fid).order('created_at');
+    if (r.error) r = await sb.from('members').select('user_id, display_name, created_at').eq('family_id', fid).order('created_at');
     const el = document.getElementById('list-members');
     if (!r.error) { memberCount = r.data.length; memberNames = {}; r.data.forEach(m => { memberNames[m.user_id] = m.display_name || ''; }); renderAll(); }
     if (r.error) { el.innerHTML = '<div class="empty">' + T('Mitglieder konnten nicht geladen werden.') + '</div>'; return; }
-    el.innerHTML = '<ul class="list">' + r.data.map(m => `
-      <li class="row"><span class="txt">${esc(m.display_name || T('Ohne Namen'))}${m.user_id === myId ? `<span class="who">${T('(du)')}</span>` : ''}</span></li>`).join('') + '</ul>';
+    const hasRoles = r.data.some(m => m.role);
+    const me = r.data.find(m => m.user_id === myId);
+    const iAmAdmin = !!(me && me.role === 'admin');
+    applyRoleUi(hasRoles, iAmAdmin);
+    el.innerHTML = '<ul class="list">' + r.data.map(m => {
+      const adm = m.role === 'admin';
+      const badge = hasRoles ? `<span class="who">${adm ? T('Admin') : T('Mitglied')}</span>` : '';
+      let btns = '';
+      if (iAmAdmin && m.user_id !== myId) {
+        btns = `<div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:6px;">
+          <button class="btn ghost small" type="button" data-mrole="${esc(m.user_id)}" data-to="${adm ? 'member' : 'admin'}">${adm ? T('Admin-Rechte entziehen') : T('Zum Admin machen')}</button>
+          <button class="btn danger small" type="button" data-mrem="${esc(m.user_id)}" data-name="${esc(m.display_name || '')}">${T('Aus Familie entfernen')}</button></div>`;
+      }
+      return `<li class="row" style="flex-wrap:wrap"><span class="txt">${esc(m.display_name || T('Ohne Namen'))}${m.user_id === myId ? `<span class="who">${T('(du)')}</span>` : ''}${badge}</span>${btns}</li>`;
+    }).join('') + '</ul>';
   }
+  function applyRoleUi(hasRoles, iAmAdmin) {
+    const canCode = !hasRoles || iAmAdmin;
+    document.getElementById('fam-newcode').hidden = !canCode;
+    document.getElementById('fam-newcode-hint').hidden = !canCode;
+    document.getElementById('fam-admin-only').hidden = canCode;
+  }
+  function roleErr(err) {
+    const m = String((err && err.message) || '');
+    if (/last admin/i.test(m)) return T('Es muss mindestens ein Admin übrig bleiben.');
+    if (/not allowed/i.test(m)) return T('Das dürfen nur Admins.');
+    return T('Das hat nicht geklappt');
+  }
+  document.getElementById('list-members').addEventListener('click', async (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.mrole) {
+      const r = await sb.rpc('set_member_role', { p_user: b.dataset.mrole, p_role: b.dataset.to });
+      if (r.error) { toast(roleErr(r.error)); return; }
+      toast(b.dataset.to === 'admin' ? T('Ist jetzt Admin.') : T('Ist kein Admin mehr.'));
+      loadMembers();
+    } else if (b.dataset.mrem) {
+      const nm = b.dataset.name || T('Ohne Namen');
+      if (!confirm(T('{name} wirklich aus der Familie entfernen? Die Einträge bleiben erhalten.', { name: nm }))) return;
+      const r = await sb.rpc('remove_member', { p_user: b.dataset.mrem });
+      if (r.error) { toast(roleErr(r.error)); return; }
+      toast(T('{name} wurde entfernt.', { name: nm }));
+      loadMembers();
+    }
+  });
 
   // ---------- Daten (Tabelle "entries") ----------
   const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));

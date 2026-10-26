@@ -343,6 +343,21 @@
     ['Fortsetzen: {name}', 'Продолжи: {name}', 'Reprendre : {name}', 'Riprendi: {name}', 'Nastavi: {name}', 'Vazhdo: {name}', 'Devam et: {name}', 'Resume: {name}'],
     ['+1 Minute: {name}', '+1 минута: {name}', '+1 minute : {name}', '+1 minuto: {name}', '+1 minut: {name}', '+1 minutë: {name}', '+1 dakika: {name}', '+1 minute: {name}'],
     ['Nochmal starten: {name}', 'Стартувај повторно: {name}', 'Relancer : {name}', 'Riavvia: {name}', 'Pokreni ponovo: {name}', 'Nise përsëri: {name}', 'Yeniden başlat: {name}', 'Restart: {name}'],
+    ['Admin', 'Админ', 'Admin', 'Admin', 'Admin', 'Admin', 'Yönetici', 'Admin'],
+    ['Mitglied', 'Член', 'Membre', 'Membro', 'Član', 'Anëtar', 'Üye', 'Member'],
+    ['Zum Admin machen', 'Направи го админ', 'Nommer admin', 'Rendi admin', 'Postavi za admina', 'Bëje admin', 'Yönetici yap', 'Make admin'],
+    ['Admin-Rechte entziehen', 'Одземи админ права', 'Retirer les droits d’admin', 'Rimuovi i diritti di admin', 'Ukloni admin prava', 'Hiq të drejtat e adminit', 'Yönetici yetkisini al', 'Remove admin rights'],
+    ['Aus Familie entfernen', 'Отстрани од семејството', 'Retirer de la famille', 'Rimuovi dalla famiglia', 'Ukloni iz porodice', 'Hiq nga familja', 'Aileden çıkar', 'Remove from family'],
+    ['Es muss mindestens ein Admin übrig bleiben.', 'Мора да остане барем еден админ.', 'Il doit rester au moins un admin.', 'Deve restare almeno un admin.', 'Mora da ostane bar jedan admin.', 'Duhet të mbetet të paktën një admin.', 'En az bir yönetici kalmalı.', 'At least one admin must remain.'],
+    ['Das dürfen nur Admins.', 'Ова можат само админите.', 'Seuls les admins peuvent faire cela.', 'Solo gli admin possono farlo.', 'Ovo mogu samo admini.', 'Këtë mund ta bëjnë vetëm adminët.', 'Bunu sadece yöneticiler yapabilir.', 'Only admins can do this.'],
+    ['Ist jetzt Admin.', 'Сега е админ.', 'Est maintenant admin.', 'Ora è admin.', 'Sada je admin.', 'Tani është admin.', 'Artık yönetici.', 'Is now an admin.'],
+    ['Ist kein Admin mehr.', 'Повеќе не е админ.', 'N’est plus admin.', 'Non è più admin.', 'Više nije admin.', 'Nuk është më admin.', 'Artık yönetici değil.', 'Is no longer an admin.'],
+    ['{name} wirklich aus der Familie entfernen? Die Einträge bleiben erhalten.', 'Навистина да се отстрани {name} од семејството? Записите остануваат.', 'Vraiment retirer {name} de la famille ? Les entrées sont conservées.', 'Rimuovere davvero {name} dalla famiglia? Le voci restano.', 'Zaista ukloniti {name} iz porodice? Unosi ostaju.', 'Ta heqësh vërtet {name} nga familja? Shënimet mbeten.', '{name} gerçekten aileden çıkarılsın mı? Kayıtlar korunur.', 'Really remove {name} from the family? The entries stay.'],
+    ['{name} wurde entfernt.', '{name} е отстранет.', '{name} a été retiré.', '{name} è stato rimosso.', '{name} je uklonjen.', '{name} u hoq.', '{name} çıkarıldı.', '{name} was removed.'],
+    ['Einladung teilen', 'Сподели покана', 'Partager l’invitation', 'Condividi invito', 'Podeli pozivnicu', 'Ndaj ftesën', 'Daveti paylaş', 'Share invite'],
+    ['Einladung kopiert!', 'Поканата е копирана!', 'Invitation copiée !', 'Invito copiato!', 'Pozivnica kopirana!', 'Ftesa u kopjua!', 'Davet kopyalandı!', 'Invite copied!'],
+    ['Komm in unsere Familie bei Milteo! Code: {code}', 'Дојди во нашето семејство на Milteo! Код: {code}', 'Rejoins notre famille sur Milteo ! Code : {code}', 'Entra nella nostra famiglia su Milteo! Codice: {code}', 'Pridruži se našoj porodici na Milteu! Kod: {code}', 'Bashkohu familjes sonë në Milteo! Kodi: {code}', 'Milteo’da ailemize katıl! Kod: {code}', 'Join our family on Milteo! Code: {code}'],
+    ['Nur Admins können einen neuen Code erzeugen und Mitglieder verwalten.', 'Само админите можат да создадат нов код и да управуваат со членовите.', 'Seuls les admins peuvent créer un nouveau code et gérer les membres.', 'Solo gli admin possono creare un nuovo codice e gestire i membri.', 'Samo admini mogu da naprave novi kod i upravljaju članovima.', 'Vetëm adminët mund të krijojnë kod të ri dhe të menaxhojnë anëtarët.', 'Yeni kodu ve üyeleri sadece yöneticiler yönetebilir.', 'Only admins can create a new code and manage members.'],
     ['__end__', '', '', '', '', '', '', '']
   ];
   R.pop();
