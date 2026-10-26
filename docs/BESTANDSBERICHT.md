@@ -81,7 +81,7 @@ Jeder Schritt: klein, getestet, danach wieder lauffähig. Schritte mit ⛔ warte
 8. **Termine:** Ort, Beschreibung, wiederkehrend, Wochenansicht, Bearbeiten.
 9. **Timer:** Pausieren/Zurücksetzen.
 10. ⛔ **Rollen und Einladungen:** Eltern/Kind, Mitglieder entfernen, Code mit Ablaufdatum, `created_by`-Schutz, Familienname. Braucht neue Spalten bzw. Tabelle und Policies; ich schicke dir vorher den genauen SQL-Text.
-11. **Belohnungssystem** (nach Rollen).
+11. **Belohnungssystem** – auf Wunsch übersprungen.
 12. **Automatisierte Tests** im Repository (Playwright) und Aufräumen der Altlasten.
 
 ## 4. Änderungsprotokoll
