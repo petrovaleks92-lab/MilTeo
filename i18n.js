@@ -390,6 +390,7 @@
     ['Fragen? Schreib uns:', 'Прашања? Пиши ни:', 'Des questions ? Écris-nous :', 'Domande? Scrivici:', 'Pitanja? Piši nam:', 'Pyetje? Na shkruaj:', 'Sorular? Bize yaz:', 'Questions? Write to us:'],
     ['Datenschutz', 'Заштита на податоци', 'Protection des données', 'Protezione dei dati', 'Zaštita podataka', 'Mbrojtja e të dhënave', 'Gizlilik', 'Privacy'],
     ['Fragen zum Datenschutz? Schreib an', 'Прашања за заштитата на податоци? Пиши на', 'Des questions sur la protection des données ? Écris à', 'Domande sulla protezione dei dati? Scrivi a', 'Pitanja o zaštiti podataka? Piši na', 'Pyetje për mbrojtjen e të dhënave? Shkruaj te', 'Gizlilikle ilgili sorular? Şuraya yaz:', 'Questions about privacy? Write to'],
+    ['Änderungen der Familie', 'Промени во семејството', 'Changements de la famille', 'Novità della famiglia', 'Promene u porodici', 'Ndryshimet e familjes', 'Ailedeki değişiklikler', 'Family updates'],
     ['__end__', '', '', '', '', '', '', '']
   ];
   R.pop();

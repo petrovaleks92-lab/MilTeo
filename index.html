@@ -648,6 +648,7 @@ input.switch:focus-visible { outline-offset: 3px; }
         <label class="switch-row"><span>Auf diesem Gerät erhalten</span><input type="checkbox" class="switch" id="sw-push" role="switch"></label>
         <div class="push-types" id="push-types" hidden>
           <label class="switch-row"><span>💬 Chat</span><input type="checkbox" class="switch" id="sw-chat" role="switch" checked></label>
+          <label class="switch-row"><span>🔔 Änderungen der Familie</span><input type="checkbox" class="switch" id="sw-change" role="switch" checked></label>
           <label class="switch-row"><span>⏱️ Timer</span><input type="checkbox" class="switch" id="sw-timer" role="switch" checked></label>
           <label class="switch-row"><span>📅 Termine</span><input type="checkbox" class="switch" id="sw-event" role="switch" checked></label>
         </div>
@@ -1095,7 +1096,7 @@ input.switch:focus-visible { outline-offset: 3px; }
 
   const TABS = ['home', 'shop', 'todos', 'timers', 'events', 'chat', 'family'];
   function startTab() {
-    if (location.hash === '#chat') return 'chat';
+    { const h = (location.hash || '').slice(1); if (TABS.includes(h) && h !== 'home' && h !== 'family') return h; }
     try { const t = localStorage.getItem('milteo_tab'); if (TABS.includes(t)) return t; } catch (_) {}
     return 'home';
   }
@@ -1696,7 +1697,22 @@ input.switch:focus-visible { outline-offset: 3px; }
     if (r.error) { saveFailed(r.error, true); return null; }
     setNet(true);
     loadEntries();
+    queueNotify(kind, r.data);
     return r.data;
+  }
+  // Familie benachrichtigen: neue Einträge sammeln (4 s), dann eine Mitteilung pro Art
+  let notifyIds = [], notifyTimer = null;
+  function queueNotify(kind, row) {
+    if (!row || !row.id || !['shop', 'todos', 'events', 'timers'].includes(kind) || memberCount === 1) return;
+    notifyIds.push(row.id);
+    clearTimeout(notifyTimer);
+    notifyTimer = setTimeout(async () => {
+      const ids = notifyIds.splice(0);
+      for (let n = 0; n < 3; n++) {
+        try { const x = await sb.functions.invoke('notify', { body: { entry_ids: ids } }); if (!x.error) return; } catch (_) {}
+        await new Promise(res => setTimeout(res, 1500 * (n + 1)));
+      }
+    }, 4000);
   }
   async function updateEntry(id, data) {
     writing++;
@@ -2876,7 +2892,7 @@ input.switch:focus-visible { outline-offset: 3px; }
     return reg ? reg.pushManager.getSubscription() : null;
   }
   function typeFlags() {
-    return { n_chat: $('sw-chat').checked, n_timer: $('sw-timer').checked, n_event: $('sw-event').checked };
+    return { n_chat: $('sw-chat').checked, n_timer: $('sw-timer').checked, n_event: $('sw-event').checked, n_change: $('sw-change').checked };
   }
   async function saveSub(sub) {
     const j = sub.toJSON();
@@ -2897,9 +2913,9 @@ input.switch:focus-visible { outline-offset: 3px; }
         return;
       }
       try { localStorage.setItem('milteo_push_on', '1'); } catch (_) {}
-      const r = await sb.from('push_subscriptions').select('n_chat,n_timer,n_event').eq('endpoint', sub.endpoint).maybeSingle();
+      const r = await sb.from('push_subscriptions').select('n_chat,n_timer,n_event,n_change').eq('endpoint', sub.endpoint).maybeSingle();
       if (r.data) {
-        $('sw-chat').checked = r.data.n_chat; $('sw-timer').checked = r.data.n_timer; $('sw-event').checked = r.data.n_event;
+        $('sw-chat').checked = r.data.n_chat; $('sw-timer').checked = r.data.n_timer; $('sw-event').checked = r.data.n_event; $('sw-change').checked = r.data.n_change !== false;
         const j = sub.toJSON();
         await sb.from('push_subscriptions').update({ p256dh: j.keys.p256dh, auth: j.keys.auth, user_id: myId }).eq('endpoint', sub.endpoint);
       } else await saveSub(sub);
@@ -2951,7 +2967,7 @@ input.switch:focus-visible { outline-offset: 3px; }
     } catch (err) { console.error(err); toast(T('Das hat nicht geklappt')); }
     refreshPushUI();
   };
-  ['sw-chat', 'sw-timer', 'sw-event'].forEach(id => {
+  ['sw-chat', 'sw-timer', 'sw-event', 'sw-change'].forEach(id => {
     $(id).onchange = async () => {
       const sub = await currentSub();
       if (!sub) return;
@@ -2966,7 +2982,7 @@ input.switch:focus-visible { outline-offset: 3px; }
   };
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.addEventListener('message', (ev) => {
-      if (ev.data && ev.data.type === 'open' && String(ev.data.url || '').endsWith('#chat')) switchTab('chat');
+      if (ev.data && ev.data.type === 'open') { const h = String(ev.data.url || '').split('#')[1]; if (h && TABS.includes(h)) switchTab(h); }
       if (ev.data && ev.data.type === 'resub') syncPush();
     });
   }
