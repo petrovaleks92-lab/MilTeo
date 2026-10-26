@@ -10,7 +10,15 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Milteo">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>Milteo</title>
+<title>Milteo – der Familienplaner für Einkauf, Aufgaben und Termine</title>
+<meta name="description" content="Milteo bringt eure Familie zusammen: gemeinsamer Einkauf, Aufgaben, Termine, Timer und Chat in einer App. In 8 Sprachen, direkt auf dem Handy.">
+<link rel="canonical" href="https://milteo.ch/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Milteo">
+<meta property="og:title" content="Milteo – Eure Familie. Ein Plan.">
+<meta property="og:description" content="Gemeinsamer Einkauf, Aufgaben, Termine, Timer und Chat – alles an einem Ort, für die ganze Familie.">
+<meta property="og:url" content="https://milteo.ch/">
+<meta property="og:image" content="https://milteo.ch/milteo-video-poster.jpg">
 <script>try{var __t=localStorage.getItem('milteo_theme');if(__t==='light'||__t==='dark')document.documentElement.setAttribute('data-theme',__t);}catch(e){}</script>
 
 <!-- PWA -->
@@ -378,12 +386,7 @@ input.switch:focus-visible { outline-offset: 3px; }
     </section>
     <footer class="ld-foot">
       <div><span>Fragen? Schreib uns:</span> <a href="mailto:support@milteo.ch">support@milteo.ch</a></div>
-      <details>
-        <summary>Datenschutz</summary>
-        <p>Milteo speichert deine E-Mail-Adresse, deinen Namen und alles, was du einträgst: Einkauf, Aufgaben, Termine, Timer, Stundenpläne und den Chat mit Bildern und Sprachnachrichten.</p>
-        <p>Die Daten liegen in einer Datenbank bei Supabase in der EU (Frankreich). Sehen können sie nur die Mitglieder deiner Familie und der Betreiber der App.</p>
-        <p>Für Gerichte und das Lesen von Fotos und PDFs wird der Text oder die Datei an die KI von Google (Gemini) gesendet. Sonst gibt Milteo keine Daten an Dritte weiter. Es gibt keine Werbung und kein Tracking.</p>
-      </details>
+      <div data-nosnippet><button class="link" id="ld-priv-btn" type="button" aria-expanded="false" aria-controls="ld-priv" style="font-size:14px; font-weight:500; padding:4px 0;">Datenschutz</button><div id="ld-priv" hidden></div></div>
     </footer>
   </div>
 </div>
@@ -680,7 +683,7 @@ input.switch:focus-visible { outline-offset: 3px; }
           <button class="btn danger small" id="btn-del" type="button">Konto löschen</button>
         </div>
       </div>
-      <div class="card fold closed" id="fold-priv">
+      <div class="card fold closed" id="fold-priv" data-nosnippet>
         <button class="fold-h" type="button" data-fold="fold-priv">🔒 Datenschutz<span class="caret" aria-hidden="true"></span></button>
         <div class="fold-b" style="display:grid; gap:8px;">
           <p class="hint">Milteo speichert deine E-Mail-Adresse, deinen Namen und alles, was du einträgst: Einkauf, Aufgaben, Termine, Timer, Stundenpläne und den Chat mit Bildern und Sprachnachrichten.</p>
@@ -1236,6 +1239,16 @@ input.switch:focus-visible { outline-offset: 3px; }
     } catch (_) {}
     return !(window.matchMedia && matchMedia('(display-mode: standalone)').matches) && !navigator.standalone;
   }
+  $('ld-priv-btn').onclick = () => {
+    const box = $('ld-priv'), open = box.hidden;
+    if (open && !box.firstChild) {
+      ['Milteo speichert deine E-Mail-Adresse, deinen Namen und alles, was du einträgst: Einkauf, Aufgaben, Termine, Timer, Stundenpläne und den Chat mit Bildern und Sprachnachrichten.',
+       'Die Daten liegen in einer Datenbank bei Supabase in der EU (Frankreich). Sehen können sie nur die Mitglieder deiner Familie und der Betreiber der App.',
+       'Für Gerichte und das Lesen von Fotos und PDFs wird der Text oder die Datei an die KI von Google (Gemini) gesendet. Sonst gibt Milteo keine Daten an Dritte weiter. Es gibt keine Werbung und kein Tracking.']
+        .forEach(k => { const p = document.createElement('p'); p.style.margin = '8px 0 0'; p.textContent = T(k); box.appendChild(p); });
+    }
+    box.hidden = !open; $('ld-priv-btn').setAttribute('aria-expanded', String(open));
+  };
   function goAuth(mode) { landingOff = true; showScreen('auth'); setMode(mode); window.scrollTo(0, 0); }
   [['ld-reg', 'register'], ['ld-reg2', 'register'], ['ld-login', 'login'], ['ld-login2', 'login'], ['ld-login-top', 'login']].forEach(([id, m]) => { $(id).onclick = () => goAuth(m); });
   function route(session) {
