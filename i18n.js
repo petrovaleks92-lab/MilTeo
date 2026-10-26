@@ -389,6 +389,7 @@
     ['Bereit für weniger Chaos im Alltag?', 'Подготвени за помалку хаос во секојдневието?', 'Prêts pour moins de chaos au quotidien ?', 'Pronti per meno caos nella vita di tutti i giorni?', 'Spremni za manje haosa u svakodnevici?', 'Gati për më pak kaos në përditshmëri?', 'Günlük hayatta daha az kaosa hazır mısınız?', 'Ready for less chaos in everyday life?'],
     ['Fragen? Schreib uns:', 'Прашања? Пиши ни:', 'Des questions ? Écris-nous :', 'Domande? Scrivici:', 'Pitanja? Piši nam:', 'Pyetje? Na shkruaj:', 'Sorular? Bize yaz:', 'Questions? Write to us:'],
     ['Datenschutz', 'Заштита на податоци', 'Protection des données', 'Protezione dei dati', 'Zaštita podataka', 'Mbrojtja e të dhënave', 'Gizlilik', 'Privacy'],
+    ['Fragen zum Datenschutz? Schreib an', 'Прашања за заштитата на податоци? Пиши на', 'Des questions sur la protection des données ? Écris à', 'Domande sulla protezione dei dati? Scrivi a', 'Pitanja o zaštiti podataka? Piši na', 'Pyetje për mbrojtjen e të dhënave? Shkruaj te', 'Gizlilikle ilgili sorular? Şuraya yaz:', 'Questions about privacy? Write to'],
     ['__end__', '', '', '', '', '', '', '']
   ];
   R.pop();

@@ -683,15 +683,16 @@ input.switch:focus-visible { outline-offset: 3px; }
           <button class="btn danger small" id="btn-del" type="button">Konto löschen</button>
         </div>
       </div>
-      <div class="card fold closed" id="fold-priv" data-nosnippet>
-        <button class="fold-h" type="button" data-fold="fold-priv">🔒 Datenschutz<span class="caret" aria-hidden="true"></span></button>
-        <div class="fold-b" style="display:grid; gap:8px;">
+      <div id="fold-priv" data-nosnippet style="margin-top:18px; text-align:center;">
+        <button class="link" id="priv-btn" type="button" aria-expanded="false" aria-controls="priv-body" style="font-size:13px; font-weight:500; color:var(--muted);">Datenschutz</button>
+        <div id="priv-body" hidden style="text-align:left; display:none; gap:8px;">
           <p class="hint">Milteo speichert deine E-Mail-Adresse, deinen Namen und alles, was du einträgst: Einkauf, Aufgaben, Termine, Timer, Stundenpläne und den Chat mit Bildern und Sprachnachrichten.</p>
           <p class="hint">Die Daten liegen in einer Datenbank bei Supabase in der EU (Frankreich). Sehen können sie nur die Mitglieder deiner Familie und der Betreiber der App.</p>
           <p class="hint">Für Gerichte und das Lesen von Fotos und PDFs wird der Text oder die Datei an die KI von Google (Gemini) gesendet. Sonst gibt Milteo keine Daten an Dritte weiter. Es gibt keine Werbung und kein Tracking.</p>
           <p class="hint">Bei der kostenlosen Nutzung von Gemini darf Google die gesendeten Inhalte zur Verbesserung seiner Produkte verwenden, und Mitarbeitende können sie lesen (ohne Bezug zu deinem Konto). Sende deshalb nichts, was privat bleiben soll.</p>
           <p class="hint">Beim Laden der App sehen GitHub (Hosting) und Google Fonts (Schriftarten) deine IP-Adresse. Einstellungen wie die Sprache bleiben auf deinem Gerät.</p>
           <p class="hint">Du kannst dein Konto jederzeit unter «Konto &amp; Passwort» löschen.</p>
+          <p class="hint">Fragen zum Datenschutz? Schreib an <a href="mailto:support@milteo.ch" style="color:var(--mil)">support@milteo.ch</a>.</p>
         </div>
       </div>
       <button class="btn ghost small" id="btn-logout" type="button">Abmelden</button>
@@ -1249,6 +1250,7 @@ input.switch:focus-visible { outline-offset: 3px; }
     }
     box.hidden = !open; $('ld-priv-btn').setAttribute('aria-expanded', String(open));
   };
+  $('priv-btn').onclick = () => { const b = $('priv-body'), o = b.style.display === 'none'; b.style.display = o ? 'grid' : 'none'; b.hidden = !o; $('priv-btn').setAttribute('aria-expanded', String(o)); };
   function goAuth(mode) { landingOff = true; showScreen('auth'); setMode(mode); window.scrollTo(0, 0); }
   [['ld-reg', 'register'], ['ld-reg2', 'register'], ['ld-login', 'login'], ['ld-login2', 'login'], ['ld-login-top', 'login']].forEach(([id, m]) => { $(id).onclick = () => goAuth(m); });
   function route(session) {

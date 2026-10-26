@@ -20,7 +20,7 @@ with sync_playwright() as p:
     b = p.chromium.launch()
     pg, errs = mk(b)
     check('Neuer Besucher sieht Startseite', vis(pg, 'screen-landing') and not vis(pg, 'screen-auth') and not vis(pg, 'screen-app'))
-    check('Video, Support-Mail und Überschrift da', pg.locator('video source[src="milteo-video.mp4"]').count() == 1 and pg.locator('a[href="mailto:support@milteo.ch"]').count() == 1 and 'Ein Plan' in pg.inner_text('h1'))
+    check('Video, Support-Mail und Überschrift da', pg.locator('video source[src="milteo-video.mp4"]').count() == 1 and pg.locator('#screen-landing a[href="mailto:support@milteo.ch"]').count() == 1 and 'Ein Plan' in pg.inner_text('h1'))
     check('Kein «Gratis» auf der Seite', 'gratis' not in pg.inner_text('#screen-landing').lower() and 'kostenlos' not in pg.inner_text('#screen-landing').lower())
     txt = pg.inner_text('#screen-landing')
     check('Datenschutztext nicht direkt sichtbar, nur Link', 'speichert deine E-Mail' not in txt and pg.is_visible('#ld-priv-btn'))

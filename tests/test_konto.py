@@ -60,7 +60,7 @@ with sync_playwright() as p:
     pg2=ctx.new_page(); pg2.route('**/supabase.min.js',lambda r:r.fulfill(body=stub,content_type='text/javascript')); pg2.route('**/fonts.googleapis.com/**',lambda r:r.fulfill(body='',content_type='text/css'))
     pg2.add_init_script("window.__sess={user:{id:'me',email:'a@b.ch',user_metadata:{name:'Ich'}}}; localStorage.setItem('milteo_lang','fr')")
     pg2.goto(URL); pg2.wait_for_timeout(800)
-    pg2.evaluate("switchTab('family')"); pg2.click('[data-fold=fold-priv]'); pg2.wait_for_timeout(200)
+    pg2.evaluate("switchTab('family')"); pg2.click('#priv-btn'); pg2.wait_for_timeout(200)
     t=pg2.inner_text('#fold-priv'); print('   FR:', t[:260].replace('\n',' | '))
     check('Datenschutz auf Französisch', 'Protection des données' in t and 'Supabase' in t)
     pg2.screenshot(path='n2.png', full_page=True)
