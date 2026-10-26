@@ -11,6 +11,7 @@ extra = """
     c.auth.signOut = async (opt) => { window.__so.push(opt && opt.scope || 'global');
       if (window.__netfail && !(opt && opt.scope === 'local')) return { error: { message: 'Failed to fetch' } };
       if (window.__hang && !(opt && opt.scope === 'local')) return new Promise(() => {});
+      if (window.__stuck) return { error: null };
       window.__sess = null; if (cb) cb('SIGNED_OUT', null); return { error: null }; };
     return c; }; })();
 """
@@ -35,5 +36,7 @@ with sync_playwright() as p:
     check('Netzfehler: trotzdem abgemeldet (lokal)', vis(pg, 'screen-landing') and 'local' in pg.evaluate('window.__so'))
     pg, errs = run(b, 'window.__hang=true;'); pg.wait_for_timeout(8000)
     check('Server antwortet nicht: nach 5 s lokal abgemeldet', vis(pg, 'screen-landing') and 'local' in pg.evaluate('window.__so'))
+    pg, errs = run(b, 'window.__stuck=true; if(!sessionStorage.getItem("z")){sessionStorage.setItem("z","1"); localStorage.setItem("sb-x-auth-token","{}");}'); pg.wait_for_timeout(3000)
+    check('Sitzung bleibt trotz signOut: Notausgang löscht lokal und lädt neu', pg.evaluate("localStorage.getItem('sb-x-auth-token')") is None)
     b.close()
 print('ALLES BESTANDEN' if ok else 'FEHLER'); raise SystemExit(0 if ok else 1)
