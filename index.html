@@ -1231,13 +1231,12 @@ input.switch:focus-visible { outline-offset: 3px; }
   }
   window.addEventListener('pagehide', () => commitPending());
 
-  // Startseite: nur für neue Besucher im Browser (nicht in der installierten App, nicht für bekannte Nutzer, nicht bei Einladungslink)
+  // Startseite: nur für neue Besucher im Browser (nicht in der installierten App, nicht bei Einladungslink)
   let landingOff = false;
   function wantLanding() {
     if (landingOff || recoveryMode) return false;
     try {
       if (sessionStorage.getItem('milteo_invite')) return false;
-      if (localStorage.getItem('milteo_known')) return false;
     } catch (_) {}
     return !(window.matchMedia && matchMedia('(display-mode: standalone)').matches) && !navigator.standalone;
   }
@@ -1258,7 +1257,6 @@ input.switch:focus-visible { outline-offset: 3px; }
     if (!session) { appReady = false; try { localStorage.removeItem('milteo_fam'); } catch (_) {} const lw = wantLanding(); showScreen(lw ? 'landing' : 'auth'); if (!lw) { try { if (sessionStorage.getItem('milteo_invite')) setMode('register'); } catch (_) {} } return; }
     if (recoveryMode) { showScreen('reset'); return; }
     myId = session.user.id; myEmail = session.user.email || '';
-    try { localStorage.setItem('milteo_known', '1'); } catch (_) {}
     myName = session.user.user_metadata?.name || session.user.email.split('@')[0];
     const nameInput = document.getElementById('in-myname');
     if (nameInput) nameInput.value = myName;

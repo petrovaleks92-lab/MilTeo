@@ -38,7 +38,7 @@ with sync_playwright() as p:
     pg, errs = mk(b); pg.select_option('#sel-lang-land', 'en'); pg.wait_for_timeout(300)
     check('Sprache Englisch auf Startseite', 'One plan' in pg.inner_text('h1') and 'Sign up now' in pg.inner_text('#ld-reg'))
     pg, errs = mk(b, "localStorage.setItem('milteo_known','1')")
-    check('Bekannter Nutzer (abgemeldet) -> direkt Anmeldung', vis(pg, 'screen-auth') and not vis(pg, 'screen-landing'))
+    check('Abgemeldeter Nutzer sieht auch die Startseite', vis(pg, 'screen-landing') and not vis(pg, 'screen-auth'))
     pg, errs = mk(b, '', URL + '?code=ABCD-EFGH')
     check('Einladungslink -> Registrierung statt Startseite', vis(pg, 'screen-auth') and 'Registrieren' in pg.inner_text('#auth-submit'))
     pg, errs = mk(b, "window.__sess={user:{id:'me',email:'a@b.ch',user_metadata:{name:'Ich'}}};")
