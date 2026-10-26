@@ -1432,12 +1432,21 @@ input.switch:focus-visible { outline-offset: 3px; }
   };
 
   const logoutAction = async () => {
-    try {
-      const sub = await currentSub();
-      if (sub) await sb.from('push_subscriptions').delete().eq('endpoint', sub.endpoint);
+    toast(T('Abmelden …'), 4000);
+    try {   // Mitteilungs-Anmeldung dieses Geräts entfernen, aber höchstens 1,5 s darauf warten
+      await Promise.race([(async () => {
+        const sub = await currentSub();
+        if (sub) await sb.from('push_subscriptions').delete().eq('endpoint', sub.endpoint);
+      })(), new Promise(res => setTimeout(res, 1500))]);
     } catch (_) {}
     unsubscribeChat();
-    await sb.auth.signOut();
+    // Abmelden darf nie hängen bleiben: Bei Fehler oder Wartezeit die Anmeldung auf diesem Gerät trotzdem entfernen
+    let r = null;
+    try { r = await Promise.race([sb.auth.signOut(), new Promise(res => setTimeout(() => res('timeout'), 5000))]); } catch (e) { r = { error: e }; }
+    if (r === 'timeout' || (r && r.error)) { try { await sb.auth.signOut({ scope: 'local' }); } catch (_) {} }
+    const { data } = await sb.auth.getSession();
+    if (data && data.session) { toast(T('Abmelden hat nicht geklappt. Bitte versuche es nochmal.')); return; }
+    route(null);
   };
   document.getElementById('btn-logout').onclick = logoutAction;
   const famLogout = document.getElementById('fam-logout');
