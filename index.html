@@ -276,11 +276,118 @@ input.switch:focus-visible { outline-offset: 3px; }
 /* Tablet und Computer: breiter, mehr Kacheln pro Zeile */
 @media (min-width: 760px) { .wrap, .nav-in { max-width: 860px; } .tiles { grid-template-columns: repeat(3, 1fr); } }
 @media (min-width: 1100px) { .wrap, .nav-in { max-width: 1000px; } }
+
+/* Startseite für Besucher */
+#screen-landing { overflow-x: hidden; }
+.ld { max-width: 1040px; margin: 0 auto; padding: 0 20px; }
+.ld-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 16px 0; }
+.ld-top .btn { min-height: 40px; }
+.ld-hero { display: grid; gap: 28px; padding: 18px 0 40px; align-items: center; }
+.ld-hero h1 { font-size: clamp(34px, 8vw, 58px); line-height: 1.05; margin: 0 0 14px; }
+.ld-hero h1 .a { color: var(--teo); } .ld-hero h1 .b { color: var(--mil); }
+.ld-sub { font-size: 18px; color: var(--muted); margin: 0 0 22px; max-width: 34em; }
+.ld-cta { display: flex; gap: 10px; flex-wrap: wrap; }
+.ld-cta .btn { min-height: 52px; padding: 0 26px; font-size: 17px; }
+.ld-phone { justify-self: center; width: min(300px, 78vw); border-radius: 30px; overflow: hidden; border: 4px solid var(--line); background: #0E1424; box-shadow: 0 18px 50px rgba(20,30,60,.22); }
+.ld-phone video { display: block; width: 100%; height: auto; aspect-ratio: 9/16; background: #0E1424; }
+.ld-sec { padding: 34px 0; }
+.ld-sec > h2 { font-size: clamp(24px, 5vw, 34px); text-align: center; margin-bottom: 22px; }
+.ld-grid { display: grid; gap: 14px; grid-template-columns: 1fr; }
+.ld-card { background: var(--surface); border: 1.5px solid var(--line); border-radius: 18px; padding: 18px; }
+.ld-card .em { font-size: 30px; line-height: 1; display: block; margin-bottom: 10px; }
+.ld-card h3 { font-family: var(--font-display); font-size: 19px; margin: 0 0 6px; }
+.ld-card p { margin: 0; color: var(--muted); }
+.ld-why { display: grid; gap: 10px; max-width: 720px; margin: 0 auto; padding: 0; list-style: none; }
+.ld-why li { background: var(--mil-soft); border-radius: 14px; padding: 14px 16px; display: flex; gap: 10px; }
+.ld-why li::before { content: "✓"; color: var(--mil); font-weight: 700; }
+.ld-steps { counter-reset: st; }
+.ld-steps .ld-card { position: relative; padding-top: 30px; }
+.ld-steps .ld-card::before { counter-increment: st; content: counter(st); position: absolute; top: -14px; left: 16px; width: 34px; height: 34px; border-radius: 50%; background: var(--teo); color: #16213A; font-weight: 700; display: grid; place-items: center; }
+.ld-final { text-align: center; background: var(--surface); border: 1.5px solid var(--line); border-radius: 24px; padding: 36px 20px; margin: 20px 0 30px; }
+.ld-final h2 { font-size: clamp(24px, 5vw, 34px); }
+.ld-final .ld-cta { justify-content: center; }
+.ld-foot { border-top: 1.5px solid var(--line); padding: 22px 0 40px; color: var(--muted); font-size: 14px; display: grid; gap: 10px; }
+.ld-foot a { color: var(--mil); font-weight: 600; }
+.ld-foot details p { margin: 8px 0 0; }
+.ld-foot summary { cursor: pointer; font-weight: 600; color: var(--ink); }
+@media (min-width: 760px) {
+  .ld-hero { grid-template-columns: 1.2fr 1fr; padding-top: 30px; }
+  .ld-grid { grid-template-columns: repeat(3, 1fr); }
+  .ld-grid.two { grid-template-columns: repeat(3, 1fr); }
+}
 </style>
 </head>
 <body>
 
 <!-- Screens -->
+<div class="screen" id="screen-landing" hidden>
+  <div class="ld">
+    <div class="ld-top">
+      <div class="brand"><div class="word"><span class="a">Mil</span><span class="b">teo</span></div></div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <select id="sel-lang-land" class="lang-sel" aria-label="Sprache"></select>
+        <button class="btn ghost small" id="ld-login-top" type="button">Anmelden</button>
+      </div>
+    </div>
+    <section class="ld-hero">
+      <div>
+        <h1>Eure Familie.<br>Ein Plan.</h1>
+        <p class="ld-sub">Einkauf, Aufgaben, Termine, Timer und Chat – alles an einem Ort, für alle auf dem Handy.</p>
+        <div class="ld-cta">
+          <button class="btn" id="ld-reg" type="button">Jetzt registrieren</button>
+          <button class="btn ghost" id="ld-login" type="button">Anmelden</button>
+        </div>
+      </div>
+      <div class="ld-phone"><video controls playsinline preload="none" poster="milteo-video-poster.jpg" aria-label="So sieht Milteo aus"><source src="milteo-video.mp4" type="video/mp4"></video></div>
+    </section>
+    <section class="ld-sec">
+      <h2>Alles, was eure Familie täglich braucht</h2>
+      <div class="ld-grid">
+        <div class="ld-card"><span class="em" aria-hidden="true">🛒</span><h3>Gemeinsamer Einkauf</h3><p>Eine Liste für alle. Wer etwas abhakt, sieht es sofort bei den anderen.</p></div>
+        <div class="ld-card"><span class="em" aria-hidden="true">✅</span><h3>Aufgaben mit Verantwortlichen</h3><p>Verteile Aufgaben, setze Fristen und Wiederholungen – nichts geht mehr vergessen.</p></div>
+        <div class="ld-card"><span class="em" aria-hidden="true">📅</span><h3>Termine für alle</h3><p>Wochenübersicht, Orte und Wiederholungen, damit niemand einen Termin verpasst.</p></div>
+        <div class="ld-card"><span class="em" aria-hidden="true">⏱️</span><h3>Timer, der sich meldet</h3><p>Kochen, Hausaufgaben, Bildschirmzeit: Der Timer meldet sich auch bei geschlossener App.</p></div>
+        <div class="ld-card"><span class="em" aria-hidden="true">💬</span><h3>Familien-Chat</h3><p>Nachrichten, Fotos und Sprachnachrichten nur für eure Familie.</p></div>
+        <div class="ld-card"><span class="em" aria-hidden="true">🍝</span><h3>Gericht rein, Zutaten raus</h3><p>Gib ein Gericht ein – Milteo setzt die Zutaten auf die Einkaufsliste.</p></div>
+      </div>
+    </section>
+    <section class="ld-sec">
+      <h2>Gemacht für Familien</h2>
+      <ul class="ld-why">
+        <li>Alle sehen Änderungen sofort, ohne neu zu laden.</li>
+        <li>In 8 Sprachen, auch Mazedonisch, Serbisch, Albanisch und Türkisch.</li>
+        <li>Wie eine App auf dem Handy: einfach zum Startbildschirm hinzufügen.</li>
+        <li>Keine Werbung, kein Tracking. Die Daten liegen auf Servern in der EU.</li>
+        <li>Admins verwalten die Familie und laden mit einem Link ein.</li>
+      </ul>
+    </section>
+    <section class="ld-sec">
+      <h2>So startest du</h2>
+      <div class="ld-grid ld-steps">
+        <div class="ld-card"><h3>Konto erstellen</h3><p>Mit E-Mail und Passwort in einer Minute.</p></div>
+        <div class="ld-card"><h3>Familie gründen oder beitreten</h3><p>Du bekommst einen Code oder Einladungslink für die anderen.</p></div>
+        <div class="ld-card"><h3>Loslegen</h3><p>Zum Startbildschirm hinzufügen und gemeinsam planen.</p></div>
+      </div>
+    </section>
+    <section class="ld-final">
+      <h2>Bereit für weniger Chaos im Alltag?</h2>
+      <div class="ld-cta">
+        <button class="btn" id="ld-reg2" type="button">Jetzt registrieren</button>
+        <button class="btn ghost" id="ld-login2" type="button">Anmelden</button>
+      </div>
+    </section>
+    <footer class="ld-foot">
+      <div><span>Fragen? Schreib uns:</span> <a href="mailto:support@milteo.ch">support@milteo.ch</a></div>
+      <details>
+        <summary>Datenschutz</summary>
+        <p>Milteo speichert deine E-Mail-Adresse, deinen Namen und alles, was du einträgst: Einkauf, Aufgaben, Termine, Timer, Stundenpläne und den Chat mit Bildern und Sprachnachrichten.</p>
+        <p>Die Daten liegen in einer Datenbank bei Supabase in der EU (Frankreich). Sehen können sie nur die Mitglieder deiner Familie und der Betreiber der App.</p>
+        <p>Für Gerichte und das Lesen von Fotos und PDFs wird der Text oder die Datei an die KI von Google (Gemini) gesendet. Sonst gibt Milteo keine Daten an Dritte weiter. Es gibt keine Werbung und kein Tracking.</p>
+      </details>
+    </footer>
+  </div>
+</div>
+
 <div class="screen" id="screen-auth">
   <div class="narrow">
     <div class="brand big"><div class="word"><span class="a">Mil</span><span class="b">teo</span></div></div>
@@ -673,7 +780,7 @@ input.switch:focus-visible { outline-offset: 3px; }
     const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
     while (w.nextNode()) {
       const n = w.currentNode;
-      if (n.parentElement && n.parentElement.closest('script,[contenteditable],select#sel-lang,select#sel-lang-auth')) continue;
+      if (n.parentElement && n.parentElement.closest('script,[contenteditable],select#sel-lang,select#sel-lang-auth,select#sel-lang-land')) continue;
       const k = norm1(n.nodeValue);
       if (k && I18N.has(k)) staticTexts.push({ n, k });
     }
@@ -715,7 +822,7 @@ input.switch:focus-visible { outline-offset: 3px; }
   applyTheme(themePref());
   document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && $('lightbox') && !$('lightbox').hidden) $('lightbox').hidden = true; });
   function fillLangSelects() {
-    ['sel-lang', 'sel-lang-auth'].forEach(id => {
+    ['sel-lang', 'sel-lang-auth', 'sel-lang-land'].forEach(id => {
       const el = $(id); if (!el) return;
       el.innerHTML = I18N.LANGS.map(l => `<option value="${l[0]}">${l[1]}</option>`).join('');
       el.value = I18N.lang;
@@ -724,7 +831,7 @@ input.switch:focus-visible { outline-offset: 3px; }
   }
   function changeLang(l) {
     I18N.set(l);
-    ['sel-lang', 'sel-lang-auth'].forEach(id => { const el = $(id); if (el) el.value = l; });
+    ['sel-lang', 'sel-lang-auth', 'sel-lang-land'].forEach(id => { const el = $(id); if (el) el.value = l; });
     applyStatic(); renderToday(); fillThemeSelect(); todoRefresh(); fillEvRepeat(); applyEvView();
     try { showNet(); $('pw-box').innerHTML = ''; $('del-box').innerHTML = ''; } catch (_) {}
     try { setMode(authMode); } catch (_) {}
@@ -967,7 +1074,7 @@ input.switch:focus-visible { outline-offset: 3px; }
   const urlCache = new Map();
 
   function showScreen(id) {
-    ['screen-auth', 'screen-reset', 'screen-family', 'screen-app'].forEach(s => {
+    ['screen-landing', 'screen-auth', 'screen-reset', 'screen-family', 'screen-app'].forEach(s => {
       const el = authNodes[s] ? authNodes[s].el : document.getElementById(s);
       if (!el) return;
       el.hidden = (s !== 'screen-' + id);
@@ -1119,10 +1226,23 @@ input.switch:focus-visible { outline-offset: 3px; }
   }
   window.addEventListener('pagehide', () => commitPending());
 
+  // Startseite: nur für neue Besucher im Browser (nicht in der installierten App, nicht für bekannte Nutzer, nicht bei Einladungslink)
+  let landingOff = false;
+  function wantLanding() {
+    if (landingOff || recoveryMode) return false;
+    try {
+      if (sessionStorage.getItem('milteo_invite')) return false;
+      if (localStorage.getItem('milteo_known')) return false;
+    } catch (_) {}
+    return !(window.matchMedia && matchMedia('(display-mode: standalone)').matches) && !navigator.standalone;
+  }
+  function goAuth(mode) { landingOff = true; showScreen('auth'); setMode(mode); window.scrollTo(0, 0); }
+  [['ld-reg', 'register'], ['ld-reg2', 'register'], ['ld-login', 'login'], ['ld-login2', 'login'], ['ld-login-top', 'login']].forEach(([id, m]) => { $(id).onclick = () => goAuth(m); });
   function route(session) {
-    if (!session) { appReady = false; try { localStorage.removeItem('milteo_fam'); } catch (_) {} showScreen('auth'); return; }
+    if (!session) { appReady = false; try { localStorage.removeItem('milteo_fam'); } catch (_) {} const lw = wantLanding(); showScreen(lw ? 'landing' : 'auth'); if (!lw) { try { if (sessionStorage.getItem('milteo_invite')) setMode('register'); } catch (_) {} } return; }
     if (recoveryMode) { showScreen('reset'); return; }
     myId = session.user.id; myEmail = session.user.email || '';
+    try { localStorage.setItem('milteo_known', '1'); } catch (_) {}
     myName = session.user.user_metadata?.name || session.user.email.split('@')[0];
     const nameInput = document.getElementById('in-myname');
     if (nameInput) nameInput.value = myName;

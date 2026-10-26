@@ -1,0 +1,46 @@
+import os
+HERE = os.path.dirname(os.path.abspath(__file__)); ROOT = os.path.dirname(HERE)
+URL = 'file://' + ROOT + '/index.html'
+from playwright.sync_api import sync_playwright
+stub = open(os.path.join(HERE, 'stub7.js'), encoding='utf-8').read()
+shots = os.environ.get('SHOTS')
+ok = True
+def check(n, c):
+    global ok; ok = ok and bool(c); print(('PASS ' if c else 'FAIL ') + n)
+def mk(b, init='', url=URL, w=390, h=780):
+    ctx = b.new_context(viewport={'width': w, 'height': h}, has_touch=w < 700, is_mobile=w < 700)
+    pg = ctx.new_page(); errs = []
+    pg.on('pageerror', lambda e: errs.append(str(e)))
+    pg.route('**/supabase.min.js', lambda r: r.fulfill(body=stub, content_type='text/javascript'))
+    pg.route('**/fonts.googleapis.com/**', lambda r: r.fulfill(body='', content_type='text/css'))
+    pg.add_init_script(init); pg.goto(url); pg.wait_for_timeout(700)
+    return pg, errs
+vis = lambda pg, i: pg.evaluate("(i)=>{const e=document.getElementById(i);return !!e&&!e.hidden&&e.isConnected}", i)
+with sync_playwright() as p:
+    b = p.chromium.launch()
+    pg, errs = mk(b)
+    check('Neuer Besucher sieht Startseite', vis(pg, 'screen-landing') and not vis(pg, 'screen-auth') and not vis(pg, 'screen-app'))
+    check('Video, Support-Mail und Überschrift da', pg.locator('video source[src="milteo-video.mp4"]').count() == 1 and pg.locator('a[href="mailto:support@milteo.ch"]').count() == 1 and 'Ein Plan' in pg.inner_text('h1'))
+    check('Kein «Gratis» auf der Seite', 'gratis' not in pg.inner_text('#screen-landing').lower() and 'kostenlos' not in pg.inner_text('#screen-landing').lower())
+    check('Seite ohne Quer-Scrollen', pg.evaluate("document.documentElement.scrollWidth <= innerWidth"))
+    if shots: pg.screenshot(path=shots + '/land_m.png', full_page=True)
+    pg.click('#ld-reg'); pg.wait_for_timeout(200)
+    check('«Jetzt registrieren» -> Konto erstellen', vis(pg, 'screen-auth') and 'Registrieren' in pg.inner_text('#auth-submit') and not vis(pg, 'screen-landing'))
+    pg, errs = mk(b)
+    pg.click('#ld-login'); pg.wait_for_timeout(200)
+    check('«Anmelden» -> Anmeldeformular', vis(pg, 'screen-auth') and pg.inner_text('#auth-submit') == 'Anmelden')
+    pg, errs = mk(b); pg.select_option('#sel-lang-land', 'en'); pg.wait_for_timeout(300)
+    check('Sprache Englisch auf Startseite', 'One plan' in pg.inner_text('h1') and 'Sign up now' in pg.inner_text('#ld-reg'))
+    pg, errs = mk(b, "localStorage.setItem('milteo_known','1')")
+    check('Bekannter Nutzer (abgemeldet) -> direkt Anmeldung', vis(pg, 'screen-auth') and not vis(pg, 'screen-landing'))
+    pg, errs = mk(b, '', URL + '?code=ABCD-EFGH')
+    check('Einladungslink -> Registrierung statt Startseite', vis(pg, 'screen-auth') and 'Registrieren' in pg.inner_text('#auth-submit'))
+    pg, errs = mk(b, "window.__sess={user:{id:'me',email:'a@b.ch',user_metadata:{name:'Ich'}}};")
+    check('Angemeldet -> App, keine Startseite', vis(pg, 'screen-app') and not vis(pg, 'screen-landing'))
+    pg, errs = mk(b, '', URL + '#type=recovery&access_token=x')
+    check('Passwort-Link -> keine Startseite', not vis(pg, 'screen-landing'))
+    pg, errs = mk(b, w=1280, h=800)
+    check('Desktop: Startseite ohne Fehler', vis(pg, 'screen-landing') and not errs and pg.evaluate("document.documentElement.scrollWidth <= innerWidth"))
+    if shots: pg.screenshot(path=shots + '/land_d.png', full_page=True)
+    b.close()
+print('ALLES BESTANDEN' if ok else 'FEHLER'); raise SystemExit(0 if ok else 1)

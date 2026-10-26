@@ -1,4 +1,4 @@
-const CACHE = 'milteo-v6';
+const CACHE = 'milteo-v7';
 const SHELL = ['./', 'index.html', 'i18n.js', 'manifest.json', 'icon-192.png', 'icon-512.png', 'badge-96.png'];
 
 self.addEventListener('install', (e) => {
@@ -14,7 +14,7 @@ self.addEventListener('activate', (e) => {
 
 // Netzwerk zuerst, bei fehlender Verbindung die gespeicherte Seite
 self.addEventListener('fetch', (e) => {
-  if (e.request.method !== 'GET' || new URL(e.request.url).origin !== location.origin) return;
+  if (e.request.method !== 'GET' || new URL(e.request.url).origin !== location.origin || /\.mp4$/.test(new URL(e.request.url).pathname)) return;
   e.respondWith(
     fetch(e.request, { cache: 'no-cache' }).then(res => {
       const copy = res.clone();
