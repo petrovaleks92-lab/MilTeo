@@ -235,6 +235,8 @@ ol.steps { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-d
 .step { display: flex; gap: 12px; align-items: flex-start; background: var(--bg); border-radius: 14px; padding: 10px 12px; cursor: pointer; }
 .step .n { flex: none; width: 28px; height: 28px; border-radius: 50%; background: var(--mil); color: var(--on-mil); font-weight: 700; display: grid; place-items: center; font-size: 14px; }
 .step .st { flex: 1; overflow-wrap: anywhere; }
+.step .tt { font-weight: 700; background: var(--teo-soft); border-radius: 6px; padding: 0 4px; white-space: nowrap; }
+.rinfo { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 10px 0 0; font-weight: 600; }
 .step.done { opacity: .5; } .step.done .st { text-decoration: line-through; } .step.done .n { background: var(--muted); }
 input.switch { appearance: none; -webkit-appearance: none; flex: none; width: 52px; height: 32px; border-radius: 999px; background: var(--line); position: relative; border: 0; padding: 0; margin: 0; cursor: pointer; transition: background .15s; }
 input.switch::after { content: ''; position: absolute; top: 4px; left: 4px; width: 24px; height: 24px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.3); transition: transform .15s; }
@@ -1768,12 +1770,18 @@ input.switch:focus-visible { outline-offset: 3px; }
     const shown = steps && recipeOpen.has(e.id);
     const label = recipeBusy.has(e.id) ? T('Rezept wird geladen …') : shown ? T('📖 Rezept ausblenden') : steps ? T('📖 Rezept anzeigen') : T('📖 Rezept Schritt für Schritt (optional)');
     let h = `<div class="recipe"><button class="btn ghost small" type="button" data-act="recipe" data-id="${e.id}" ${recipeBusy.has(e.id) ? 'disabled' : ''}>${label}</button>`;
-    if (shown) h += '<ol class="steps">' + steps.map((t, n) => `<li class="step ${stepsDone.has(e.id + ':' + n) ? 'done' : ''}" role="checkbox" aria-checked="${stepsDone.has(e.id + ':' + n)}" tabindex="0" data-act="step" data-id="${e.id}" data-i="${n}"><span class="n">${n + 1}</span><span class="st">${esc(tx(t))}</span></li>`).join('') + '</ol><p class="hint" style="margin-top:8px">Tippe auf einen Schritt, um ihn abzuhaken.</p>';
+    if (shown) {
+      const texts = steps.map(t => tx(t));
+      const temps = [...new Set(texts.flatMap(t => t.match(TEMP_RE) || []).map(x => x.replace(/\s+/g, ' ').trim()))].slice(0, 3);
+      const times = [...new Set(texts.flatMap(t => t.match(TIME_RE) || []).map(x => x.replace(/\s+/g, ' ').trim()))].slice(0, 4);
+      if (temps.length || times.length) h += '<div class="rinfo">' + (temps.length ? '<span>🌡️ ' + esc(temps.join(' · ')) + '</span>' : '') + (times.length ? '<span>⏱️ ' + esc(times.join(' · ')) + '</span>' : '') + '</div>';
+      h += '<ol class="steps">' + steps.map((t, n) => `<li class="step ${stepsDone.has(e.id + ':' + n) ? 'done' : ''}" role="checkbox" aria-checked="${stepsDone.has(e.id + ':' + n)}" tabindex="0" data-act="step" data-id="${e.id}" data-i="${n}"><span class="n">${n + 1}</span><span class="st">${hiTT(texts[n])}</span></li>`).join('') + '</ol><p class="hint" style="margin-top:8px">Tippe auf einen Schritt, um ihn abzuhaken.</p><button class="link" type="button" data-act="recipe-new" data-id="' + e.id + '">' + T('Rezept neu erstellen') + '</button>';
+    }
     return h + '</div>';
   }
   async function loadRecipe(id) {
     const e = entries.find(x => x.id === id); if (!e) return;
-    if (Array.isArray(e.data.steps) && e.data.steps.length) { if (recipeOpen.has(id)) recipeOpen.delete(id); else recipeOpen.add(id); renderChecklist('shop'); return; }
+    if (Array.isArray(e.data.steps) && e.data.steps.length) { if (recipeOpen.has(id)) recipeOpen.delete(id); else recipeOpen.add(id); saveRecipeState(); renderChecklist('shop'); return; }
     recipeBusy.add(id); renderChecklist('shop');
     let err = null, steps = null;
     try {
@@ -1787,13 +1795,32 @@ input.switch:focus-visible { outline-offset: 3px; }
       renderChecklist('shop'); return;
     }
     e.data = { ...e.data, steps };
-    recipeOpen.add(id);
+    recipeOpen.add(id); saveRecipeState();
     renderChecklist('shop');
     patchEntry(id, d => ({ ...d, steps }));
   }
   function saveOpen() { try { localStorage.setItem('milteo_open_dishes', JSON.stringify([...openDishes])); } catch (_) {} }
 
+  // Temperatur- und Zeitangaben in den Schritten hervorheben (alle Sprachen)
+  const TEMP_RE = /\d{2,3}(?:\s?[–-]\s?\d{2,3})?\s?°\s?[CF]?/gu;
+  const TIME_RE = /\d{1,3}(?:\s?[–-]\s?\d{1,3})?\s?(?:Minuten|Minute|Min\.?|min\.?|Stunden|Stunde|Std\.?|minutes?|heures?|minuti|minuta|минути|минута|мин\.?|dakika|dk\.?|saat|sati|sat|orë|ore|ora|hours?|h)(?![\p{L}])/gu;
+  const hiTT = (t) => esc(t).replace(new RegExp(TEMP_RE.source + '|' + TIME_RE.source, 'gu'), m => '<span class="tt">' + m + '</span>');
+  // Offene Rezepte und abgehakte Schritte bleiben nach dem Neuladen (z. B. App-Aktualisierung) erhalten
   const recipeOpen = new Set(), stepsDone = new Set(), recipeBusy = new Set();
+  const stepTs = {};
+  try {
+    const st = JSON.parse(localStorage.getItem('milteo_recipe_state') || '{}'), lim = Date.now() - 7 * 86400000;
+    Object.entries(st.d || {}).forEach(([k, ts]) => { if (ts > lim) { stepsDone.add(k); stepTs[k] = ts; } });
+    Object.entries(st.o || {}).forEach(([k, ts]) => { if (ts > lim) { recipeOpen.add(k); stepTs['o:' + k] = ts; } });
+  } catch (_) {}
+  function saveRecipeState() {
+    try {
+      const d = {}, o = {};
+      stepsDone.forEach(k => { d[k] = stepTs[k] || (stepTs[k] = Date.now()); });
+      recipeOpen.forEach(k => { o[k] = stepTs['o:' + k] || (stepTs['o:' + k] = Date.now()); });
+      localStorage.setItem('milteo_recipe_state', JSON.stringify({ d, o }));
+    } catch (_) {}
+  }
   function dishHtml(e) {
     const d = e.data, items = Array.isArray(d.items) ? d.items : [];
     const open = openDishes.has(e.id);
@@ -2026,7 +2053,16 @@ input.switch:focus-visible { outline-offset: 3px; }
       renderChecklist('shop');
     }
     if (act === 'recipe') { loadRecipe(id); return; }
-    if (act === 'step') { const k = id + ':' + b.dataset.i; if (stepsDone.has(k)) stepsDone.delete(k); else stepsDone.add(k); b.classList.toggle('done'); b.setAttribute('aria-checked', b.classList.contains('done')); return; }
+    if (act === 'recipe-new') {
+      if (!confirm(T('Rezept neu erstellen? Die abgehakten Schritte gehen dabei verloren.'))) return;
+      const e = entries.find(x => x.id === id); if (!e) return;
+      [...stepsDone].filter(k => k.startsWith(id + ':')).forEach(k => { stepsDone.delete(k); delete stepTs[k]; });
+      recipeOpen.delete(id); saveRecipeState();
+      const nd = { ...e.data }; delete nd.steps; e.data = nd;
+      (async () => { await patchEntry(id, d => { const n = { ...d }; delete n.steps; return n; }); loadRecipe(id); })();
+      return;
+    }
+    if (act === 'step') { const k = id + ':' + b.dataset.i; if (stepsDone.has(k)) { stepsDone.delete(k); delete stepTs[k]; } else { stepsDone.add(k); stepTs[k] = Date.now(); } saveRecipeState(); b.classList.toggle('done'); b.setAttribute('aria-checked', b.classList.contains('done')); return; }
     if (act === 'item' || act === 'item-del') {
       const e = entries.find(x => x.id === id);
       if (!e) return;

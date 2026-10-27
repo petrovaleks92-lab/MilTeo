@@ -393,6 +393,8 @@
     ['Änderungen der Familie', 'Промени во семејството', 'Changements de la famille', 'Novità della famiglia', 'Promene u porodici', 'Ndryshimet e familjes', 'Ailedeki değişiklikler', 'Family updates'],
     ['Abmelden hat nicht geklappt. Bitte versuche es nochmal.', 'Одјавата не успеа. Обиди се повторно.', 'La déconnexion a échoué. Réessaie.', 'Disconnessione non riuscita. Riprova.', 'Odjava nije uspela. Pokušaj ponovo.', 'Dalja nuk u krye. Provo përsëri.', 'Çıkış yapılamadı. Lütfen tekrar dene.', 'Logging out did not work. Please try again.'],
     ['Abmelden …', 'Одјавување …', 'Déconnexion …', 'Disconnessione …', 'Odjavljivanje …', 'Duke dalë …', 'Çıkış yapılıyor …', 'Logging out …'],
+    ['Rezept neu erstellen', 'Создај го рецептот повторно', 'Recréer la recette', 'Crea di nuovo la ricetta', 'Ponovo napravi recept', 'Krijo recetën përsëri', 'Tarifi yeniden oluştur', 'Recreate recipe'],
+    ['Rezept neu erstellen? Die abgehakten Schritte gehen dabei verloren.', 'Рецептот да се создаде повторно? Штиклираните чекори ќе се изгубат.', 'Recréer la recette ? Les étapes cochées seront perdues.', 'Creare di nuovo la ricetta? I passaggi spuntati andranno persi.', 'Ponovo napraviti recept? Označeni koraci će se izgubiti.', 'Ta krijosh recetën përsëri? Hapat e shënuar humbasin.', 'Tarif yeniden oluşturulsun mu? İşaretlenen adımlar kaybolur.', 'Recreate the recipe? The ticked steps will be lost.'],
     ['__end__', '', '', '', '', '', '', '']
   ];
   R.pop();
