@@ -1,0 +1,20 @@
+{
+  "packageId": "ch.milteo.app",
+  "host": "www.milteo.ch",
+  "name": "Milteo Familienplaner",
+  "launcherName": "Milteo",
+  "display": "standalone",
+  "orientation": "portrait",
+  "themeColor": "#1F8A4C",
+  "navigationColor": "#1F8A4C",
+  "backgroundColor": "#F2F5FA",
+  "enableNotifications": true,
+  "startUrl": "/",
+  "iconUrl": "https://www.milteo.ch/icon-512.png",
+  "maskableIconUrl": "https://www.milteo.ch/icon-512.png",
+  "appVersionName": "1.0.0",
+  "appVersion": "1",
+  "signingKey": { "path": "./milteo-upload.keystore", "alias": "milteo" },
+  "fallbackType": "customtabs",
+  "minSdkVersion": 21
+}

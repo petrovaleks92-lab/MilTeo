@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "ch.milteo.app",
+    "sha256_cert_fingerprints": ["HIER:DER:SHA256-FINGERABDRUCK:AUS:DER:PLAY-CONSOLE"]
+  }
+}]
