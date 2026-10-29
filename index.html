@@ -692,6 +692,7 @@ input.switch:focus-visible { outline-offset: 3px; }
           <p class="hint">Milteo speichert deine E-Mail-Adresse, deinen Namen und alles, was du einträgst: Einkauf, Aufgaben, Termine, Timer, Stundenpläne und den Chat mit Bildern und Sprachnachrichten.</p>
           <p class="hint">Die Daten liegen in einer Datenbank bei Supabase in der EU (Frankreich). Sehen können sie nur die Mitglieder deiner Familie und der Betreiber der App.</p>
           <p class="hint">Für Gerichte und das Lesen von Fotos und PDFs wird der Text oder die Datei an die KI von Google (Gemini) gesendet. Sonst gibt Milteo keine Daten an Dritte weiter. Es gibt keine Werbung und kein Tracking.</p>
+          <p class="hint">Nachrichten im Chat werden nicht an Google gesendet. Fotos, PDFs und Texte gehen nur an die KI, wenn du sie selbst zum Lesen auswählst.</p>
           <p class="hint">Bei der kostenlosen Nutzung von Gemini darf Google die gesendeten Inhalte zur Verbesserung seiner Produkte verwenden, und Mitarbeitende können sie lesen (ohne Bezug zu deinem Konto). Sende deshalb nichts, was privat bleiben soll.</p>
           <p class="hint">Beim Laden der App sehen GitHub (Hosting) und Google Fonts (Schriftarten) deine IP-Adresse. Einstellungen wie die Sprache bleiben auf deinem Gerät.</p>
           <p class="hint">Du kannst dein Konto jederzeit unter «Konto &amp; Passwort» löschen.</p>
@@ -2397,6 +2398,11 @@ input.switch:focus-visible { outline-offset: 3px; }
     const name = (file.name || '').toLowerCase();
     const body = { mode: 'extract', what, today: ymd(new Date()) };
     if (what === 'events' && (name.endsWith('.ics') || file.type === 'text/calendar')) return { events: parseIcs(await file.text()) };
+    let okAi = false; try { okAi = localStorage.getItem('milteo_ai_ok') === '1'; } catch (_) {}
+    if (!okAi) {
+      if (!confirm(T('Die Datei wird zum Lesen an Google (Gemini) gesendet. Google kann sie auch zur Verbesserung seiner Produkte verwenden. Lade nichts Privates hoch. Jetzt senden?'))) return { error: 'cancel' };
+      try { localStorage.setItem('milteo_ai_ok', '1'); } catch (_) {}
+    }
     if ((file.type || '').startsWith('image/')) {
       const b = await shrinkImage(file, 2000);
       if (b.size > 4 * 1024 * 1024) return { error: 'big' };
@@ -2418,7 +2424,7 @@ input.switch:focus-visible { outline-offset: 3px; }
     if (err) return { error: err };
     return data || { error: 'ai_failed' };
   }
-  const extractMsg = (err) => err === 'big' ? T('Datei zu gross (max. 4 MB)') : err === 'limit' ? T('Tageslimit der KI erreicht') : err === 'quota' ? T('KI gerade ausgelastet, später nochmal') : T('Die Datei konnte nicht gelesen werden. Versuche ein deutlicheres Foto oder eine andere Datei.');
+  const extractMsg = (err) => err === 'cancel' ? T('Abgebrochen. Es wurde nichts gesendet.') : err === 'big' ? T('Datei zu gross (max. 4 MB)') : err === 'limit' ? T('Tageslimit der KI erreicht') : err === 'quota' ? T('KI gerade ausgelastet, später nochmal') : T('Die Datei konnte nicht gelesen werden. Versuche ein deutlicheres Foto oder eine andere Datei.');
 
   let importFound = [], importRemind = '15';
   function renderImport() {
