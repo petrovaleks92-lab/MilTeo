@@ -1,0 +1,10 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "ch.milteo.app",
+    "sha256_cert_fingerprints": [
+      "6D:29:AE:69:E8:A8:AC:51:1F:23:6E:F5:54:CD:E8:7F:00:B8:24:E7:34:24:E0:9D:1A:AC:9F:96:47:BD:5F:C2"
+    ]
+  }
+}]
