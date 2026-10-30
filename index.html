@@ -389,6 +389,7 @@ input.switch:focus-visible { outline-offset: 3px; }
     <footer class="ld-foot">
       <div><span>Fragen? Schreib uns:</span> <a href="mailto:support@milteo.ch">support@milteo.ch</a></div>
       <div data-nosnippet><button class="link" id="ld-priv-btn" type="button" aria-expanded="false" aria-controls="ld-priv" style="font-size:14px; font-weight:500; padding:4px 0;">Datenschutz</button><div id="ld-priv" hidden></div></div>
+      <div data-nosnippet><button class="link" id="ld-imp-btn" type="button" aria-expanded="false" aria-controls="ld-imp" style="font-size:14px; font-weight:500; padding:4px 0;">Impressum</button><div id="ld-imp" hidden style="font-size:13px; margin-top:6px;">Milteo · Petrov Aleksander · Hinteracherweg 9 · 8303 Bassersdorf · Schweiz · support@milteo.ch</div></div>
     </footer>
   </div>
 </div>
@@ -697,6 +698,7 @@ input.switch:focus-visible { outline-offset: 3px; }
           <p class="hint">Google kann die gesendeten Daten auch ausserhalb der EU verarbeiten, zum Beispiel in den USA. Was an die KI geht, siehst du vorher: Es passiert nur nach deiner Bestätigung. Lade nur hoch, was nötig ist, und decke Namen oder Details auf Fotos wenn möglich ab.</p>
           <p class="hint">Beim Laden der App sehen GitHub (Hosting) und Google Fonts (Schriftarten) deine IP-Adresse. Einstellungen wie die Sprache bleiben auf deinem Gerät.</p>
           <p class="hint">Du kannst dein Konto jederzeit unter «Konto &amp; Passwort» löschen.</p>
+          <p class="hint">Impressum: Milteo · Petrov Aleksander · Hinteracherweg 9 · 8303 Bassersdorf · Schweiz · support@milteo.ch</p>
           <p class="hint">Fragen zum Datenschutz? Schreib an <a href="mailto:support@milteo.ch" style="color:var(--mil)">support@milteo.ch</a>.</p>
         </div>
       </div>
@@ -1244,6 +1246,7 @@ input.switch:focus-visible { outline-offset: 3px; }
     } catch (_) {}
     return !(window.matchMedia && matchMedia('(display-mode: standalone)').matches) && !navigator.standalone;
   }
+  $('ld-imp-btn').onclick = () => { const box = $('ld-imp'), open = box.hidden; box.hidden = !open; $('ld-imp-btn').setAttribute('aria-expanded', String(open)); };
   $('ld-priv-btn').onclick = () => {
     const box = $('ld-priv'), open = box.hidden;
     if (open && !box.firstChild) {
