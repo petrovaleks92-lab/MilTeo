@@ -389,7 +389,6 @@ input.switch:focus-visible { outline-offset: 3px; }
     <footer class="ld-foot">
       <div><span>Fragen? Schreib uns:</span> <a href="mailto:support@milteo.ch">support@milteo.ch</a></div>
       <div data-nosnippet><button class="link" id="ld-priv-btn" type="button" aria-expanded="false" aria-controls="ld-priv" style="font-size:14px; font-weight:500; padding:4px 0;">Datenschutz</button><div id="ld-priv" hidden></div></div>
-      <div data-nosnippet><button class="link" id="ld-imp-btn" type="button" aria-expanded="false" aria-controls="ld-imp" style="font-size:14px; font-weight:500; padding:4px 0;">Impressum</button><div id="ld-imp" hidden style="font-size:13px; margin-top:6px;">Milteo · Petrov Aleksander · Hinteracherweg 9 · 8303 Bassersdorf · Schweiz · support@milteo.ch</div></div>
     </footer>
   </div>
 </div>
@@ -1246,13 +1245,13 @@ input.switch:focus-visible { outline-offset: 3px; }
     } catch (_) {}
     return !(window.matchMedia && matchMedia('(display-mode: standalone)').matches) && !navigator.standalone;
   }
-  $('ld-imp-btn').onclick = () => { const box = $('ld-imp'), open = box.hidden; box.hidden = !open; $('ld-imp-btn').setAttribute('aria-expanded', String(open)); };
   $('ld-priv-btn').onclick = () => {
     const box = $('ld-priv'), open = box.hidden;
     if (open && !box.firstChild) {
       ['Milteo speichert deine E-Mail-Adresse, deinen Namen und alles, was du einträgst: Einkauf, Aufgaben, Termine, Timer, Stundenpläne und den Chat mit Bildern und Sprachnachrichten.',
        'Die Daten liegen in einer Datenbank bei Supabase in der EU (Frankreich). Sehen können sie nur die Mitglieder deiner Familie und der Betreiber der App.',
-       'Für Gerichte und das Lesen von Fotos und PDFs wird der Text oder die Datei an die KI von Google (Gemini) gesendet. Sonst gibt Milteo keine Daten an Dritte weiter. Es gibt keine Werbung und kein Tracking.']
+       'Für Gerichte und das Lesen von Fotos und PDFs wird der Text oder die Datei an die KI von Google (Gemini) gesendet. Sonst gibt Milteo keine Daten an Dritte weiter. Es gibt keine Werbung und kein Tracking.',
+       'Impressum: Milteo · Petrov Aleksander · Hinteracherweg 9 · 8303 Bassersdorf · Schweiz · support@milteo.ch']
         .forEach(k => { const p = document.createElement('p'); p.style.margin = '8px 0 0'; p.textContent = T(k); box.appendChild(p); });
     }
     box.hidden = !open; $('ld-priv-btn').setAttribute('aria-expanded', String(open));
