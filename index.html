@@ -478,6 +478,8 @@ input.switch:focus-visible { outline-offset: 3px; }
       <div id="home-tt"></div>
       <div class="next-card" id="home-next" hidden><span class="nic" id="home-next-ic">📅</span><div><small id="home-next-k">Als Nächstes</small><strong id="home-next-t"></strong></div></div>
       <div class="qa" id="home-qa"><button class="chip" type="button" data-go="shop">＋ <span>Einkauf</span></button><button class="chip" type="button" data-go="todos">＋ <span>Aufgabe</span></button><button class="chip" type="button" data-go="events">＋ <span>Termin</span></button></div>
+      <div class="card" id="home-intro" hidden style="gap:8px"><p class="field-label" style="margin:0">Willkommen bei Milteo 👋</p><p class="hint" style="margin:0">🛒 Einkauf: Schreib auf, was fehlt. Alle in der Familie sehen es sofort.</p><p class="hint" style="margin:0">✅ Aufgaben und 📅 Termine: Verteile Aufgaben und lass dich erinnern.</p><p class="hint" style="margin:0">👨‍👩‍👧 Lade deine Familie ein, dann ist alles gemeinsam.</p><button class="btn small" id="home-intro-ok" type="button">Verstanden</button></div>
+      <div class="card" id="home-invite" hidden style="gap:8px"><p class="field-label" style="margin:0">Du bist noch allein hier</p><p class="hint" style="margin:0">Lade deine Familie ein, damit ihr alles gemeinsam nutzt.</p><button class="btn small" id="home-wa" type="button">Per WhatsApp einladen</button><button class="btn ghost small" id="home-share2" type="button">Anders teilen</button></div>
       <div class="card" id="home-open" role="button" tabindex="0" hidden onclick="switchTab('todos')" style="gap:6px; cursor:pointer"><p class="field-label" style="margin:0">Offene Aufgaben</p><div id="home-open-list"></div></div>
       <div class="tiles">
         <button class="tile" data-t="shop" type="button" onclick="switchTab('shop')"><span class="ti" aria-hidden="true">🛒</span><span><span class="tt">Einkauf</span><span class="tinfo" id="ti-shop"></span></span></button>
@@ -666,6 +668,7 @@ input.switch:focus-visible { outline-offset: 3px; }
         <div class="code" id="fam-code">-</div>
         <button class="btn small" id="fam-copy" type="button">Code kopieren</button>
         <button class="btn small" id="fam-share" type="button">Einladung teilen</button>
+        <button class="btn small" id="fam-wa" type="button">Per WhatsApp einladen</button>
         <button class="btn ghost small" id="fam-newcode" type="button">Neuen Code erzeugen</button>
         <p class="hint" id="fam-newcode-hint">Falls der Code in falsche Hände geraten ist: Mit einem neuen Code können keine weiteren Personen mit dem alten beitreten. Aktuelle Mitglieder bleiben dabei.</p>
         <p class="hint" id="fam-admin-only" hidden>Nur Admins können einen neuen Code erzeugen und Mitglieder verwalten.</p>
@@ -1183,6 +1186,8 @@ input.switch:focus-visible { outline-offset: 3px; }
       const name = (o.l.subject || '') + (o.l.group ? ' (' + o.l.group + ')' : '');
       return `<div class="next-card"><span class="nic">🎒</span><div><small>${esc(day)}${o.l.from ? ' ' + esc(o.l.from) : ''} · ${esc(o.e.data.child || '')}</small><strong>${esc(name)}</strong></div></div>`;
     }).join('');
+    try { $('home-intro').hidden = !!localStorage.getItem('milteo_intro') || E.length > 0; } catch (_) { $('home-intro').hidden = E.length > 0; }
+    $('home-invite').hidden = memberCount !== 1;
     const nx = $('home-next');
     if (run.length) { nx.hidden = false; $('home-next-ic').textContent = '⏱️'; $('home-next-k').textContent = T('Läuft gerade'); $('home-next-t').textContent = run.map(r => r.data.label || T('Timer')).join(', '); }
     else if (evs.length) { nx.hidden = false; $('home-next-ic').textContent = '📅'; $('home-next-k').textContent = T('Als Nächstes'); $('home-next-t').textContent = fmtEv(evs[0]); }
@@ -1568,6 +1573,25 @@ input.switch:focus-visible { outline-offset: 3px; }
     document.getElementById('fam-code').textContent = r.data;
     toast(T('Neuer Code: ') + r.data, 5000);
   };
+  function inviteText() {
+    const code = document.getElementById('fam-code').textContent.trim();
+    if (!code || code === '-') return '';
+    const url = location.origin + location.pathname + '?code=' + encodeURIComponent(code);
+    return T('Komm in unsere Familie bei Milteo! Code: {code}', { code }) + '\n' + url;
+  }
+  async function shareInvite() {
+    const text = inviteText();
+    if (!text) { toast(T('Das hat nicht geklappt')); return; }
+    try { if (navigator.share) { await navigator.share({ title: 'Milteo', text }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+    try { await navigator.clipboard.writeText(text); toast(T('Einladung kopiert!')); } catch (_) { toast(T('Das hat nicht geklappt')); }
+  }
+  function waInvite() {
+    const text = inviteText();
+    if (!text) { toast(T('Das hat nicht geklappt')); return; }
+    window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank', 'noopener');
+  }
+  $('fam-wa').onclick = waInvite; $('home-wa').onclick = waInvite; $('home-share2').onclick = shareInvite;
+  $('home-intro-ok').onclick = () => { try { localStorage.setItem('milteo_intro', '1'); } catch (_) {} $('home-intro').hidden = true; };
   document.getElementById('fam-share').onclick = async () => {
     const code = document.getElementById('fam-code').textContent.trim();
     const url = location.origin + location.pathname + '?code=' + encodeURIComponent(code);
