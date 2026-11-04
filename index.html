@@ -603,6 +603,15 @@ input.switch:focus-visible { outline-offset: 3px; }
         <input type="file" id="in-import" accept="image/*,.pdf,.ics,.txt,.csv,text/calendar,application/pdf" hidden>
         <div id="import-box"></div></div>
       </div>
+      <div class="card fold closed" id="fold-cal">
+        <button class="fold-h" type="button" data-fold="fold-cal">🔗 Kalender abonnieren<span class="caret" aria-hidden="true"></span></button>
+        <div class="fold-b" style="display:grid; gap:12px;">
+        <p class="hint">Zeige die Milteo-Termine deiner Familie in deinem Handy-Kalender (Google, Apple, Outlook). Neue Termine erscheinen dort automatisch. Der Kalender ist nur zum Lesen.</p>
+        <p class="hint">iPhone: «Im Kalender öffnen» antippen. Google Kalender: Link kopieren, dann am Computer auf calendar.google.com unter «Weitere Kalender» → «Per URL» einfügen.</p>
+        <p class="hint">Wer den Link kennt, sieht eure Termine. Gib ihn nicht weiter. Mit «Link erneuern» wird der alte ungültig.</p>
+        <div class="grid2"><button class="btn ghost" id="cal-copy" type="button">Link kopieren</button><button class="btn ghost" id="cal-open" type="button">Im Kalender öffnen</button></div>
+        <button class="link" id="cal-reset" type="button">Link erneuern</button>
+      </div></div>
       <div class="card fold" id="fold-list">
         <button class="fold-h" type="button" data-fold="fold-list">Termine <span class="cnt" id="cnt-events"></span><span class="caret" aria-hidden="true"></span></button>
         <div class="fold-b">
@@ -1296,6 +1305,15 @@ input.switch:focus-visible { outline-offset: 3px; }
     }
     box.hidden = !open; $('ld-priv-btn').setAttribute('aria-expanded', String(open));
   };
+  // Kalender-Abo (nur lesen)
+  async function calUrl(reset) {
+    const r = await sb.rpc('get_calendar_token', { p_reset: !!reset });
+    if (r.error || !r.data) { toast(T('Das hat nicht geklappt')); return null; }
+    return SUPABASE_URL + '/functions/v1/cal?t=' + r.data;
+  }
+  $('cal-copy').onclick = async () => { const u = await calUrl(false); if (!u) return; try { await navigator.clipboard.writeText(u); toast(T('Link kopiert!')); } catch (_) { toast(T('Das hat nicht geklappt')); } };
+  $('cal-open').onclick = async () => { const u = await calUrl(false); if (u) location.href = u.replace(/^https:/, 'webcal:'); };
+  $('cal-reset').onclick = async () => { if (!confirm(T('Der alte Link funktioniert danach nicht mehr. Fortfahren?'))) return; const u = await calUrl(true); if (!u) return; try { await navigator.clipboard.writeText(u); toast(T('Neuer Link kopiert!')); } catch (_) { toast(T('Neuer Link erstellt')); } };
   $('install-btn').onclick = () => { const b = $('install-body'), o = b.style.display === 'none'; b.style.display = o ? 'grid' : 'none'; b.hidden = !o; $('install-btn').setAttribute('aria-expanded', String(o)); };
   $('priv-btn').onclick = () => { const b = $('priv-body'), o = b.style.display === 'none'; b.style.display = o ? 'grid' : 'none'; b.hidden = !o; $('priv-btn').setAttribute('aria-expanded', String(o)); };
   let authFromLanding = false;
