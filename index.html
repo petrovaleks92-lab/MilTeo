@@ -11,11 +11,11 @@
 <meta name="apple-mobile-web-app-title" content="Milteo">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>Milteo – der Familienplaner für Einkauf, Aufgaben und Termine</title>
-<meta name="description" content="Milteo bringt eure Familie zusammen: gemeinsamer Einkauf, Aufgaben, Termine, Timer und Chat in einer App. In 8 Sprachen, direkt auf dem Handy.">
+<meta name="description" content="Milteo bringt deine Familie zusammen: gemeinsamer Einkauf, Aufgaben, Termine, Timer und Chat in einer App. In 8 Sprachen, direkt auf dem Handy.">
 <link rel="canonical" href="https://milteo.ch/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Milteo">
-<meta property="og:title" content="Milteo – Eure Familie. Ein Plan.">
+<meta property="og:title" content="Milteo – Deine Familie. Ein Plan.">
 <meta property="og:description" content="Gemeinsamer Einkauf, Aufgaben, Termine, Timer und Chat – alles an einem Ort, für die ganze Familie.">
 <meta property="og:url" content="https://milteo.ch/">
 <meta property="og:image" content="https://milteo.ch/milteo-video-poster.jpg">
@@ -316,6 +316,8 @@ input.switch:focus-visible { outline-offset: 3px; }
 .ld-final { text-align: center; background: var(--surface); border: 1.5px solid var(--line); border-radius: 24px; padding: 36px 20px; margin: 20px 0 30px; }
 .ld-final h2 { font-size: clamp(24px, 5vw, 34px); }
 .ld-final .ld-cta { justify-content: center; }
+.ld-ol { margin: 0; padding-left: 20px; color: var(--muted); display: grid; gap: 6px; }
+.ld-note { color: var(--muted); margin: 14px 0 0; }
 .ld-foot { border-top: 1.5px solid var(--line); padding: 22px 0 40px; color: var(--muted); font-size: 14px; display: grid; gap: 10px; }
 .ld-foot a { color: var(--mil); font-weight: 600; }
 .ld-foot details p { margin: 8px 0 0; }
@@ -341,7 +343,7 @@ input.switch:focus-visible { outline-offset: 3px; }
     </div>
     <section class="ld-hero">
       <div>
-        <h1>Eure Familie.<br>Ein Plan.</h1>
+        <h1>Deine Familie.<br>Ein Plan.</h1>
         <p class="ld-sub">Einkauf, Aufgaben, Termine, Timer und Chat – alles an einem Ort, für alle auf dem Handy.</p>
         <div class="ld-cta">
           <button class="btn" id="ld-reg" type="button">Jetzt registrieren</button>
@@ -351,13 +353,13 @@ input.switch:focus-visible { outline-offset: 3px; }
       <div class="ld-phone"><video controls playsinline preload="none" poster="milteo-video-poster.jpg" aria-label="So sieht Milteo aus"><source src="milteo-video.mp4" type="video/mp4"></video></div>
     </section>
     <section class="ld-sec">
-      <h2>Alles, was eure Familie täglich braucht</h2>
+      <h2>Alles, was deine Familie täglich braucht</h2>
       <div class="ld-grid">
         <div class="ld-card"><span class="em" aria-hidden="true">🛒</span><h3>Gemeinsamer Einkauf</h3><p>Eine Liste für alle. Wer etwas abhakt, sieht es sofort bei den anderen.</p></div>
         <div class="ld-card"><span class="em" aria-hidden="true">✅</span><h3>Aufgaben mit Verantwortlichen</h3><p>Verteile Aufgaben, setze Fristen und Wiederholungen – nichts geht mehr vergessen.</p></div>
         <div class="ld-card"><span class="em" aria-hidden="true">📅</span><h3>Termine für alle</h3><p>Wochenübersicht, Orte und Wiederholungen, damit niemand einen Termin verpasst.</p></div>
         <div class="ld-card"><span class="em" aria-hidden="true">⏱️</span><h3>Timer, der sich meldet</h3><p>Kochen, Hausaufgaben, Bildschirmzeit: Der Timer meldet sich auch bei geschlossener App.</p></div>
-        <div class="ld-card"><span class="em" aria-hidden="true">💬</span><h3>Familien-Chat</h3><p>Nachrichten, Fotos und Sprachnachrichten nur für eure Familie.</p></div>
+        <div class="ld-card"><span class="em" aria-hidden="true">💬</span><h3>Familien-Chat</h3><p>Nachrichten, Fotos und Sprachnachrichten nur für deine Familie.</p></div>
         <div class="ld-card"><span class="em" aria-hidden="true">🍝</span><h3>Gericht rein, Zutaten raus</h3><p>Gib ein Gericht ein – Milteo setzt die Zutaten auf die Einkaufsliste.</p></div>
       </div>
     </section>
@@ -379,6 +381,26 @@ input.switch:focus-visible { outline-offset: 3px; }
         <div class="ld-card"><h3>Loslegen</h3><p>Zum Startbildschirm hinzufügen und gemeinsam planen.</p></div>
       </div>
     </section>
+    <section class="ld-sec" id="ld-install">
+      <h2>So kommt Milteo auf deinen Startbildschirm</h2>
+      <div class="ld-grid two">
+        <div class="ld-card"><h3>Android (Chrome)</h3><ol class="ld-ol">
+          <li>Öffne www.milteo.ch in Chrome.</li>
+          <li>Tippe oben rechts auf die drei Punkte ⋮.</li>
+          <li>Wähle «Zum Startbildschirm hinzufügen» oder «App installieren».</li>
+          <li>Bestätige mit «Installieren». Fertig: Milteo liegt jetzt wie eine App auf deinem Handy.</li></ol></div>
+        <div class="ld-card"><h3>iPhone (Safari)</h3><ol class="ld-ol">
+          <li>Öffne www.milteo.ch in Safari (nicht in Chrome).</li>
+          <li>Tippe unten auf das Teilen-Symbol (Quadrat mit Pfeil nach oben).</li>
+          <li>Scrolle nach unten und wähle «Zum Home-Bildschirm».</li>
+          <li>Tippe oben rechts auf «Hinzufügen». Fertig.</li></ol></div>
+      </div>
+      <p class="ld-note">Auf dem iPhone funktionieren Mitteilungen nur, wenn Milteo auf dem Home-Bildschirm liegt.</p>
+    </section>
+    <section class="ld-sec">
+      <h2>Was kostet Milteo?</h2>
+      <p class="ld-note" style="margin-top:0">Im Moment fällt für dich nichts an. Milteo wird von einer einzelnen Person betrieben, ohne Werbung und ohne Verkauf von Daten. Später kann ein optionales Abo dazukommen. Du wirst vorher informiert, und es wird nichts abgebucht, ohne dass du zustimmst.</p>
+    </section>
     <section class="ld-final">
       <h2>Bereit für weniger Chaos im Alltag?</h2>
       <div class="ld-cta">
@@ -388,6 +410,7 @@ input.switch:focus-visible { outline-offset: 3px; }
     </section>
     <footer class="ld-foot">
       <div><span>Fragen? Schreib uns:</span> <a href="mailto:support@milteo.ch">support@milteo.ch</a></div>
+      <div><a href="impressum.html" style="font-size:14px">Impressum</a></div>
       <div data-nosnippet><button class="link" id="ld-priv-btn" type="button" aria-expanded="false" aria-controls="ld-priv" style="font-size:14px; font-weight:500; padding:4px 0;">Datenschutz</button><div id="ld-priv" hidden></div></div>
     </footer>
   </div>
@@ -395,6 +418,7 @@ input.switch:focus-visible { outline-offset: 3px; }
 
 <div class="screen" id="screen-auth">
   <div class="narrow">
+    <button class="link" id="auth-back" type="button" hidden style="padding:4px 0 10px">← Zurück</button>
     <div class="brand big"><div class="word"><span class="a">Mil</span><span class="b">teo</span></div></div>
     <h1 id="auth-title">Anmelden</h1>
     <p class="lead" id="auth-lead">Einkauf, Aufgaben, Timer und Termine.</p>
@@ -689,6 +713,16 @@ input.switch:focus-visible { outline-offset: 3px; }
           <button class="btn danger small" id="btn-del" type="button">Konto löschen</button>
         </div>
       </div>
+      <div id="fold-install" style="margin:18px 0 0; text-align:center;">
+        <button class="link" id="install-btn" type="button" aria-expanded="false" aria-controls="install-body" style="font-size:13px; font-weight:500; color:var(--muted);">Zum Startbildschirm hinzufügen</button>
+        <div id="install-body" hidden style="text-align:left; display:none; gap:8px;">
+          <p class="hint"><b>Android (Chrome)</b></p>
+          <p class="hint">Tippe oben rechts auf die drei Punkte ⋮, wähle «Zum Startbildschirm hinzufügen» oder «App installieren» und bestätige mit «Installieren».</p>
+          <p class="hint"><b>iPhone (Safari)</b></p>
+          <p class="hint">Öffne Milteo in Safari, tippe unten auf das Teilen-Symbol (Quadrat mit Pfeil nach oben), wähle «Zum Home-Bildschirm» und tippe auf «Hinzufügen».</p>
+          <p class="hint">Auf dem iPhone funktionieren Mitteilungen nur, wenn Milteo auf dem Home-Bildschirm liegt.</p>
+        </div>
+      </div>
       <div id="fold-priv" data-nosnippet style="margin-top:18px; text-align:center;">
         <button class="link" id="priv-btn" type="button" aria-expanded="false" aria-controls="priv-body" style="font-size:13px; font-weight:500; color:var(--muted);">Datenschutz</button>
         <div id="priv-body" hidden style="text-align:left; display:none; gap:8px;">
@@ -701,7 +735,7 @@ input.switch:focus-visible { outline-offset: 3px; }
           <p class="hint">Beim Laden der App sehen GitHub (Hosting) und Google Fonts (Schriftarten) deine IP-Adresse. Einstellungen wie die Sprache bleiben auf deinem Gerät.</p>
           <p class="hint">Du kannst dein Konto jederzeit unter «Konto &amp; Passwort» löschen.</p>
           <p class="hint">Impressum: Milteo · Petrov Aleksander · Hinteracherweg 9 · 8303 Bassersdorf · Schweiz · support@milteo.ch</p>
-          <p class="hint"><a href="datenschutz.html" target="_blank" rel="noopener">Ganze Datenschutzerklärung</a></p>
+          <p class="hint"><a href="datenschutz.html" target="_blank" rel="noopener">Ganze Datenschutzerklärung</a> · <a href="impressum.html" target="_blank" rel="noopener">Impressum</a></p>
           <p class="hint">Fragen zum Datenschutz? Schreib an <a href="mailto:support@milteo.ch" style="color:var(--mil)">support@milteo.ch</a>.</p>
         </div>
       </div>
@@ -1262,13 +1296,18 @@ input.switch:focus-visible { outline-offset: 3px; }
     }
     box.hidden = !open; $('ld-priv-btn').setAttribute('aria-expanded', String(open));
   };
+  $('install-btn').onclick = () => { const b = $('install-body'), o = b.style.display === 'none'; b.style.display = o ? 'grid' : 'none'; b.hidden = !o; $('install-btn').setAttribute('aria-expanded', String(o)); };
   $('priv-btn').onclick = () => { const b = $('priv-body'), o = b.style.display === 'none'; b.style.display = o ? 'grid' : 'none'; b.hidden = !o; $('priv-btn').setAttribute('aria-expanded', String(o)); };
-  function goAuth(mode) { landingOff = true; showScreen('auth'); setMode(mode); window.scrollTo(0, 0); }
+  let authFromLanding = false;
+  function goAuth(mode) { landingOff = true; authFromLanding = true; showScreen('auth'); setMode(mode); $('auth-back').hidden = false; try { history.pushState({ milteoAuth: 1 }, ''); } catch (_) {} window.scrollTo(0, 0); }
+  function backToLanding() { landingOff = false; authFromLanding = false; $('auth-back').hidden = true; showScreen('landing'); window.scrollTo(0, 0); }
+  $('auth-back').onclick = () => { if (history.state && history.state.milteoAuth) history.back(); else backToLanding(); };
+  window.addEventListener('popstate', () => { if (authFromLanding) backToLanding(); });
   [['ld-reg', 'register'], ['ld-reg2', 'register'], ['ld-login', 'login'], ['ld-login2', 'login'], ['ld-login-top', 'login']].forEach(([id, m]) => { $(id).onclick = () => goAuth(m); });
   function route(session) {
     if (!session) { appReady = false; try { localStorage.removeItem('milteo_fam'); } catch (_) {} const lw = wantLanding(); showScreen(lw ? 'landing' : 'auth'); if (!lw) { try { if (sessionStorage.getItem('milteo_invite')) setMode('register'); } catch (_) {} } return; }
     if (recoveryMode) { showScreen('reset'); return; }
-    myId = session.user.id; myEmail = session.user.email || '';
+    authFromLanding = false; myId = session.user.id; myEmail = session.user.email || '';
     myName = session.user.user_metadata?.name || session.user.email.split('@')[0];
     const nameInput = document.getElementById('in-myname');
     if (nameInput) nameInput.value = myName;
@@ -1917,7 +1956,7 @@ input.switch:focus-visible { outline-offset: 3px; }
       items = items.map((e, n) => [e, n]).sort((x, y) => todoCmp(x[0], y[0]) || (x[1] - y[1])).map(x => x[0]);
       if (allCount && !items.length) { el.innerHTML = `<div class="empty">${esc(T('Keine Aufgaben in diesem Filter.'))}</div>`; return; }
     }
-    if (!items.length) { el.innerHTML = !loadedOnce ? '' : kind === 'shop' ? emptyHtml('Deine Einkaufsliste ist noch leer. Füge deinen ersten Artikel hinzu.', 'Artikel hinzufügen', 'shop') : emptyHtml('Noch keine Aufgaben. Erstelle eine Aufgabe für eure Familie.', 'Aufgabe erstellen', 'todos'); return; }
+    if (!items.length) { el.innerHTML = !loadedOnce ? '' : kind === 'shop' ? emptyHtml('Deine Einkaufsliste ist noch leer. Füge deinen ersten Artikel hinzu.', 'Artikel hinzufügen', 'shop') : emptyHtml('Noch keine Aufgaben. Erstelle eine Aufgabe für deine Familie.', 'Aufgabe erstellen', 'todos'); return; }
     let lastCat = null; const grouping = kind === 'shop';
     if (grouping) {
       const ci = (e) => e.data.type === 'dish' ? -1 : CATS.findIndex(c => c[0] === catOf(e));
@@ -1966,7 +2005,7 @@ input.switch:focus-visible { outline-offset: 3px; }
     const items = entries.filter(e => e.kind === 'events' && e.data.type !== 'timetable')
       .sort((a, b) => ((a.data.date || '') + (a.data.time || '')).localeCompare((b.data.date || '') + (b.data.time || '')));
     { const c = $('cnt-events'); if (c) c.textContent = items.length ? '(' + items.length + ')' : ''; }
-    if (!items.length) { el.innerHTML = loadedOnce ? emptyHtml('Keine Termine geplant. Trage euren nächsten Termin ein.', 'Termin eintragen', 'events') : ''; return; }
+    if (!items.length) { el.innerHTML = loadedOnce ? emptyHtml('Keine Termine geplant. Trage deinen nächsten Termin ein.', 'Termin eintragen', 'events') : ''; return; }
     el.innerHTML = '<ul class="list">' + items.map(e => {
       const d = e.data.date ? new Date(e.data.date + 'T00:00').toLocaleDateString(I18N.loc(), { weekday: 'short', day: 'numeric', month: 'short' }) : '';
       const rmv = (e.data.remind !== null && e.data.remind !== undefined && e.data.remind !== '') ? String(e.data.remind) : '';
