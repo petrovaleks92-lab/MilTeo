@@ -857,6 +857,16 @@ input.switch:focus-visible { outline-offset: 3px; }
       } else o.el.setAttribute(o.a, T(o.k));
     });
     document.documentElement.lang = I18N.lang;
+    try { landVideo(); } catch (_) {}
+  }
+  // Startseiten-Video passend zur Sprache (Rest: deutsche Fassung)
+  const LAND_VIDEOS = { mk: 'milteo-video-mk', sr: 'milteo-video-sr' };
+  function landVideo() {
+    const v = document.querySelector('.ld-phone video'); if (!v) return;
+    const base = LAND_VIDEOS[I18N.lang] || 'milteo-video', src = base + '.mp4', src0 = v.querySelector('source');
+    if (!src0 || src0.getAttribute('src') === src) return;
+    src0.setAttribute('src', src); v.poster = base === 'milteo-video' ? 'milteo-video-poster.jpg' : base.replace('video', 'video-poster') + '.jpg';
+    v.load();
   }
   function renderToday() {
     const d = new Date();
