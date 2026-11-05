@@ -860,7 +860,7 @@ input.switch:focus-visible { outline-offset: 3px; }
     try { landVideo(); } catch (_) {}
   }
   // Startseiten-Video passend zur Sprache (Rest: deutsche Fassung)
-  const LAND_VIDEOS = { mk: 'milteo-video-mk', sr: 'milteo-video-sr' };
+  const LAND_VIDEOS = { mk: 'milteo-video-mk', sr: 'milteo-video-sr', fr: 'milteo-video-fr', it: 'milteo-video-it', sq: 'milteo-video-sq', tr: 'milteo-video-tr', en: 'milteo-video-en' };
   function landVideo() {
     const v = document.querySelector('.ld-phone video'); if (!v) return;
     const base = LAND_VIDEOS[I18N.lang] || 'milteo-video', src = base + '.mp4', src0 = v.querySelector('source');

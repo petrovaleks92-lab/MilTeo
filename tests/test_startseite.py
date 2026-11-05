@@ -46,8 +46,9 @@ with sync_playwright() as p:
     check('Sprache Mazedonisch -> mazedonisches Video', pg.locator('video source[src="milteo-video-mk.mp4"]').count() == 1 and 'poster-mk' in pg.get_attribute('.ld-phone video', 'poster'))
     pg.select_option('#sel-lang-land', 'de'); pg.wait_for_timeout(300)
     check('Zurück auf Deutsch -> deutsches Video', pg.locator('video source[src="milteo-video.mp4"]').count() == 1)
-    pg.select_option('#sel-lang-land', 'fr'); pg.wait_for_timeout(300)
-    check('Sprache ohne eigenes Video -> deutsches Video', pg.locator('video source[src="milteo-video.mp4"]').count() == 1)
+    for lg in ('fr', 'it', 'sq', 'tr', 'en', 'sr'):
+        pg.select_option('#sel-lang-land', lg); pg.wait_for_timeout(200)
+        check('Sprache ' + lg + ' -> eigenes Video', pg.locator('video source[src="milteo-video-' + lg + '.mp4"]').count() == 1)
     pg, errs = mk(b); pg.select_option('#sel-lang-land', 'en'); pg.wait_for_timeout(300)
     check('Sprache Englisch auf Startseite', 'One plan' in pg.inner_text('h1') and 'Sign up now' in pg.inner_text('#ld-reg'))
     pg, errs = mk(b, "localStorage.setItem('milteo_known','1')")
