@@ -71,6 +71,10 @@ form.add { display: flex; gap: 8px; margin-bottom: 10px; }
 input[type=text], input[type=number], input[type=date], input[type=time], input[type=email], input[type=password], select {
   width: 100%; min-height: 46px; padding: 0 14px; background: var(--surface); border: 1.5px solid var(--line); border-radius: 12px;
 }
+.pw-wrap { position: relative; }
+.pw-wrap input { padding-right: 52px; }
+.pw-eye { position: absolute; right: 4px; top: 0; bottom: 0; width: 46px; border: 0; background: transparent; cursor: pointer; font-size: 20px; line-height: 1; opacity: .7; }
+.pw-eye:focus-visible { outline: 2px solid var(--mil); border-radius: 12px; opacity: 1; }
 .lang-sel { margin-top: 12px; }
 .fold-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; min-height: 40px; background: none; border: 0; padding: 2px 0; font-weight: 700; font-size: 15px; color: inherit; text-align: left; }
 .fold-h .caret::after { content: '▾'; color: var(--muted); }
@@ -847,6 +851,25 @@ input.switch:focus-visible { outline-offset: 3px; }
         if (v && I18N.has(norm1(v))) staticTexts.push({ el, a, k: norm1(v) });
       });
     });
+  })();
+
+  // Passwort-Felder: Auge zum Anzeigen/Verbergen (auch für später eingefügte Felder)
+  (function () {
+    function wrap(inp) {
+      if (inp.dataset.pwEye || !inp.parentNode) return;
+      inp.dataset.pwEye = '1';
+      const w = document.createElement('div'); w.className = 'pw-wrap';
+      inp.parentNode.insertBefore(w, inp); w.appendChild(inp);
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'pw-eye';
+      const lab = (s) => (window.T ? window.T(s) : s);
+      const set = (show) => { inp.type = show ? 'text' : 'password'; b.textContent = show ? '🙈' : '👁'; b.setAttribute('aria-label', lab(show ? 'Passwort verbergen' : 'Passwort anzeigen')); b.setAttribute('aria-pressed', show ? 'true' : 'false'); };
+      set(false);
+      b.addEventListener('click', () => { set(inp.type === 'password'); inp.focus(); });
+      w.appendChild(b);
+    }
+    function scan() { document.querySelectorAll('input[type=password]').forEach(wrap); }
+    scan();
+    new MutationObserver(scan).observe(document.body, { childList: true, subtree: true });
   })();
   function applyStatic() {
     staticTexts.forEach(o => {

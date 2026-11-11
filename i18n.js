@@ -446,6 +446,8 @@
     ['Neuer Link kopiert!', 'Новиот линк е копиран!', 'Nouveau lien copié !', 'Nuovo link copiato!', 'Novi link kopiran!', 'Lidhja e re u kopjua!', 'Yeni bağlantı kopyalandı!', 'New link copied!'],
     ['Neuer Link erstellt', 'Новиот линк е создаден', 'Nouveau lien créé', 'Nuovo link creato', 'Novi link napravljen', 'Lidhja e re u krijua', 'Yeni bağlantı oluşturuldu', 'New link created'],
     ['Der alte Link funktioniert danach nicht mehr. Fortfahren?', 'Старият линк потоа повеќе не работи. Продолжи?', 'L’ancien lien ne fonctionnera plus. Continuer ?', 'Il vecchio link non funzionerà più. Continuare?', 'Stari link posle toga više ne radi. Nastaviti?', 'Lidhja e vjetër nuk do të funksionojë më. Vazhdo?', 'Eski bağlantı artık çalışmaz. Devam edilsin mi?', 'The old link will stop working. Continue?'],
+    ['Passwort anzeigen', 'Прикажи лозинка', 'Afficher le mot de passe', 'Mostra password', 'Prikaži lozinku', 'Shfaq fjalëkalimin', 'Şifreyi göster', 'Show password'],
+    ['Passwort verbergen', 'Скриј лозинка', 'Masquer le mot de passe', 'Nascondi password', 'Sakrij lozinku', 'Fshih fjalëkalimin', 'Şifreyi gizle', 'Hide password'],
     ['__end__', '', '', '', '', '', '', '']
   ];
   R.pop();
