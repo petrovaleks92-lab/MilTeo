@@ -380,6 +380,8 @@
     ['Alle Tage dieser Woche sind belegt', 'Сите денови оваа недела се зафатени', 'Tous les jours de cette semaine sont pris', 'Tutti i giorni di questa settimana sono occupati', 'Svi dani ove nedelje su zauzeti', 'Të gjitha ditët e kësaj jave janë të zëna', 'Bu haftanın tüm günleri dolu', 'All days this week are taken'],
     ['Keine Vorschläge gefunden. Ändere die Wünsche und versuche es nochmals.', 'Нема најдени предлози. Промени ги желбите и обиди се повторно.', 'Aucune suggestion trouvée. Modifie tes souhaits et réessaie.', 'Nessun suggerimento trovato. Cambia i desideri e riprova.', 'Nema predloga. Promeni želje i pokušaj ponovo.', 'Nuk u gjetën sugjerime. Ndrysho dëshirat dhe provo përsëri.', 'Öneri bulunamadı. İsteklerini değiştirip tekrar dene.', 'No suggestions found. Change your wishes and try again.'],
     ['Nicht essen', 'Не јадеме', 'À éviter', 'Da evitare', 'Ne jedemo', 'Mos hamë', 'Yemeyiz', 'Do not eat'],
+    ['Tag wählen', 'Избери ден', 'Choisir le jour', 'Scegli il giorno', 'Izaberi dan', 'Zgjidh ditën', 'Gün seç', 'Choose day'],
+    ['belegt', 'зафатено', 'pris', 'occupato', 'zauzeto', 'e zënë', 'dolu', 'taken'],
     ['Keine Wiederholung', 'Без повторување', 'Pas de répétition', 'Nessuna ripetizione', 'Bez ponavljanja', 'Pa përsëritje', 'Tekrar yok', 'No repeat'],
     ['{n} pausiert', '{n} паузиран', '{n} en pause', '{n} in pausa', '{n} pauziran', '{n} në pauzë', '{n} duraklatıldı', '{n} paused'],
     ['Pausiert', 'Паузиран', 'En pause', 'In pausa', 'Pauziran', 'Në pauzë', 'Duraklatıldı', 'Paused'],

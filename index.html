@@ -2181,12 +2181,23 @@ input.switch:focus-visible { outline-offset: 3px; }
     if (entries.some(e => e.kind === 'meals' && e.data.dish && e.data.type !== 'prefs' && e.data.dish.trim().toLowerCase() === d.name.trim().toLowerCase())) { d.seen = true; return true; }
     return !d.seen && !!d.addedAt && Date.now() - d.addedAt < 8000;   // eben hinzugefügt, der Eintrag kommt gleich an
   };
+  const dayTaken = (y) => !!mealOf(y) || (sugDays.get(y) || 0) > Date.now() - 8000;
+  const firstFreeDay = () => { const base = weekStart(mealOff); for (let n = 0; n < 7; n++) { const x = new Date(base); x.setDate(base.getDate() + n); const y = ymd(x); if (!dayTaken(y)) return y; } return null; };
+  function dayOptions(sel) {
+    const base = weekStart(mealOff), pick = sel && !dayTaken(sel) && sel >= ymd(base) && sel <= ymd(new Date(base.getFullYear(), base.getMonth(), base.getDate() + 6)) ? sel : firstFreeDay();
+    let o = '';
+    for (let n = 0; n < 7; n++) {
+      const x = new Date(base); x.setDate(base.getDate() + n); const y = ymd(x), tk = dayTaken(y);
+      o += `<option value="${y}"${tk ? ' disabled' : ''}${y === pick ? ' selected' : ''}>${esc(x.toLocaleDateString(I18N.loc(), { weekday: 'short', day: 'numeric', month: 'numeric' }))}${tk ? ' · ' + esc(T('belegt')) : ''}</option>`;
+    }
+    return o;
+  }
   function sugHtml() {
     sugInit(); const s = sugState;
     let h = `<div class="card meal-sug"><div class="grid2" style="align-items:end"><div><label class="field-label">${esc(T('Max. kcal pro Portion'))}</label><input type="number" class="sg-k" value="${esc(s.kcal)}" inputmode="numeric" placeholder="600" aria-label="${esc(T('Max. kcal pro Portion'))}"></div><div><label class="field-label">${esc(T('Anzahl Personen'))}</label><input type="number" class="sg-s servings" value="${esc(s.serv)}" inputmode="numeric" aria-label="${esc(T('Anzahl Personen'))}" title="${esc(T('Anzahl Personen'))}"></div></div>
       <label class="field-label">${esc(T('Nicht essen'))}</label><input type="text" class="sg-x" value="${esc(s.excl)}" maxlength="150" placeholder="${esc(T('Nicht essen, z. B. Fisch, Pilze, scharf'))}" aria-label="${esc(T('Nicht essen, z. B. Fisch, Pilze, scharf'))}">
       <button class="btn block" type="button" data-act="sugfetch" ${sugBusy ? 'disabled' : ''}>${esc(sugBusy ? T('Suche …') : T('Vorschläge holen'))}</button>`;
-    h += sugRes.map((d, i) => `<div class="meal-row sug-row"><span class="txt"><strong>${esc(d.name)}</strong>${d.kcal ? `<span class="who" style="white-space:nowrap">${esc(T('ca. {n} kcal', { n: d.kcal }))}</span>` : ''}${d.desc ? `<small class="hint" style="display:block;margin:2px 0 0">${esc(d.desc)}</small>` : ''}</span><button class="chip ${sugInPlan(d) ? 'on' : ''}" type="button" data-act="sugadd" data-i="${i}" ${sugInPlan(d) ? 'disabled' : ''}>${esc(sugInPlan(d) ? T('✓ Im Plan') : T('＋ Zum Plan'))}</button></div>`).join('');
+    h += sugRes.map((d, i) => `<div class="meal-row sug-row"><span class="txt"><strong>${esc(d.name)}</strong>${d.kcal ? `<span class="who" style="white-space:nowrap">${esc(T('ca. {n} kcal', { n: d.kcal }))}</span>` : ''}${d.desc ? `<small class="hint" style="display:block;margin:2px 0 0">${esc(d.desc)}</small>` : ''}</span><span class="sug-act" style="display:grid;gap:6px;justify-items:stretch">${sugInPlan(d) ? '' : `<select class="sug-day" data-i="${i}" aria-label="${esc(T('Tag wählen'))}" ${firstFreeDay() ? '' : 'disabled'}>${dayOptions(d.day)}</select>`}<button class="chip ${sugInPlan(d) ? 'on' : ''}" type="button" data-act="sugadd" data-i="${i}" ${sugInPlan(d) ? 'disabled' : ''}>${esc(sugInPlan(d) ? T('✓ Im Plan') : T('＋ Zum Plan'))}</button></span></div>`).join('');
     return h + `<p class="hint" style="margin-top:8px">${esc(T('Die kcal-Angaben sind Schätzungen und keine Ernährungsberatung. Bei Allergien bitte immer selbst prüfen. Deine Eingaben gehen zur Auswahl an Google (Gemini).'))}</p></div>`;
   }
   async function sugFetch() {
@@ -2215,19 +2226,18 @@ input.switch:focus-visible { outline-offset: 3px; }
   }
   function sugAdd(i) {
     const d = sugRes[i]; if (!d || sugInPlan(d)) return;
-    const base = weekStart(mealOff); let day = null;
-    for (let n = 0; n < 7; n++) {   // erster freier Tag der angezeigten Woche, ab Montag
-      const x = new Date(base); x.setDate(base.getDate() + n); const y = ymd(x);
-      if (mealOf(y) || (sugDays.get(y) || 0) > Date.now() - 8000) continue;
-      day = y; break;
-    }
+    const sel = document.querySelector(`.sug-day[data-i="${i}"]`);
+    const day = sel && sel.value && !dayTaken(sel.value) ? sel.value : firstFreeDay();   // gewählter Tag, sonst erster freier der Woche
     if (!day) { toast(T('Alle Tage dieser Woche sind belegt')); return; }
-    d.addedAt = Date.now(); sugDays.set(day, Date.now());
+    d.addedAt = Date.now(); d.day = null; sugDays.set(day, Date.now());
     const serv = Math.min(20, Math.max(1, parseInt(sugState && sugState.serv, 10) || 4));
     addEntry('meals', { date: day, dish: d.name, servings: serv, ...(d.kcal ? { kcal: d.kcal } : {}) });
     toast(pd(day).toLocaleDateString(I18N.loc(), { weekday: 'short' }) + ': ' + d.name);
     renderMeals();
   }
+  document.addEventListener('change', (ev) => {
+    const s = ev.target.closest && ev.target.closest('.sug-day'); if (s && sugRes[Number(s.dataset.i)]) sugRes[Number(s.dataset.i)].day = s.value;
+  });
   document.addEventListener('input', (ev) => {
     const t = ev.target.closest && ev.target.closest('.meal-sug .sg-k, .meal-sug .sg-s, .meal-sug .sg-x'); if (!t || !sugState) return;
     sugState[t.classList.contains('sg-k') ? 'kcal' : t.classList.contains('sg-s') ? 'serv' : 'excl'] = t.value;
