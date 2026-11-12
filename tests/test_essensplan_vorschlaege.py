@@ -34,10 +34,15 @@ with sync_playwright() as p:
     check('Zwei Vorschläge auf zwei verschiedene freie Tage: %s' % days, len(ms) == 2 and len(set(days)) == 2 and all(d >= iso(T) for d in days) and any(m.get('kcal') == 520 for m in ms))
     check('Button zeigt «Im Plan»', pg.inner_text('.meal-sug').count('Im Plan') == 2)
     check('Plan zeigt kcal in der Zeile', 'ca. 520 kcal' in pg.inner_text('#meal-plan .meal-row:not(.sug-row)'))
+    # Gericht aus dem Plan löschen -> Vorschlag ist wieder wählbar
+    pg.click('#meal-plan .meal-row:not(.sug-row) [data-act=del]'); pg.wait_for_timeout(7000)   # Frist für «Rückgängig» abwarten
+    check('Nach dem Löschen: Vorschlag wieder wählbar', pg.evaluate("document.querySelectorAll('[data-act=sugadd]:not([disabled])').length")==2)
+    pg.evaluate("(()=>{ document.querySelectorAll('[data-act=sugadd]:not([disabled])')[0].click() })()"); pg.wait_for_timeout(900)
+    check('Wieder gewählt: wieder im Plan', pg.evaluate("document.querySelectorAll('[data-act=sugadd][disabled]').length")==2 and pg.evaluate("__db.entries.filter(e=>e.kind==='meals'&&e.data.dish).length")==2)
     # Zweiter Abruf: Einstellungen werden nur aktualisiert, nicht doppelt angelegt
     pg.click('[data-act=sugfetch]'); pg.wait_for_timeout(800)
     check('Prefs bleiben ein Eintrag', pg.evaluate("__db.entries.filter(e=>e.kind==='meals'&&e.data.type==='prefs').length") == 1)
-    check('«schon geplant» wird mitgeschickt', set(pg.evaluate("window.__sc[1].b.avoid")) == {m['dish'] for m in ms})
+    check('«schon geplant» wird mitgeschickt', set(pg.evaluate("window.__sc[1].b.avoid")) == set(pg.evaluate("__db.entries.filter(e=>e.kind==='meals'&&e.data.dish&&e.data.type!=='prefs').map(e=>e.data.dish)")))
     # Fehlerfall
     pg.evaluate("sb.functions.invoke=async()=>({data:{error:'limit'}});0")
     pg.click('[data-act=sugfetch]'); pg.wait_for_timeout(600)
