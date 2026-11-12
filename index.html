@@ -504,6 +504,7 @@ input.switch:focus-visible { outline-offset: 3px; }
     <section class="panel" id="p-home">
       <div class="hello"><h1 id="home-hello">Hallo</h1><p id="home-sub"></p></div>
       <div id="home-tt"></div>
+      <div id="home-bd"></div>
       <div class="next-card" id="home-next" hidden><span class="nic" id="home-next-ic">📅</span><div><small id="home-next-k">Als Nächstes</small><strong id="home-next-t"></strong></div></div>
       <div class="qa" id="home-qa"><button class="chip" type="button" data-go="shop">＋ <span>Einkauf</span></button><button class="chip" type="button" data-go="todos">＋ <span>Aufgabe</span></button><button class="chip" type="button" data-go="events">＋ <span>Termin</span></button></div>
       <div class="card" id="home-intro" hidden style="gap:8px"><p class="field-label" style="margin:0">Willkommen bei Milteo 👋</p><p class="hint" style="margin:0">🛒 Einkauf: Schreib auf, was fehlt. Alle in der Familie sehen es sofort.</p><p class="hint" style="margin:0">✅ Aufgaben und 📅 Termine: Verteile Aufgaben und lass dich erinnern.</p><p class="hint" style="margin:0">👨‍👩‍👧 Lade deine Familie ein, dann ist alles gemeinsam.</p><button class="btn small" id="home-intro-ok" type="button">Verstanden</button></div>
@@ -577,12 +578,17 @@ input.switch:focus-visible { outline-offset: 3px; }
       <h2>Termine</h2>
       <div class="card fold closed" id="fold-new">
         <button class="fold-h" type="button" data-fold="fold-new">➕ Neuer Termin<span class="caret" aria-hidden="true"></span></button>
-        <div class="fold-b"><form id="f-event" style="display:grid; gap:8px;">
+        <div class="fold-b"><div class="ev-view" id="ev-kind" role="group" aria-label="Art">
+            <button class="chip on" type="button" data-kind="event" aria-pressed="true">📅 Termin</button>
+            <button class="chip" type="button" data-kind="birthday" aria-pressed="false">🎂 Geburtstag</button>
+          </div><form id="f-event" style="display:grid; gap:8px;">
           <input type="text" id="in-etitle" enterkeyhint="done" placeholder="Titel">
           <div class="grid2">
             <input type="date" id="in-edate" aria-label="Datum">
             <input type="time" id="in-etime" aria-label="Uhrzeit">
           </div>
+          <button class="chip on" type="button" id="in-bage" aria-pressed="true" hidden>🎈 Alter anzeigen</button>
+          <p class="hint" id="bd-hint" hidden>Das Geburtsjahr wird nur für das Alter gebraucht.</p>
           <input type="text" id="in-eplace" maxlength="80" enterkeyhint="done" placeholder="Ort (optional)">
           <select id="in-erepeat" aria-label="Wiederholen"></select>
           <select id="in-eremind" aria-label="Erinnerung">
@@ -1092,6 +1098,16 @@ input.switch:focus-visible { outline-offset: 3px; }
     return from;
   }
   const evAnchor = (d) => d.anchor || d.date;
+  // Geburtstage: Termin vom Typ "birthday" (anchor = Geburtsdatum, date = nächster Geburtstag, jährlich)
+  const bdName = (t) => String(t || '').replace(/^🎂\s*/, '');
+  const bdAge = (d) => (d.type !== 'birthday' || d.noage || !d.anchor || !d.date) ? 0 : Number(d.date.slice(0, 4)) - Number(d.anchor.slice(0, 4));
+  const daysUntil = (iso) => { const t = new Date(); t.setHours(0, 0, 0, 0); return Math.round((pd(iso) - t) / 864e5); };
+  const bdWhen = (n) => n === 0 ? T('Heute') : n === 1 ? T('Morgen') : T('in {n} Tagen', { n });
+  function bdInfo(d) {
+    if (d.type !== 'birthday') return '';
+    const a = bdAge(d), n = d.date ? daysUntil(d.date) : -1;
+    return (a > 0 ? `<span class="who" style="white-space:nowrap">🎈 ${esc(T('wird {n}', { n: a }))}</span>` : '') + (n >= 0 && n <= 60 ? `<span class="who" style="white-space:nowrap">⏳ ${esc(bdWhen(n))}</span>` : '');
+  }
   function occursOn(e, day) {
     const d = e.data; if (!d.date) return false;
     if (!d.repeat || !EV_REP[d.repeat]) return d.date === day;
@@ -1125,7 +1141,7 @@ input.switch:focus-visible { outline-offset: 3px; }
       const d = new Date(base); d.setDate(base.getDate() + i); const day = ymd(d);
       const list = evs.filter(e => occursOn(e, day)).sort((a, b) => (a.data.time || '').localeCompare(b.data.time || ''));
       html += `<div class="wk-day ${day === td ? 'today' : ''}"><h3>${esc(d.toLocaleDateString(I18N.loc(), { weekday: 'long', day: 'numeric', month: 'short' }))}</h3>` +
-        (list.length ? list.map(e => `<div class="wk-ev"><span class="tm">${esc(e.data.time || '')}</span><span>${esc(e.data.title || '')}${e.data.repeat ? ' 🔁' : ''}${e.data.place ? ` <span class="who" style="display:inline">📍 ${esc(e.data.place)}</span>` : ''}</span></div>`).join('') : `<div class="wk-none">–</div>`) + '</div>';
+        (list.length ? list.map(e => `<div class="wk-ev"><span class="tm">${esc(e.data.time || '')}</span><span>${esc(e.data.title || '')}${e.data.repeat && e.data.type !== 'birthday' ? ' 🔁' : ''}${e.data.place ? ` <span class="who" style="display:inline">📍 ${esc(e.data.place)}</span>` : ''}</span></div>`).join('') : `<div class="wk-none">–</div>`) + '</div>';
     }
     box.innerHTML = html;
   }
@@ -1136,6 +1152,11 @@ input.switch:focus-visible { outline-offset: 3px; }
   }
   function evFormHtml(e) {
     const d = e.data;
+    if (d.type === 'birthday') return `<form class="ev-edit" data-id="${e.id}" data-bd="1">
+      <input type="text" class="ev-t" value="${esc(d.title || '')}" maxlength="80" aria-label="${esc(T('Name'))}">
+      <input type="date" class="ev-d" value="${esc(d.anchor || d.date || '')}" aria-label="${esc(T('Geburtsdatum'))}">
+      <button type="button" class="chip ev-age ${d.noage ? '' : 'on'}" aria-pressed="${d.noage ? 'false' : 'true'}">${esc(T('🎈 Alter anzeigen'))}</button>
+      <div style="display:flex; gap:8px"><button class="btn" type="submit">${esc(T('Speichern'))}</button><button class="btn ghost" type="button" data-act="evcancel">${esc(T('Abbrechen'))}</button></div></form>`;
     return `<form class="ev-edit" data-id="${e.id}">
       <input type="text" class="ev-t" value="${esc(d.title || '')}" maxlength="80" aria-label="${esc(T('Titel'))}">
       <div class="grid2"><input type="date" class="ev-d" value="${esc(d.date || '')}" aria-label="${esc(T('Datum'))}"><input type="time" class="ev-tm" value="${esc(d.time || '')}" aria-label="${esc(T('Uhrzeit'))}"></div>
@@ -1243,12 +1264,16 @@ input.switch:focus-visible { outline-offset: 3px; }
     const today = new Date(); today.setHours(0, 0, 0, 0);
     const evs = E.filter(e => e.kind === 'events' && e.data.date && e.data.home !== false && new Date(e.data.date + 'T' + (e.data.time || '23:59')) >= new Date())
       .sort((a, b) => ((a.data.date) + (a.data.time || '')).localeCompare((b.data.date) + (b.data.time || '')));
+    const evsA = evs.filter(e => e.data.type !== 'birthday');
+    $('home-bd').innerHTML = E.filter(e => e.kind === 'events' && e.data.type === 'birthday' && e.data.date && e.data.home !== false)
+      .map(e => ({ e, n: daysUntil(e.data.date) })).filter(o => o.n >= 0 && o.n <= 14).sort((a, b) => a.n - b.n).slice(0, 2)
+      .map(o => { const a = bdAge(o.e.data); return `<div class="next-card"><span class="nic">🎂</span><div><small>${esc(T('Geburtstag'))} · ${esc(bdWhen(o.n))}</small><strong>${esc(bdName(o.e.data.title))}${a > 0 ? ' ' + esc(T('wird {n}', { n: a })) : ''}</strong></div></div>`; }).join('');
     const fmtEv = (e) => {
       const d = new Date(e.data.date + 'T00:00'), diff = Math.round((d - today) / 86400000);
       const day = diff === 0 ? T('Heute') : diff === 1 ? T('Morgen') : d.toLocaleDateString(I18N.loc(), { weekday: 'short', day: 'numeric', month: 'short' });
       return day + (e.data.time ? ' ' + e.data.time : '') + ' · ' + (e.data.title || '');
     };
-    $('ti-events').textContent = evs.length ? fmtEv(evs[0]) : T('Keine Termine');
+    $('ti-events').textContent = evsA.length ? fmtEv(evsA[0]) : evs.length ? fmtEv(evs[0]) : T('Keine Termine');
     const last = chatMsgs[chatMsgs.length - 1];
     $('ti-chat').textContent = last ? ((last.user_id === myId ? T('Du') : (last.display_name || '')) + ': ' + (last.media_path ? (String(last.media_type || '').startsWith('audio') ? T('🎤 Sprachnachricht') : T('📷 Bild')) : (last.body || ''))) : T('Noch keine Nachrichten');
     const bd = $('tb-chat'); bd.hidden = !chatUnread; bd.textContent = chatUnread > 9 ? '9+' : chatUnread; bd.setAttribute('aria-label', T('{n} ungelesen', { n: chatUnread }));
@@ -1266,7 +1291,7 @@ input.switch:focus-visible { outline-offset: 3px; }
     $('home-invite').hidden = memberCount !== 1;
     const nx = $('home-next');
     if (run.length) { nx.hidden = false; $('home-next-ic').textContent = '⏱️'; $('home-next-k').textContent = T('Läuft gerade'); $('home-next-t').textContent = run.map(r => r.data.label || T('Timer')).join(', '); }
-    else if (evs.length) { nx.hidden = false; $('home-next-ic').textContent = '📅'; $('home-next-k').textContent = T('Als Nächstes'); $('home-next-t').textContent = fmtEv(evs[0]); }
+    else if (evsA.length) { nx.hidden = false; $('home-next-ic').textContent = '📅'; $('home-next-k').textContent = T('Als Nächstes'); $('home-next-t').textContent = fmtEv(evsA[0]); }
     else nx.hidden = true;
   }
 
@@ -1344,7 +1369,11 @@ input.switch:focus-visible { outline-offset: 3px; }
     if (r.error || !r.data) { toast(T('Das hat nicht geklappt')); return null; }
     return SUPABASE_URL + '/functions/v1/cal?t=' + r.data;
   }
-  $('cal-copy').onclick = async () => { const u = await calUrl(false); if (!u) return; try { await navigator.clipboard.writeText(u); toast(T('Link kopiert!')); } catch (_) { toast(T('Das hat nicht geklappt')); } };
+  async function copyText(u) {
+    try { await navigator.clipboard.writeText(u); return true; } catch (_) {}
+    try { const t = document.createElement('textarea'); t.value = u; t.setAttribute('readonly', ''); t.style.cssText = 'position:fixed;top:0;left:0;opacity:0'; document.body.appendChild(t); t.select(); t.setSelectionRange(0, u.length); const ok = document.execCommand('copy'); t.remove(); return !!ok; } catch (_) { return false; }
+  }
+  $('cal-copy').onclick = async () => { const u = await calUrl(false); if (!u) return; if (await copyText(u)) toast(T('Link kopiert!')); else prompt(T('Link kopieren'), u); };
   $('cal-open').onclick = async () => { const u = await calUrl(false); if (u) location.href = u.replace(/^https:/, 'webcal:'); };
   $('cal-reset').onclick = async () => { if (!confirm(T('Der alte Link funktioniert danach nicht mehr. Fortfahren?'))) return; const u = await calUrl(true); if (!u) return; try { await navigator.clipboard.writeText(u); toast(T('Neuer Link kopiert!')); } catch (_) { toast(T('Neuer Link erstellt')); } };
   $('install-btn').onclick = () => { const b = $('install-body'), o = b.style.display === 'none'; b.style.display = o ? 'grid' : 'none'; b.hidden = !o; $('install-btn').setAttribute('aria-expanded', String(o)); };
@@ -2061,7 +2090,7 @@ input.switch:focus-visible { outline-offset: 3px; }
       const d = e.data.date ? new Date(e.data.date + 'T00:00').toLocaleDateString(I18N.loc(), { weekday: 'short', day: 'numeric', month: 'short' }) : '';
       const rmv = (e.data.remind !== null && e.data.remind !== undefined && e.data.remind !== '') ? String(e.data.remind) : '';
       const ed = evForm === e.id ? evFormHtml(e) : evEdit === e.id ? `<div style="flex-basis:100%; display:flex; gap:8px; align-items:center; flex-wrap:wrap"><select class="mini" id="ev-rm" data-v="${esc(rmv)}" aria-label="${esc(T('Erinnerung'))}">${$('in-eremind').innerHTML}</select><button type="button" class="chip ${e.data.home === false ? '' : 'on'}" data-act="evhome" data-id="${e.id}">📌 ${esc(T('Im Hauptmenü anzeigen'))}</button><button type="button" class="chip" data-act="evform" data-id="${e.id}">✏️ ${esc(T('Bearbeiten'))}</button></div>` : '';
-      return `<li class="row" style="flex-wrap:wrap"><span class="txt" data-act="evedit" data-id="${e.id}" role="button" tabindex="0" style="cursor:pointer">${esc(e.data.title || '')}${e.data.home === false ? ' <span class="who">🚫📌</span>' : ''}<span class="who">${d} ${esc(e.data.time || '')}</span>${(e.data.remind !== null && e.data.remind !== undefined && e.data.remind !== '') ? `<span class="who">🔔 ${remindText(Number(e.data.remind))}</span>` : ''}${e.data.repeat && EV_REP[e.data.repeat] ? `<span class="who">🔁 ${esc(T(EV_REP[e.data.repeat]))}</span>` : ''}${byHtml(e)}</span>
+      return `<li class="row" style="flex-wrap:wrap"><span class="txt" data-act="evedit" data-id="${e.id}" role="button" tabindex="0" style="cursor:pointer">${esc(e.data.title || '')}${e.data.home === false ? ' <span class="who">🚫📌</span>' : ''}<span class="who">${d} ${esc(e.data.time || '')}</span>${bdInfo(e.data)}${(e.data.remind !== null && e.data.remind !== undefined && e.data.remind !== '') ? `<span class="who">🔔 ${remindText(Number(e.data.remind))}</span>` : ''}${e.data.repeat && EV_REP[e.data.repeat] && e.data.type !== 'birthday' ? `<span class="who">🔁 ${esc(T(EV_REP[e.data.repeat]))}</span>` : ''}${byHtml(e)}</span>
         <button class="del" type="button" aria-label="${esc(T('Löschen: {name}', { name: e.data.title || '' }))}" data-act="del" data-id="${e.id}">×</button>${e.data.place ? `<div class="ev-place">📍 ${mapLink(e.data.place)}</div>` : ''}${ed}</li>`;
     }).join('') + '</ul>';
     const sel = $('ev-rm'); if (sel) sel.value = sel.dataset.v;
@@ -2087,11 +2116,20 @@ input.switch:focus-visible { outline-offset: 3px; }
     const f = ev.target.closest && ev.target.closest('.ev-edit'); if (!f) return;
     ev.preventDefault();
     const e = entries.find(x => x.id === f.dataset.id);
-    const title = f.querySelector('.ev-t').value.trim(), date = f.querySelector('.ev-d').value, time = f.querySelector('.ev-tm').value, place = f.querySelector('.ev-p').value.trim(), rep = f.querySelector('.ev-r').value;
+    const bdForm = f.dataset.bd === '1', q = (sel) => f.querySelector(sel);
+    const title = q('.ev-t').value.trim(), date = q('.ev-d').value, time = bdForm ? '' : q('.ev-tm').value, place = bdForm ? '' : q('.ev-p').value.trim(), rep = bdForm ? 'yearly' : q('.ev-r').value;
+    const noage = bdForm && !q('.ev-age').classList.contains('on');
     if (!title || !date) { toast(T('Titel und Datum fehlen')); return; }
     evForm = null; evFormShown = false; evEdit = null;
     if (!e) { renderAll(); return; }
     const apply = (d) => {
+      if (bdForm) {
+        const nd = nextOcc(date, 'yearly', todayYmd());
+        const x = { ...d, title: '🎂 ' + bdName(title), anchor: date, date: nd, repeat: 'yearly', time: '' };
+        if (noage) x.noage = true; else delete x.noage;
+        if (d.date !== nd) x.reminded = false;
+        return x;
+      }
       const x = { ...d, title, date, time };
       if (place) x.place = place; else delete x.place;
       if (rep) { x.repeat = rep; x.anchor = date; } else { delete x.repeat; delete x.anchor; }
@@ -2470,7 +2508,21 @@ input.switch:focus-visible { outline-offset: 3px; }
     if (!(min > 0)) return;
     addEntry('timers', { label, end: Date.now() + min * 60000, dur: min * 60000 });
   };
-  let evBusy = false;
+  let evBusy = false, evKind = 'event', evRemindPrev = null;
+  function setEvKind(k) {
+    evKind = k; const bd = k === 'birthday';
+    document.querySelectorAll('#ev-kind [data-kind]').forEach(c => { const on = c.dataset.kind === k; c.classList.toggle('on', on); c.setAttribute('aria-pressed', String(on)); });
+    $('in-etitle').dataset.ph = T(bd ? 'Name' : 'Titel'); $('in-edate').setAttribute('aria-label', T(bd ? 'Geburtsdatum' : 'Datum'));
+    ['in-etime', 'in-eplace', 'in-erepeat'].forEach(id => { $(id).hidden = bd; });
+    $('in-bage').hidden = !bd; $('bd-hint').hidden = !bd;
+    $('in-edate').parentNode.style.gridTemplateColumns = bd ? '1fr' : '';
+    const rm = $('in-eremind');
+    if (bd) { evRemindPrev = rm.value; rm.value = '1440'; } else if (evRemindPrev !== null) { rm.value = evRemindPrev; evRemindPrev = null; }
+  }
+  document.addEventListener('click', (ev) => {
+    const k = ev.target.closest('#ev-kind [data-kind]'); if (k) { setEvKind(k.dataset.kind); return; }
+    const a = ev.target.closest('#in-bage, .ev-age'); if (a) { const on = !a.classList.contains('on'); a.classList.toggle('on', on); a.setAttribute('aria-pressed', String(on)); }
+  });
   document.getElementById('f-event').onsubmit = async (e) => {
     e.preventDefault();
     const title = document.getElementById('in-etitle').value.trim();
@@ -2479,6 +2531,14 @@ input.switch:focus-visible { outline-offset: 3px; }
     if (!title || !date) { toast(T('Titel und Datum fehlen')); return; }
     if (evBusy) return;
     const rv = document.getElementById('in-eremind').value;
+    if (evKind === 'birthday') {
+      evBusy = true;
+      try {
+        const noage = !$('in-bage').classList.contains('on');
+        if (await addEntry('events', { type: 'birthday', title: '🎂 ' + bdName(title), date: nextOcc(date, 'yearly', todayYmd()), anchor: date, repeat: 'yearly', time: '', remind: rv === '' ? null : Number(rv), ...(noage ? { noage: true } : {}) })) { document.getElementById('in-etitle').value = ''; document.getElementById('in-edate').value = ''; }
+      } finally { evBusy = false; }
+      return;
+    }
     const place = $('in-eplace').value.trim(), rep = $('in-erepeat').value;
     evBusy = true;
     try { if (await addEntry('events', { title, date, time, remind: rv === '' ? null : Number(rv), ...(place ? { place } : {}), ...(rep ? { repeat: rep, anchor: date } : {}) })) { document.getElementById('in-etitle').value = ''; $('in-eplace').value = ''; $('in-erepeat').value = ''; } }

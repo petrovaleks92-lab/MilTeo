@@ -30,4 +30,4 @@ with sync_playwright() as p:
     check('Datenschutz: Chat nicht an Google', 'Nachrichten im Chat werden nicht an Google gesendet' in pg.evaluate("document.getElementById('priv-body').textContent"))
     check('Keine JS-Fehler', not errs); print(errs)
     b.close()
-print('OK' if ok else 'FEHLER'); raise SystemExit(0 if ok else 1)
+print('ALLES BESTANDEN' if ok else 'FEHLER'); raise SystemExit(0 if ok else 1)
