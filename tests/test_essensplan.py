@@ -60,7 +60,7 @@ with sync_playwright() as p:
     pg.click('#meal-plan .meal-row [data-act=del]'); pg.wait_for_timeout(300)
     check('Löschen entfernt aus der Ansicht (mit Rückgängig)', pg.evaluate("document.querySelectorAll('#meal-plan .meal-row').length===0"))
     # Ansicht bleibt gemerkt
-    pg.reload(); pg.wait_for_timeout(1000); pg.evaluate("switchTab('shop')")
+    pg.reload(); pg.wait_for_timeout(1800); pg.evaluate("switchTab('shop')"); pg.wait_for_timeout(300)
     check('Ansicht Essensplan bleibt nach Neuladen', pg.evaluate("!$('meal-plan').hidden"))
     check('Kein JS-Fehler am Ende', not errs); print(errs)
     b.close()

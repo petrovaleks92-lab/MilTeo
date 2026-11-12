@@ -2169,6 +2169,64 @@ input.switch:focus-visible { outline-offset: 3px; }
   let mealOff = 0, mealForm = null, mealFormShown = false, shopView = 'list';
   const mealBusy = new Set();
   try { if (localStorage.getItem('milteo_shopview') === 'meals') shopView = 'meals'; } catch (_) {}
+  let mealSug = false, sugState = null, sugRes = [], sugBusy = false;
+  const sugDays = new Map();
+  const mealPrefs = () => entries.find(e => e.kind === 'meals' && e.data.type === 'prefs');
+  function sugInit() {
+    if (sugState) return; const p = mealPrefs(); let sv = 0; try { sv = Number(localStorage.getItem('milteo_meal_serv')) || 0; } catch (_) {}
+    sugState = { kcal: p && p.data.maxKcal ? String(p.data.maxKcal) : '', excl: (p && p.data.exclude) || '', serv: String((p && p.data.servings) || sv || 4) };
+  }
+  function sugHtml() {
+    sugInit(); const s = sugState;
+    let h = `<div class="card meal-sug"><div class="grid2" style="align-items:end"><div><label class="field-label">${esc(T('Max. kcal pro Portion'))}</label><input type="number" class="sg-k" value="${esc(s.kcal)}" inputmode="numeric" placeholder="600" aria-label="${esc(T('Max. kcal pro Portion'))}"></div><div><label class="field-label">${esc(T('Anzahl Personen'))}</label><input type="number" class="sg-s servings" value="${esc(s.serv)}" inputmode="numeric" aria-label="${esc(T('Anzahl Personen'))}" title="${esc(T('Anzahl Personen'))}"></div></div>
+      <label class="field-label">${esc(T('Nicht essen'))}</label><input type="text" class="sg-x" value="${esc(s.excl)}" maxlength="150" placeholder="${esc(T('Nicht essen, z. B. Fisch, Pilze, scharf'))}" aria-label="${esc(T('Nicht essen, z. B. Fisch, Pilze, scharf'))}">
+      <button class="btn block" type="button" data-act="sugfetch" ${sugBusy ? 'disabled' : ''}>${esc(sugBusy ? T('Suche …') : T('Vorschläge holen'))}</button>`;
+    h += sugRes.map((d, i) => `<div class="meal-row sug-row"><span class="txt"><strong>${esc(d.name)}</strong>${d.kcal ? `<span class="who" style="white-space:nowrap">${esc(T('ca. {n} kcal', { n: d.kcal }))}</span>` : ''}${d.desc ? `<small class="hint" style="display:block;margin:2px 0 0">${esc(d.desc)}</small>` : ''}</span><button class="chip ${d.added ? 'on' : ''}" type="button" data-act="sugadd" data-i="${i}" ${d.added ? 'disabled' : ''}>${esc(d.added ? T('✓ Im Plan') : T('＋ Zum Plan'))}</button></div>`).join('');
+    return h + `<p class="hint" style="margin-top:8px">${esc(T('Die kcal-Angaben sind Schätzungen und keine Ernährungsberatung. Bei Allergien bitte immer selbst prüfen. Deine Eingaben gehen zur Auswahl an Google (Gemini).'))}</p></div>`;
+  }
+  async function sugFetch() {
+    if (sugBusy || !fid) return; sugInit();
+    const k = parseInt(sugState.kcal, 10) || 0, serv = Math.min(20, Math.max(1, parseInt(sugState.serv, 10) || 4));
+    const excl = sugState.excl.split(/[,;\n]/).map(x => x.trim()).filter(Boolean);
+    const avoid = entries.filter(e => e.kind === 'meals' && e.data.dish && e.data.type !== 'prefs').map(e => e.data.dish).slice(-14);
+    sugBusy = true; renderMeals();
+    const prefs = { type: 'prefs', maxKcal: k || null, exclude: sugState.excl.slice(0, 150), servings: serv };
+    const p0 = mealPrefs(); let saved;
+    if (p0) { p0.data = { ...p0.data, ...prefs }; saved = patchEntry(p0.id, (d) => ({ ...d, ...prefs })); } else saved = addEntry('meals', prefs);
+    let err = null, data = null;
+    try {
+      const r = await sb.functions.invoke('suggest', { body: { maxKcal: k || undefined, exclude: excl, avoid, servings: serv, count: 6, lang: I18N.lang } });
+      data = r.data;
+      if (r.error) { try { const j = await r.error.context.json(); err = j.error || 'ai_failed'; } catch (_) { err = 'ai_failed'; } }
+      else if (data && data.error) err = data.error;
+    } catch (_) { err = 'ai_failed'; }
+    try { await saved; } catch (_) {}
+    sugBusy = false;
+    if (err || !data || !Array.isArray(data.dishes) || !data.dishes.length) {
+      sugRes = [];
+      toast(err === 'limit' ? T('Tageslimit der KI erreicht') : err === 'quota' ? T('Die KI ist gerade ausgelastet. Versuche es später.') : T('Keine Vorschläge gefunden. Ändere die Wünsche und versuche es nochmals.'));
+    } else sugRes = data.dishes.map(d => ({ ...d, added: false }));
+    renderMeals();
+  }
+  function sugAdd(i) {
+    const d = sugRes[i]; if (!d || d.added) return;
+    const base = weekStart(mealOff), td = todayYmd(); let day = null;
+    for (let n = 0; n < 7; n++) {
+      const x = new Date(base); x.setDate(base.getDate() + n); const y = ymd(x);
+      if (y < td || mealOf(y) || (sugDays.get(y) || 0) > Date.now() - 8000) continue;
+      day = y; break;
+    }
+    if (!day) { toast(T('Alle Tage dieser Woche sind belegt')); return; }
+    d.added = true; sugDays.set(day, Date.now());
+    const serv = Math.min(20, Math.max(1, parseInt(sugState && sugState.serv, 10) || 4));
+    addEntry('meals', { date: day, dish: d.name, servings: serv, ...(d.kcal ? { kcal: d.kcal } : {}) });
+    toast(pd(day).toLocaleDateString(I18N.loc(), { weekday: 'short' }) + ': ' + d.name);
+    renderMeals();
+  }
+  document.addEventListener('input', (ev) => {
+    const t = ev.target.closest && ev.target.closest('.meal-sug .sg-k, .meal-sug .sg-s, .meal-sug .sg-x'); if (!t || !sugState) return;
+    sugState[t.classList.contains('sg-k') ? 'kcal' : t.classList.contains('sg-s') ? 'serv' : 'excl'] = t.value;
+  });
   const mealOf = (day) => entries.find(e => e.kind === 'meals' && e.data.date === day);
   const mealOnList = (id) => entries.some(e => e.kind === 'shop' && e.data.type === 'dish' && e.data.meal === id);
   const weekStart = (off) => { const b = new Date(); b.setHours(0, 0, 0, 0); b.setDate(b.getDate() - ((b.getDay() + 6) % 7) + off * 7); return b; };
@@ -2185,7 +2243,7 @@ input.switch:focus-visible { outline-offset: 3px; }
   }
   function mealRowHtml(m) {
     const d = m.data, on = mealOnList(m.id), busy = mealBusy.has(m.id);
-    return `<div class="meal-row"><span class="txt" data-act="mealform" data-day="${esc(d.date)}" role="button" tabindex="0" style="cursor:pointer"><strong>${esc(d.dish || '')}</strong>${d.cook ? `<span class="who">👩‍🍳 ${esc(d.cook)}</span>` : ''}</span>
+    return `<div class="meal-row"><span class="txt" data-act="mealform" data-day="${esc(d.date)}" role="button" tabindex="0" style="cursor:pointer"><strong>${esc(d.dish || '')}</strong>${d.cook ? `<span class="who">👩‍🍳 ${esc(d.cook)}</span>` : ''}${d.kcal ? `<span class="who" style="white-space:nowrap">${esc(T('ca. {n} kcal', { n: d.kcal }))}</span>` : ''}</span>
       <button class="chip ${on ? 'on' : ''}" type="button" data-act="mealtolist" data-id="${m.id}" ${busy ? 'disabled' : ''}>${busy ? esc(T('Suche …')) : on ? esc(T('✓ Auf der Liste')) : '🛒 ' + esc(T('Zutaten'))}</button>
       <button class="del" type="button" aria-label="${esc(T('Löschen: {name}', { name: d.dish || '' }))}" data-act="del" data-id="${m.id}">×</button></div>`;
   }
@@ -2195,10 +2253,11 @@ input.switch:focus-visible { outline-offset: 3px; }
     $('shop-main').hidden = shopView !== 'list'; box.hidden = shopView !== 'meals';
     if (shopView !== 'meals') return;
     if (mealForm && mealFormShown) return;   // während der Eingabe nicht neu zeichnen
+    { const a = document.activeElement; if (mealSug && a && a.closest && a.closest('.meal-sug') && (a.isContentEditable || /^(INPUT|SELECT)$/.test(a.tagName))) return; }
     if (!mealForm) mealFormShown = false;
     const base = weekStart(mealOff), td = todayYmd(), last = new Date(base); last.setDate(last.getDate() + 6);
     const fm = (d) => d.toLocaleDateString(I18N.loc(), { day: 'numeric', month: 'short' });
-    let any = false, html = `<div class="ev-view"><button class="chip" type="button" data-mwk="-1" aria-label="${esc(T('Vorherige Woche'))}">‹</button><button class="chip" type="button" data-mwk="0">${esc(T('Diese Woche'))}</button><button class="chip" type="button" data-mwk="1" aria-label="${esc(T('Nächste Woche'))}">›</button><span class="sp"></span><span class="who" style="margin:0">${esc(fm(base))} – ${esc(fm(last))}</span></div>`;
+    let any = false, html = `<div class="ev-view"><button class="chip" type="button" data-mwk="-1" aria-label="${esc(T('Vorherige Woche'))}">‹</button><button class="chip" type="button" data-mwk="0">${esc(T('Diese Woche'))}</button><button class="chip" type="button" data-mwk="1" aria-label="${esc(T('Nächste Woche'))}">›</button><span class="sp"></span><span class="who" style="margin:0">${esc(fm(base))} – ${esc(fm(last))}</span></div><div class="meal-acts" style="margin:0 0 6px"><button class="chip ${mealSug ? 'on' : ''}" type="button" data-act="mealsug" aria-expanded="${mealSug}">${esc(T('✨ Vorschläge'))}</button></div>${mealSug ? sugHtml() : ''}`;
     for (let i = 0; i < 7; i++) {
       const d = new Date(base); d.setDate(base.getDate() + i); const day = ymd(d), m = mealOf(day); if (m) any = true;
       html += `<div class="wk-day ${day === td ? 'is-today' : ''}"><h3>${esc(d.toLocaleDateString(I18N.loc(), { weekday: 'long', day: 'numeric', month: 'short' }))}</h3>` +
@@ -2206,6 +2265,7 @@ input.switch:focus-visible { outline-offset: 3px; }
     }
     if (any) html += `<div class="meal-acts"><button class="btn ghost" type="button" data-act="mealall">${esc(T('🛒 Alle Zutaten der Woche'))}</button><button class="btn ghost" type="button" data-act="mealcopy">${esc(T('📋 In die nächste Woche kopieren'))}</button></div>`;
     box.innerHTML = html;
+    box.querySelectorAll('.meal-sug input[type=text],.meal-sug input[type=number]').forEach(cefify);
     const f = box.querySelector('.meal-form'); if (f) { mealFormShown = true; f.querySelectorAll('input[type=text],input[type=number]').forEach(cefify); const t = f.querySelector('.ml-d'); if (t) t.focus(); }
   }
   async function mealToList(id, quiet) {
@@ -2268,6 +2328,9 @@ input.switch:focus-visible { outline-offset: 3px; }
     else if (act === 'mealtolist') mealToList(b.dataset.id);
     else if (act === 'mealall') mealAll();
     else if (act === 'mealcopy') mealCopy();
+    else if (act === 'mealsug') { mealSug = !mealSug; renderMeals(); }
+    else if (act === 'sugfetch') sugFetch();
+    else if (act === 'sugadd') sugAdd(Number(b.dataset.i));
   });
   document.addEventListener('submit', async (ev) => {
     const f = ev.target.closest && ev.target.closest('.meal-form'); if (!f) return;
@@ -2279,7 +2342,7 @@ input.switch:focus-visible { outline-offset: 3px; }
     mealForm = null; mealFormShown = false;
     const m = id ? entries.find(x => x.id === id) : mealOf(day);
     if (m) {
-      const apply = (d) => { const x = { ...d, dish, servings }; if (cook) x.cook = cook; else delete x.cook; return x; };
+      const apply = (d) => { const x = { ...d, dish, servings }; if (cook) x.cook = cook; else delete x.cook; if (d.dish !== dish) delete x.kcal; return x; };
       m.data = apply(m.data); renderAll(); patchEntry(m.id, apply);
     } else { await addEntry('meals', { date: day, dish, servings, ...(cook ? { cook } : {}) }); }
     renderMeals();
