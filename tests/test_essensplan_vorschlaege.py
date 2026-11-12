@@ -52,10 +52,20 @@ with sync_playwright() as p:
     m = pg.evaluate("__db.entries.find(e=>e.data.dish==='Pizza Margherita')")
     check('Auf gewählten Tag (Freitag) eingetragen: %s' % (m and m['data']['date']), m and m['data']['date'] == fri)
     check('Freitag danach in Auswahl gesperrt', pg.evaluate("[...document.querySelectorAll('.sug-day')[0].options].find(o=>o.value==='%s').disabled" % fri))
+    # Tag belegen und gleich wieder löschen -> Tag sofort wieder wählbar
+    pg.evaluate("sb.functions.invoke=async(n,o)=>{window.__sc.push({n,b:o.body}); return {data:{dishes:[{name:'Rösti mit Spiegelei',desc:'Kartoffeln, Ei',kcal:550}]}}};0")
+    pg.click('[data-act=sugfetch]'); pg.wait_for_timeout(700)
+    free = pg.evaluate("[...document.querySelectorAll('.sug-day')[0].options].filter(o=>!o.disabled).map(o=>o.value)")
+    tgt = free[-1]
+    pg.select_option('.sug-day >> nth=0', tgt); pg.click('[data-act=sugadd][data-i="0"]'); pg.wait_for_timeout(900)
+    pg.click('#meal-plan .meal-row:has-text("Rösti") [data-act=del]'); pg.wait_for_timeout(400)
+    ok_free = pg.evaluate("(()=>{const s=document.querySelector('.sug-day'); return !!s && [...s.options].some(o=>o.value==='%s' && !o.disabled)})()" % tgt)
+    check('Belegt und sofort gelöscht: Tag wieder wählbar', ok_free)
     # Zweiter Abruf: Einstellungen werden nur aktualisiert, nicht doppelt angelegt
     pg.click('[data-act=sugfetch]'); pg.wait_for_timeout(800)
     check('Prefs bleiben ein Eintrag', pg.evaluate("__db.entries.filter(e=>e.kind==='meals'&&e.data.type==='prefs').length") == 1)
-    check('«schon geplant» wird mitgeschickt', set(pg.evaluate("window.__sc[window.__sc.length-1].b.avoid")) == set(pg.evaluate("__db.entries.filter(e=>e.kind==='meals'&&e.data.dish&&e.data.type!=='prefs').map(e=>e.data.dish)")))
+    av = set(pg.evaluate("window.__sc[window.__sc.length-1].b.avoid"))
+    check('«schon geplant» wird mitgeschickt (ohne das gelöschte Gericht): %s' % sorted(av), {'Pizza Margherita', 'Gemüsecurry mit Reis', 'Ofengemüse mit Feta'} <= av and 'Rösti mit Spiegelei' not in av)
     # Fehlerfall
     pg.evaluate("sb.functions.invoke=async()=>({data:{error:'limit'}});0")
     pg.click('[data-act=sugfetch]'); pg.wait_for_timeout(600)

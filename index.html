@@ -2181,7 +2181,11 @@ input.switch:focus-visible { outline-offset: 3px; }
     if (entries.some(e => e.kind === 'meals' && e.data.dish && e.data.type !== 'prefs' && e.data.dish.trim().toLowerCase() === d.name.trim().toLowerCase())) { d.seen = true; return true; }
     return !d.seen && !!d.addedAt && Date.now() - d.addedAt < 8000;   // eben hinzugefügt, der Eintrag kommt gleich an
   };
-  const dayTaken = (y) => !!mealOf(y) || (sugDays.get(y) || 0) > Date.now() - 8000;
+  const dayTaken = (y) => {   // belegt = Eintrag vorhanden, oder eben hinzugefügt und der Eintrag kommt gleich an (nur bis er einmal gesehen wurde)
+    const p = sugDays.get(y);
+    if (mealOf(y)) { if (p) p.seen = true; return true; }
+    return !!p && !p.seen && Date.now() - p.t < 8000;
+  };
   const firstFreeDay = () => { const base = weekStart(mealOff); for (let n = 0; n < 7; n++) { const x = new Date(base); x.setDate(base.getDate() + n); const y = ymd(x); if (!dayTaken(y)) return y; } return null; };
   function dayOptions(sel) {
     const base = weekStart(mealOff), pick = sel && !dayTaken(sel) && sel >= ymd(base) && sel <= ymd(new Date(base.getFullYear(), base.getMonth(), base.getDate() + 6)) ? sel : firstFreeDay();
@@ -2229,7 +2233,7 @@ input.switch:focus-visible { outline-offset: 3px; }
     const sel = document.querySelector(`.sug-day[data-i="${i}"]`);
     const day = sel && sel.value && !dayTaken(sel.value) ? sel.value : firstFreeDay();   // gewählter Tag, sonst erster freier der Woche
     if (!day) { toast(T('Alle Tage dieser Woche sind belegt')); return; }
-    d.addedAt = Date.now(); d.day = null; sugDays.set(day, Date.now());
+    d.addedAt = Date.now(); d.day = null; sugDays.set(day, { t: Date.now(), seen: false }); setTimeout(() => renderMeals(), 8200);
     const serv = Math.min(20, Math.max(1, parseInt(sugState && sugState.serv, 10) || 4));
     addEntry('meals', { date: day, dish: d.name, servings: serv, ...(d.kcal ? { kcal: d.kcal } : {}) });
     toast(pd(day).toLocaleDateString(I18N.loc(), { weekday: 'short' }) + ': ' + d.name);
@@ -2264,6 +2268,7 @@ input.switch:focus-visible { outline-offset: 3px; }
   }
   function renderMeals() {
     const box = $('meal-plan'); if (!box) return;
+    sugDays.forEach((p, y) => { if (!p.seen && mealOf(y)) p.seen = true; });   // Eintrag ist angekommen: ab jetzt zählt nur noch, ob er wirklich da ist
     document.querySelectorAll('#shop-view [data-sview]').forEach(c => { const on = c.dataset.sview === shopView; c.classList.toggle('on', on); c.setAttribute('aria-pressed', String(on)); });
     $('shop-main').hidden = shopView !== 'list'; box.hidden = shopView !== 'meals';
     if (shopView !== 'meals') return;
