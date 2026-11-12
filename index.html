@@ -269,13 +269,17 @@ input.switch:disabled { opacity: .5; }
 .ev-view .sp { flex: 1; }
 .wk-day { border-top: 1px solid var(--line); padding: 8px 2px; }
 .wk-day h3 { margin: 0 0 4px; font-size: .9rem; color: var(--muted); }
-.wk-day.today h3 { color: var(--mil); }
+.wk-day.is-today h3 { color: var(--mil); }
 .wk-ev { display: flex; gap: 8px; padding: 3px 0; }
 .wk-ev .tm { min-width: 48px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .wk-none { color: var(--muted); font-size: .85rem; }
+.meal-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
+.meal-row .txt { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.meal-acts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
 .ev-place { flex-basis: 100%; font-size: .85rem; color: var(--muted); }
 .ev-place a { color: inherit; text-decoration: underline; }
 .ev-edit { flex-basis: 100%; display: grid; gap: 8px; }
+.meal-form { display: grid; gap: 8px; margin-top: 4px; }
 /* Timer: Pause, +1 Minute, Nochmal */
 .t-btns { display: flex; gap: 2px; flex: none; }
 .t-btns .ic-btn { width: 44px; height: 44px; font-size: 18px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--text); }
@@ -505,6 +509,7 @@ input.switch:focus-visible { outline-offset: 3px; }
       <div class="hello"><h1 id="home-hello">Hallo</h1><p id="home-sub"></p></div>
       <div id="home-tt"></div>
       <div id="home-bd"></div>
+      <div id="home-meal"></div>
       <div class="next-card" id="home-next" hidden><span class="nic" id="home-next-ic">📅</span><div><small id="home-next-k">Als Nächstes</small><strong id="home-next-t"></strong></div></div>
       <div class="qa" id="home-qa"><button class="chip" type="button" data-go="shop">＋ <span>Einkauf</span></button><button class="chip" type="button" data-go="todos">＋ <span>Aufgabe</span></button><button class="chip" type="button" data-go="events">＋ <span>Termin</span></button></div>
       <div class="card" id="home-intro" hidden style="gap:8px"><p class="field-label" style="margin:0">Willkommen bei Milteo 👋</p><p class="hint" style="margin:0">🛒 Einkauf: Schreib auf, was fehlt. Alle in der Familie sehen es sofort.</p><p class="hint" style="margin:0">✅ Aufgaben und 📅 Termine: Verteile Aufgaben und lass dich erinnern.</p><p class="hint" style="margin:0">👨‍👩‍👧 Lade deine Familie ein, dann ist alles gemeinsam.</p><button class="btn small" id="home-intro-ok" type="button">Verstanden</button></div>
@@ -522,6 +527,12 @@ input.switch:focus-visible { outline-offset: 3px; }
 
     <section class="panel" id="p-shop" hidden>
       <h2>Einkaufsliste</h2>
+      <div class="ev-view" id="shop-view" role="group" aria-label="Ansicht">
+        <button class="chip on" type="button" data-sview="list" aria-pressed="true">🛒 Liste</button>
+        <button class="chip" type="button" data-sview="meals" aria-pressed="false">🍽️ Essensplan</button>
+      </div>
+      <div id="meal-plan" hidden></div>
+      <div id="shop-main">
       <form class="add" id="f-shop">
         <input type="text" id="in-shop" enterkeyhint="send" placeholder="Was fehlt?">
         <input type="text" id="in-shop-qty" class="qty" enterkeyhint="send" placeholder="Menge" maxlength="20">
@@ -538,6 +549,7 @@ input.switch:focus-visible { outline-offset: 3px; }
       <p class="hint" style="margin-bottom:14px" id="dish-hint">Gericht und Anzahl Personen eingeben: Die Zutaten werden vorgeschlagen und erscheinen unter dem Gericht, mit + aufklappbar.</p>
       <input type="text" id="shop-q" placeholder="Einkaufsliste durchsuchen" aria-label="Einkaufsliste durchsuchen" maxlength="60" hidden>
       <div id="list-shop"></div>
+      </div>
     </section>
 
     <section class="panel" id="p-todos" hidden>
@@ -1140,7 +1152,7 @@ input.switch:focus-visible { outline-offset: 3px; }
     for (let i = 0; i < 7; i++) {
       const d = new Date(base); d.setDate(base.getDate() + i); const day = ymd(d);
       const list = evs.filter(e => occursOn(e, day)).sort((a, b) => (a.data.time || '').localeCompare(b.data.time || ''));
-      html += `<div class="wk-day ${day === td ? 'today' : ''}"><h3>${esc(d.toLocaleDateString(I18N.loc(), { weekday: 'long', day: 'numeric', month: 'short' }))}</h3>` +
+      html += `<div class="wk-day ${day === td ? 'is-today' : ''}"><h3>${esc(d.toLocaleDateString(I18N.loc(), { weekday: 'long', day: 'numeric', month: 'short' }))}</h3>` +
         (list.length ? list.map(e => `<div class="wk-ev"><span class="tm">${esc(e.data.time || '')}</span><span>${esc(e.data.title || '')}${e.data.repeat && e.data.type !== 'birthday' ? ' 🔁' : ''}${e.data.place ? ` <span class="who" style="display:inline">📍 ${esc(e.data.place)}</span>` : ''}</span></div>`).join('') : `<div class="wk-none">–</div>`) + '</div>';
     }
     box.innerHTML = html;
@@ -1264,6 +1276,8 @@ input.switch:focus-visible { outline-offset: 3px; }
     const today = new Date(); today.setHours(0, 0, 0, 0);
     const evs = E.filter(e => e.kind === 'events' && e.data.date && e.data.home !== false && new Date(e.data.date + 'T' + (e.data.time || '23:59')) >= new Date())
       .sort((a, b) => ((a.data.date) + (a.data.time || '')).localeCompare((b.data.date) + (b.data.time || '')));
+    { const mt = E.find(e => e.kind === 'meals' && e.data.date === todayYmd() && e.data.dish);
+      $('home-meal').innerHTML = mt ? `<div class="next-card"><span class="nic">🍽️</span><div><small>${esc(T('Heute essen wir'))}</small><strong>${esc(mt.data.dish)}</strong>${mt.data.cook ? `<small style="text-transform:none">👩‍🍳 ${esc(T('{name} kocht', { name: mt.data.cook }))}</small>` : ''}</div></div>` : ''; }
     const evsA = evs.filter(e => e.data.type !== 'birthday');
     $('home-bd').innerHTML = E.filter(e => e.kind === 'events' && e.data.type === 'birthday' && e.data.date && e.data.home !== false)
       .map(e => ({ e, n: daysUntil(e.data.date) })).filter(o => o.n >= 0 && o.n <= 14).sort((a, b) => a.n - b.n).slice(0, 2)
@@ -2151,7 +2165,127 @@ input.switch:focus-visible { outline-offset: 3px; }
     e.data = { ...e.data, remind: rv, reminded: false }; renderAll();
     patchEntry(e.id, d => ({ ...d, remind: rv, reminded: false }));
   });
-  function renderAll() { renderFreq(); renderChecklist('shop'); renderChecklist('todos'); renderTimers(); renderEvents(); renderTimetables(); renderHome(); }
+  // Essensplan (Art "meals"): pro Tag ein Abendessen, optional wer kocht; Zutaten auf die Einkaufsliste
+  let mealOff = 0, mealForm = null, mealFormShown = false, shopView = 'list';
+  const mealBusy = new Set();
+  try { if (localStorage.getItem('milteo_shopview') === 'meals') shopView = 'meals'; } catch (_) {}
+  const mealOf = (day) => entries.find(e => e.kind === 'meals' && e.data.date === day);
+  const mealOnList = (id) => entries.some(e => e.kind === 'shop' && e.data.type === 'dish' && e.data.meal === id);
+  const weekStart = (off) => { const b = new Date(); b.setHours(0, 0, 0, 0); b.setDate(b.getDate() - ((b.getDay() + 6) % 7) + off * 7); return b; };
+  function cookOptions(sel) {
+    const names = [...new Set(Object.values(memberNames).filter(Boolean))]; if (sel && !names.includes(sel)) names.push(sel);
+    return `<option value="">👩‍🍳 ${esc(T('Wer kocht? (optional)'))}</option>` + names.map(n => `<option value="${esc(n)}"${n === sel ? ' selected' : ''}>${esc(n)}</option>`).join('');
+  }
+  function mealFormHtml(day, m) {
+    const d = (m && m.data) || {}; let serv = d.servings; if (!serv) { try { serv = Number(localStorage.getItem('milteo_meal_serv')) || 0; } catch (_) {} } serv = serv || 4;
+    return `<form class="meal-form" data-day="${day}" data-id="${m ? m.id : ''}">
+      <input type="text" class="ml-d" value="${esc(d.dish || '')}" maxlength="80" placeholder="${esc(T('Gericht, z. B. Lasagne'))}" aria-label="${esc(T('Gericht'))}">
+      <div class="grid2"><select class="ml-c" aria-label="${esc(T('Wer kocht? (optional)'))}">${cookOptions(d.cook || '')}</select><input type="number" class="ml-s servings" value="${serv}" min="1" max="20" inputmode="numeric" aria-label="${esc(T('Anzahl Personen'))}" title="${esc(T('Anzahl Personen'))}"></div>
+      <div style="display:flex; gap:8px"><button class="btn" type="submit">${esc(T('Speichern'))}</button><button class="btn ghost" type="button" data-act="mealcancel">${esc(T('Abbrechen'))}</button></div></form>`;
+  }
+  function mealRowHtml(m) {
+    const d = m.data, on = mealOnList(m.id), busy = mealBusy.has(m.id);
+    return `<div class="meal-row"><span class="txt" data-act="mealform" data-day="${esc(d.date)}" role="button" tabindex="0" style="cursor:pointer"><strong>${esc(d.dish || '')}</strong>${d.cook ? `<span class="who">👩‍🍳 ${esc(d.cook)}</span>` : ''}</span>
+      <button class="chip ${on ? 'on' : ''}" type="button" data-act="mealtolist" data-id="${m.id}" ${busy ? 'disabled' : ''}>${busy ? esc(T('Suche …')) : on ? esc(T('✓ Auf der Liste')) : '🛒 ' + esc(T('Zutaten'))}</button>
+      <button class="del" type="button" aria-label="${esc(T('Löschen: {name}', { name: d.dish || '' }))}" data-act="del" data-id="${m.id}">×</button></div>`;
+  }
+  function renderMeals() {
+    const box = $('meal-plan'); if (!box) return;
+    document.querySelectorAll('#shop-view [data-sview]').forEach(c => { const on = c.dataset.sview === shopView; c.classList.toggle('on', on); c.setAttribute('aria-pressed', String(on)); });
+    $('shop-main').hidden = shopView !== 'list'; box.hidden = shopView !== 'meals';
+    if (shopView !== 'meals') return;
+    if (mealForm && mealFormShown) return;   // während der Eingabe nicht neu zeichnen
+    if (!mealForm) mealFormShown = false;
+    const base = weekStart(mealOff), td = todayYmd(), last = new Date(base); last.setDate(last.getDate() + 6);
+    const fm = (d) => d.toLocaleDateString(I18N.loc(), { day: 'numeric', month: 'short' });
+    let any = false, html = `<div class="ev-view"><button class="chip" type="button" data-mwk="-1" aria-label="${esc(T('Vorherige Woche'))}">‹</button><button class="chip" type="button" data-mwk="0">${esc(T('Diese Woche'))}</button><button class="chip" type="button" data-mwk="1" aria-label="${esc(T('Nächste Woche'))}">›</button><span class="sp"></span><span class="who" style="margin:0">${esc(fm(base))} – ${esc(fm(last))}</span></div>`;
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(base); d.setDate(base.getDate() + i); const day = ymd(d), m = mealOf(day); if (m) any = true;
+      html += `<div class="wk-day ${day === td ? 'is-today' : ''}"><h3>${esc(d.toLocaleDateString(I18N.loc(), { weekday: 'long', day: 'numeric', month: 'short' }))}</h3>` +
+        (mealForm === day ? mealFormHtml(day, m) : m ? mealRowHtml(m) : `<button class="chip" type="button" data-act="mealform" data-day="${day}">＋ ${esc(T('Gericht eintragen'))}</button>`) + '</div>';
+    }
+    if (any) html += `<div class="meal-acts"><button class="btn ghost" type="button" data-act="mealall">${esc(T('🛒 Alle Zutaten der Woche'))}</button><button class="btn ghost" type="button" data-act="mealcopy">${esc(T('📋 In die nächste Woche kopieren'))}</button></div>`;
+    box.innerHTML = html;
+    const f = box.querySelector('.meal-form'); if (f) { mealFormShown = true; f.querySelectorAll('input[type=text],input[type=number]').forEach(cefify); const t = f.querySelector('.ml-d'); if (t) t.focus(); }
+  }
+  async function mealToList(id, quiet) {
+    const m = entries.find(x => x.id === id); if (!m || mealBusy.has(id) || !fid) return false;
+    if (!quiet && mealOnList(id) && !confirm(T('Die Zutaten stehen schon auf der Liste. Nochmals hinzufügen?'))) return false;
+    const dish = m.data.dish, servings = m.data.servings || 4;
+    let items = null, name = dish;
+    mealBusy.add(id); renderMeals();
+    try {
+      const rec = findRecipe(dish);
+      if (rec) { items = scaleRecipe(rec, servings); if (rec.title) name = rec.title; }
+      else {
+        let err = null, data = null;
+        try {
+          const r = await sb.functions.invoke('dish', { body: { dish, servings } });
+          data = r.data;
+          if (r.error) { try { const j = await r.error.context.json(); err = j.error || 'ai_failed'; } catch (_) { err = 'ai_failed'; } }
+          else if (data && data.error) err = data.error;
+        } catch (_) { err = 'ai_failed'; }
+        if (err || !data || !Array.isArray(data.items) || !data.items.length) {
+          if (!quiet || err === 'limit') toast(err === 'limit' ? T('Tageslimit der KI erreicht') : err === 'quota' ? T('Die KI ist gerade ausgelastet. Versuche es später.') : T('Zu diesem Gericht habe ich keine Zutaten gefunden.'));
+          return false;
+        }
+        items = data.items.map(i => ({ name: i.name, amount: i.amount || '', done: false })); if (data.dish) name = data.dish;
+      }
+      const row = await addEntry('shop', { type: 'dish', text: name, servings, items, by: myName, meal: id });
+      if (row && !quiet) toast(T('Zutaten für «{name}» stehen auf der Liste', { name }));
+      return !!row;
+    } finally { mealBusy.delete(id); renderMeals(); }
+  }
+  async function mealAll() {
+    const base = weekStart(mealOff); let n = 0, bad = 0;
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(base); d.setDate(base.getDate() + i); const m = mealOf(ymd(d)); if (!m || mealOnList(m.id)) continue;
+      if (await mealToList(m.id, true)) n++; else bad++;
+    }
+    if (n) toast(T(n === 1 ? 'Zutaten für {n} Gericht gesetzt' : 'Zutaten für {n} Gerichte gesetzt', { n }) + (bad ? ' · ' + T('Nicht alle Zutaten gefunden') : ''));
+    else toast(bad ? T('Nicht alle Zutaten gefunden') : T('Alles schon auf der Liste'));
+  }
+  async function mealCopy() {
+    const base = weekStart(mealOff); let n = 0;
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(base); d.setDate(base.getDate() + i); const m = mealOf(ymd(d)); if (!m) continue;
+      const nd = new Date(d); nd.setDate(d.getDate() + 7); const nday = ymd(nd); if (mealOf(nday)) continue;
+      const row = await addEntry('meals', { date: nday, dish: m.data.dish, servings: m.data.servings || 4, ...(m.data.cook ? { cook: m.data.cook } : {}) });
+      if (row) n++;
+    }
+    if (n) { mealOff += 1; renderMeals(); toast(T(n === 1 ? '{n} Gericht kopiert' : '{n} Gerichte kopiert', { n })); }
+    else toast(T('Nichts zu kopieren'));
+  }
+  document.addEventListener('click', (ev) => {
+    const v = ev.target.closest('#shop-view [data-sview]');
+    if (v) { shopView = v.dataset.sview; try { localStorage.setItem('milteo_shopview', shopView); } catch (_) {} mealForm = null; mealFormShown = false; renderMeals(); return; }
+    const w = ev.target.closest('#meal-plan [data-mwk]');
+    if (w) { const n = Number(w.dataset.mwk); mealOff = n === 0 ? 0 : mealOff + n; mealForm = null; mealFormShown = false; renderMeals(); return; }
+    const b = ev.target.closest('#meal-plan [data-act]'); if (!b) return;
+    const act = b.dataset.act;
+    if (act === 'mealform') { mealForm = b.dataset.day; mealFormShown = false; renderMeals(); }
+    else if (act === 'mealcancel') { mealForm = null; mealFormShown = false; renderMeals(); }
+    else if (act === 'mealtolist') mealToList(b.dataset.id);
+    else if (act === 'mealall') mealAll();
+    else if (act === 'mealcopy') mealCopy();
+  });
+  document.addEventListener('submit', async (ev) => {
+    const f = ev.target.closest && ev.target.closest('.meal-form'); if (!f) return;
+    ev.preventDefault();
+    const dish = f.querySelector('.ml-d').value.trim(), cook = f.querySelector('.ml-c').value, day = f.dataset.day, id = f.dataset.id;
+    const servings = Math.min(20, Math.max(1, parseInt(f.querySelector('.ml-s').value, 10) || 4));
+    if (dish.length < 2) { toast(T('Bitte ein Gericht eingeben')); return; }
+    try { localStorage.setItem('milteo_meal_serv', String(servings)); } catch (_) {}
+    mealForm = null; mealFormShown = false;
+    const m = id ? entries.find(x => x.id === id) : mealOf(day);
+    if (m) {
+      const apply = (d) => { const x = { ...d, dish, servings }; if (cook) x.cook = cook; else delete x.cook; return x; };
+      m.data = apply(m.data); renderAll(); patchEntry(m.id, apply);
+    } else { await addEntry('meals', { date: day, dish, servings, ...(cook ? { cook } : {}) }); }
+    renderMeals();
+  });
+
+  function renderAll() { renderFreq(); renderChecklist('shop'); renderChecklist('todos'); renderTimers(); renderEvents(); renderTimetables(); renderMeals(); renderHome(); }
 
   // Timer: pausieren, fortsetzen, +1 Minute, nochmal. Pausiert = end weit in der Zukunft (der Server meldet dann nichts), Rest in "left".
   const T_PAUSE_END = 3.15e11;   // ca. 10 Jahre
