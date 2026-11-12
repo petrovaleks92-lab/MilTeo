@@ -2215,10 +2215,10 @@ input.switch:focus-visible { outline-offset: 3px; }
   }
   function sugAdd(i) {
     const d = sugRes[i]; if (!d || sugInPlan(d)) return;
-    const base = weekStart(mealOff), td = todayYmd(); let day = null;
-    for (let n = 0; n < 7; n++) {
+    const base = weekStart(mealOff); let day = null;
+    for (let n = 0; n < 7; n++) {   // erster freier Tag der angezeigten Woche, ab Montag
       const x = new Date(base); x.setDate(base.getDate() + n); const y = ymd(x);
-      if (y < td || mealOf(y) || (sugDays.get(y) || 0) > Date.now() - 8000) continue;
+      if (mealOf(y) || (sugDays.get(y) || 0) > Date.now() - 8000) continue;
       day = y; break;
     }
     if (!day) { toast(T('Alle Tage dieser Woche sind belegt')); return; }

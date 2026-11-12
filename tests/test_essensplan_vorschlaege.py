@@ -31,7 +31,7 @@ with sync_playwright() as p:
     pg.click('[data-act=sugadd][data-i="0"]'); pg.click('[data-act=sugadd][data-i="1"]'); pg.wait_for_timeout(900)
     ms = pg.evaluate("__db.entries.filter(e=>e.kind==='meals'&&e.data.dish).map(e=>e.data)")
     days = sorted(m['date'] for m in ms)
-    check('Zwei Vorschläge auf zwei verschiedene freie Tage: %s' % days, len(ms) == 2 and len(set(days)) == 2 and all(d >= iso(T) for d in days) and any(m.get('kcal') == 520 for m in ms))
+    check('Zwei Vorschläge auf Montag und Dienstag (erste freie Tage der Woche): %s' % days, len(ms) == 2 and len(set(days)) == 2 and days == [iso(T - datetime.timedelta(days=T.weekday())), iso(T - datetime.timedelta(days=T.weekday()) + datetime.timedelta(days=1))] and any(m.get('kcal') == 520 for m in ms))
     check('Button zeigt «Im Plan»', pg.inner_text('.meal-sug').count('Im Plan') == 2)
     check('Plan zeigt kcal in der Zeile', 'ca. 520 kcal' in pg.inner_text('#meal-plan .meal-row:not(.sug-row)'))
     # Gericht aus dem Plan löschen -> Vorschlag ist wieder wählbar
