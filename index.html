@@ -175,6 +175,7 @@ body.composing #toast { bottom: 90px; }
 .bubble.media { padding: 4px; }
 .bubble.media .from, .bubble.media .when, .bubble.media .cap { padding-left: 8px; padding-right: 8px; }
 .bubble .cap { padding-top: 4px; }
+.bubble a.chat-link { color: var(--mil, #1B7F46); text-decoration: underline; word-break: break-all; }
 .chat-img { display: block; width: 240px; max-width: 100%; min-height: 80px; max-height: 320px; object-fit: cover; border-radius: 12px; background: var(--line); cursor: zoom-in; }
 .player { display: flex; align-items: center; gap: 10px; min-width: 200px; padding: 4px 8px 0 4px; }
 .pbtn { width: 38px; height: 38px; border-radius: 50%; border: 0; background: var(--mil); color: var(--on-mil); display: grid; place-items: center; flex: none; padding: 0; }
@@ -3051,6 +3052,18 @@ input.switch:focus-visible { outline-offset: 3px; }
     return r.data.signedUrl;
   }
 
+  // Links in Chat-Nachrichten anklickbar machen (nur http(s):// und www.; Text bleibt escaped)
+  function linkify(text) {
+    return esc(text).replace(/(^|[\s(])((?:https?:\/\/|www\.)[^\s<]+)/gi, (all, pre, u) => {
+      let tail = '';
+      const m = u.match(/(?:[.,;:!?)\]]|&quot;|&#39;|&gt;)+$/);
+      if (m) { tail = m[0]; u = u.slice(0, -tail.length); }
+      if (!u || /^(?:https?:\/\/|www\.)$/i.test(u)) return all;
+      const href = /^www\./i.test(u) ? 'https://' + u : u;
+      return `${pre}<a class="chat-link" href="${href}" target="_blank" rel="noopener noreferrer nofollow">${u}</a>${tail}`;
+    });
+  }
+
   function msgHtml(m) {
     const mine = m.user_id === myId;
     const dt = new Date(m.created_at);
@@ -3063,7 +3076,7 @@ input.switch:focus-visible { outline-offset: 3px; }
         inner = `<img class="chat-img" data-path="${esc(m.media_path)}" alt="${esc(T('Bild'))}" loading="lazy">`;
       }
     }
-    if (m.body) inner += `<div>${esc(m.body)}</div>`;
+    if (m.body) inner += `<div>${linkify(m.body)}</div>`;
     return `<div class="m-row ${mine ? 'mine' : ''}" data-mid="${m.id}"><div class="bubble">${mine ? '' : `<div class="from">${esc(m.display_name || '')}</div>`}${inner}<div class="when">${when}</div></div></div>`;
   }
 
