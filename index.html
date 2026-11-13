@@ -131,6 +131,8 @@ nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface);
 .m-row.mine .bubble { background: var(--mil-soft); border-color: transparent; border-radius: 16px 16px 4px 16px; }
 .bubble .from { font-size: 12px; font-weight: 600; color: var(--muted); }
 .bubble .when { font-size: 11px; color: var(--muted); margin-top: 2px; text-align: right; }
+.bubble .tick { cursor: pointer; letter-spacing: -2px; padding: 2px 2px 2px 4px; }
+.bubble .tick.all { color: #1B7F46; font-weight: 700; }
 .dot { position: absolute; top: 6px; right: 20%; width: 11px; height: 11px; border-radius: 50%; background: var(--danger); border: 2px solid var(--surface); }
 .hint { margin: 0; font-size: 13px; color: var(--muted); }
 .row .amt { color: var(--muted); font-size: 13px; margin-left: 8px; }
@@ -999,7 +1001,7 @@ input.switch:focus-visible { outline-offset: 3px; }
   let entries = [], loadedOnce = false, editing = null, editShown = false, appReady = false;
   const openDishes = new Set();
   try { JSON.parse(localStorage.getItem('milteo_open_dishes') || '[]').forEach(i => openDishes.add(i)); } catch (_) {}
-  let chatUnread = 0, memberCount = 0, memberNames = {};
+  let chatUnread = 0, memberCount = 0, memberNames = {}, chatReads = {}, readsOk = false, readsSent = '';
   // Aufgaben: Zuweisung, Fälligkeit, Wichtigkeit, Wiederholung (alles im Datenfeld, keine DB-Änderung)
   const ymd = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   const todayYmd = () => ymd(new Date());
@@ -3064,6 +3066,53 @@ input.switch:focus-visible { outline-offset: 3px; }
     });
   }
 
+  // Lesebestätigung: ✓ gesendet, ✓✓ von einigen gelesen, ✓✓ grün von allen gelesen
+  function readInfo(m) {
+    const t = new Date(m.created_at).getTime();
+    const others = Object.keys(memberNames).filter(u => u !== myId);
+    const names = others.filter(u => chatReads[u] && new Date(chatReads[u]).getTime() >= t).map(u => memberNames[u] || '');
+    return { total: others.length, names };
+  }
+  function tickHtml(m) {
+    if (!readsOk) return '';
+    const i = readInfo(m);
+    if (!i.total) return '';
+    const all = i.names.length >= i.total;
+    return ` <span class="tick ${all ? 'all' : ''}" data-mid="${m.id}" role="button" tabindex="0" aria-label="${esc(i.names.length ? T('Gelesen von: {names}', { names: i.names.join(', ') }) : T('Noch von niemandem gelesen'))}">${i.names.length ? '✓✓' : '✓'}</span>`;
+  }
+  function refreshTicks() {
+    if (!readsOk) return;
+    chatMsgs.forEach(m => {
+      if (m.user_id !== myId) return;
+      const row = $('list-chat').querySelector('.m-row[data-mid="' + m.id + '"] .when');
+      if (!row) return;
+      const old = row.querySelector('.tick'); if (old) old.remove();
+      row.insertAdjacentHTML('beforeend', tickHtml(m));
+    });
+  }
+  async function loadReads() {
+    if (!fid) return;
+    let r; try { r = await sb.from('message_reads').select('user_id, last_read_at').eq('family_id', fid); } catch (e) { return; }
+    if (r.error) { readsOk = false; return; }   // Tabelle fehlt oder offline: keine Häkchen
+    readsOk = true; chatReads = {}; r.data.forEach(x => { chatReads[x.user_id] = x.last_read_at; });
+    refreshTicks();
+  }
+  async function markRead() {
+    if (!fid || !myId || !readsOk || currentTab !== 'chat' || document.hidden) return;
+    const last = chatMsgs.filter(m => m.user_id !== myId).pop();
+    if (!last || last.created_at === readsSent) return;
+    readsSent = last.created_at;
+    chatReads[myId] = last.created_at;
+    try { await sb.from('message_reads').upsert({ family_id: fid, user_id: myId, last_read_at: last.created_at }, { onConflict: 'family_id,user_id' }); } catch (_) { readsSent = ''; }
+  }
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) markRead(); });
+  $('list-chat').addEventListener('click', (e) => {
+    const t = e.target.closest && e.target.closest('.tick'); if (!t) return;
+    const m = chatMsgs.find(x => String(x.id) === t.dataset.mid); if (!m) return;
+    const i = readInfo(m);
+    toast(i.names.length ? T('Gelesen von: {names}', { names: i.names.join(', ') }) : T('Noch von niemandem gelesen'), 3500);
+  });
+
   function msgHtml(m) {
     const mine = m.user_id === myId;
     const dt = new Date(m.created_at);
@@ -3077,7 +3126,7 @@ input.switch:focus-visible { outline-offset: 3px; }
       }
     }
     if (m.body) inner += `<div>${linkify(m.body)}</div>`;
-    return `<div class="m-row ${mine ? 'mine' : ''}" data-mid="${m.id}"><div class="bubble">${mine ? '' : `<div class="from">${esc(m.display_name || '')}</div>`}${inner}<div class="when">${when}</div></div></div>`;
+    return `<div class="m-row ${mine ? 'mine' : ''}" data-mid="${m.id}"><div class="bubble">${mine ? '' : `<div class="from">${esc(m.display_name || '')}</div>`}${inner}<div class="when">${when}${mine ? tickHtml(m) : ''}</div></div></div>`;
   }
 
   function hydrateMedia(root) {
@@ -3105,6 +3154,7 @@ input.switch:focus-visible { outline-offset: 3px; }
     el.insertAdjacentHTML('beforeend', msgHtml(m));
     hydrateMedia(el);
     if (stickBottom) el.scrollTop = el.scrollHeight;
+    if (m.user_id !== myId) markRead();
   }
   $('list-chat').addEventListener('scroll', () => {
     const l = $('list-chat');
@@ -3116,9 +3166,10 @@ input.switch:focus-visible { outline-offset: 3px; }
     if (r.error) { if (isNetErr(r.error)) setNet(false); return; }
     setNet(true);
     const fresh = r.data.reverse();
-    if (fresh.length === chatMsgs.length && fresh.every((m, i) => m.id === chatMsgs[i].id) && $('list-chat').children.length) return;
+    await loadReads();
+    if (fresh.length === chatMsgs.length && fresh.every((m, i) => m.id === chatMsgs[i].id) && $('list-chat').children.length) { refreshTicks(); markRead(); return; }
     chatMsgs = fresh; chatIds.clear(); fresh.forEach(m => chatIds.add(m.id));
-    renderChat(); renderHome();
+    renderChat(); renderHome(); markRead();
   }
   function subscribeChat() {
     if (chatChannel || !fid) return;
@@ -3128,12 +3179,16 @@ input.switch:focus-visible { outline-offset: 3px; }
         if (currentTab !== 'chat' && p.new.user_id !== myId) { $('chat-dot').hidden = false; chatUnread++; }
         renderHome();
       })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'message_reads', filter: 'family_id=eq.' + fid }, (p) => {
+        if (!p.new || !p.new.user_id) return;
+        readsOk = true; chatReads[p.new.user_id] = p.new.last_read_at; refreshTicks();
+      })
       .subscribe();
   }
   function unsubscribeChat() {
     if (entriesChannel) { sb.removeChannel(entriesChannel); entriesChannel = null; rtOk = false; }
     if (chatChannel) { sb.removeChannel(chatChannel); chatChannel = null; }
-    chatMsgs = []; chatIds.clear();
+    chatMsgs = []; chatIds.clear(); chatReads = {}; readsOk = false; readsSent = '';
     stopPlaying();
     renderChat();
   }

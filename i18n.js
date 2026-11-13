@@ -339,6 +339,8 @@
     ['Ort auf der Karte öffnen: {name}', 'Отвори на карта: {name}', 'Ouvrir sur la carte : {name}', 'Apri sulla mappa: {name}', 'Otvori na mapi: {name}', 'Hap në hartë: {name}', 'Haritada aç: {name}', 'Open on map: {name}'],
     ['📅 Termin', '📅 Термин', '📅 Rendez-vous', '📅 Appuntamento', '📅 Termin', '📅 Takim', '📅 Randevu', '📅 Appointment'],
     ['🎂 Geburtstag', '🎂 Роденден', '🎂 Anniversaire', '🎂 Compleanno', '🎂 Rođendan', '🎂 Ditëlindje', '🎂 Doğum günü', '🎂 Birthday'],
+    ['Gelesen von: {names}', 'Прочитано од: {names}', 'Lu par : {names}', 'Letto da: {names}', 'Pročitali: {names}', 'Lexuar nga: {names}', 'Okuyanlar: {names}', 'Read by: {names}'],
+    ['Noch von niemandem gelesen', 'Уште никој не прочитал', 'Pas encore lu', 'Non ancora letto', 'Još niko nije pročitao', 'Ende nuk është lexuar', 'Henüz kimse okumadı', 'Not read by anyone yet'],
     ['Geburtstag', 'Роденден', 'Anniversaire', 'Compleanno', 'Rođendan', 'Ditëlindje', 'Doğum günü', 'Birthday'],
     ['Name', 'Име', 'Nom', 'Nome', 'Ime', 'Emri', 'Ad', 'Name'],
     ['Geburtsdatum', 'Датум на раѓање', 'Date de naissance', 'Data di nascita', 'Datum rođenja', 'Data e lindjes', 'Doğum tarihi', 'Date of birth'],

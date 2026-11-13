@@ -19,7 +19,7 @@ with sync_playwright() as p:
       {id:'d1',family_id:'f',kind:'shop',data:{type:'dish',text:'Lasagne',servings:4,items:[{name:'Hack',amount:'500 g',done:false},{name:'Tomaten',amount:'400 g',done:false}]},created_at:new Date().toISOString()},
       {id:'ev1',family_id:'f',kind:'events',data:{title:'Zahnarzt',date:'2030-01-02',time:'10:00',remind:15},created_at:new Date().toISOString()}]; loadEntries()""")
     pg.wait_for_timeout(700)
-    check('Echtzeit-Abos angelegt (entries + members)', pg.evaluate("(window.__rt||[]).map(x=>x[0]).sort().join()")=='entries,members,messages' or pg.evaluate("(window.__rt||[]).map(x=>x[0]).sort().join()")=='entries,members')
+    check('Echtzeit-Abos angelegt (entries + members)', pg.evaluate("(window.__rt||[]).map(x=>x[0]).sort().join()")in ('entries,members,message_reads,messages', 'entries,members,messages') or pg.evaluate("(window.__rt||[]).map(x=>x[0]).sort().join()")=='entries,members')
     # Echtzeit: andere Person fügt Aufgabe ein, ohne dass wir etwas tun
     pg.evaluate("__db.entries.push({id:'t9',family_id:'f',kind:'todos',data:{text:'Von Papa',done:false,by:'Papa'},created_at:new Date().toISOString()}); __rt.filter(x=>x[0]==='entries').forEach(x=>x[1]({eventType:'INSERT'}))")
     pg.wait_for_timeout(800)
