@@ -3518,6 +3518,10 @@ input.switch:focus-visible { outline-offset: 3px; }
     if (Notification.permission === 'denied') {
       master.checked = false;
       st.textContent = isTwa() ? T('Benachrichtigungen sind blockiert. Öffne die Android-Einstellungen → Apps → Milteo → Benachrichtigungen und erlaube sie.') : T('Benachrichtigungen sind blockiert. Erlaube sie in den Website-Einstellungen des Browsers.');
+      try {
+        const q = navigator.permissions ? await navigator.permissions.query({ name: 'notifications' }) : null;
+        st.textContent += ' [' + ['perm=' + Notification.permission, 'query=' + (q ? q.state : '-'), 'twa=' + (isTwa() ? 1 : 0), 'sw=' + (('serviceWorker' in navigator) ? 1 : 0), 'v29'].join(', ') + ']';
+      } catch (_) {}
       return;
     }
     let sub = null;
