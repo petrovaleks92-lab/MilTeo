@@ -3497,6 +3497,12 @@ input.switch:focus-visible { outline-offset: 3px; }
       } else await saveSub(sub);
     } catch (_) {}
   }
+  function isTwa() {
+    try { if (document.referrer && document.referrer.startsWith('android-app://')) sessionStorage.setItem('milteo_twa', '1'); } catch (_) {}
+    try { return sessionStorage.getItem('milteo_twa') === '1'; } catch (_) { return false; }
+  }
+  isTwa();
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && typeof refreshPushUI === 'function') refreshPushUI(); });
   async function refreshPushUI() {
     const st = $('push-status'), master = $('sw-push'), types = $('push-types'), test = $('btn-push-test');
     test.hidden = true; types.hidden = true;
@@ -3511,7 +3517,7 @@ input.switch:focus-visible { outline-offset: 3px; }
     master.disabled = false;
     if (Notification.permission === 'denied') {
       master.checked = false;
-      st.textContent = T('Benachrichtigungen sind blockiert. Erlaube sie in den Website-Einstellungen des Browsers.');
+      st.textContent = isTwa() ? T('Benachrichtigungen sind blockiert. Öffne die Android-Einstellungen → Apps → Milteo → Benachrichtigungen und erlaube sie.') : T('Benachrichtigungen sind blockiert. Erlaube sie in den Website-Einstellungen des Browsers.');
       return;
     }
     let sub = null;
@@ -3525,7 +3531,7 @@ input.switch:focus-visible { outline-offset: 3px; }
     try {
       if (master.checked) {
         const perm = await Notification.requestPermission();
-        if (perm !== 'granted') { toast(T('Benachrichtigungen nicht erlaubt')); return; }
+        if (perm !== 'granted') { toast(T('Benachrichtigungen nicht erlaubt')); master.checked = false; refreshPushUI(); return; }
         const reg = await swReady();
         if (!reg) throw new Error('Service Worker nicht bereit');
         let sub = await reg.pushManager.getSubscription();
