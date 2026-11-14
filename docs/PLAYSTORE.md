@@ -26,7 +26,7 @@ Milteo bringt die ganze Familie auf denselben Stand: eine App für Einkaufsliste
 • Timer, die auf allen Handys klingeln
 • Chat nur für die Familie
 • Mitteilungen, wenn jemand etwas ergänzt
-• 8 Sprachen: Deutsch, Mazedonisch, Französisch, Italienisch, Serbisch, Albanisch, Türkisch, Englisch
+• 9 Sprachen: Deutsch, Mazedonisch, Französisch, Italienisch, Serbisch, Albanisch, Türkisch, Englisch, Arabisch
 • Keine Werbung, kein Tracking
 
 Jede Familie testet Milteo 30 Tage mit allen Funktionen.
