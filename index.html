@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-title" content="Milteo">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>Milteo – der Familienplaner für Einkauf, Aufgaben und Termine</title>
-<meta name="description" content="Milteo bringt deine Familie zusammen: gemeinsamer Einkauf, Aufgaben, Termine, Timer und Chat in einer App. In 8 Sprachen, direkt auf dem Handy.">
+<meta name="description" content="Milteo bringt deine Familie zusammen: gemeinsamer Einkauf, Aufgaben, Termine, Timer und Chat in einer App. In 9 Sprachen, direkt auf dem Handy.">
 <link rel="canonical" href="https://milteo.ch/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Milteo">
@@ -383,7 +383,7 @@ input.switch:focus-visible { outline-offset: 3px; }
       <h2>Gemacht für Familien</h2>
       <ul class="ld-why">
         <li>Alle sehen Änderungen sofort, ohne neu zu laden.</li>
-        <li>In 8 Sprachen, auch Mazedonisch, Serbisch, Albanisch und Türkisch.</li>
+        <li>In 9 Sprachen, auch Mazedonisch, Serbisch, Albanisch, Türkisch und Arabisch.</li>
         <li>Wie eine App auf dem Handy: einfach zum Startbildschirm hinzufügen.</li>
         <li>Keine Werbung, kein Tracking. Die Daten liegen auf Servern in der EU.</li>
         <li>Admins verwalten die Familie und laden mit einem Link ein.</li>
@@ -909,7 +909,7 @@ input.switch:focus-visible { outline-offset: 3px; }
     try { landVideo(); } catch (_) {}
   }
   // Startseiten-Video passend zur Sprache (Rest: deutsche Fassung)
-  const LAND_VIDEOS = { mk: 'milteo-video-mk', sr: 'milteo-video-sr', fr: 'milteo-video-fr', it: 'milteo-video-it', sq: 'milteo-video-sq', tr: 'milteo-video-tr', en: 'milteo-video-en', ar: 'milteo-video-en' };
+  const LAND_VIDEOS = { mk: 'milteo-video-mk', sr: 'milteo-video-sr', fr: 'milteo-video-fr', it: 'milteo-video-it', sq: 'milteo-video-sq', tr: 'milteo-video-tr', en: 'milteo-video-en', ar: 'milteo-video-ar' };
   function landVideo() {
     const v = document.querySelector('.ld-phone video'); if (!v) return;
     const base = LAND_VIDEOS[I18N.lang] || 'milteo-video', src = base + '.mp4', src0 = v.querySelector('source');
