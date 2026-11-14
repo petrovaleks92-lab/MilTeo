@@ -1,4 +1,4 @@
-const CACHE = 'milteo-v27';
+const CACHE = 'milteo-v28';
 const SHELL = ['./', 'index.html', 'i18n.js', 'manifest.json', 'icon-192.png', 'icon-512.png', 'badge-96.png'];
 
 self.addEventListener('install', (e) => {
